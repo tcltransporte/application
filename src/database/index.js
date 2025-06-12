@@ -1,0 +1,254 @@
+import { Sequelize } from 'sequelize'
+import * as tedious from 'tedious'
+import 'dotenv/config'
+
+import { Company } from './models/company.model.js'
+import { CompanyUser } from './models/companyUser.model.js'
+import { CompanyBusiness } from './models/companyBusiness.model.js'
+import { User } from './models/user.model.js'
+import { UserMember } from './models/userMember.model.js'
+import { BankAccount } from './models/bankAccount.model.js'
+import { Integration } from './models/integration.model.js'
+import { CompanyIntegration } from './models/companyIntegration.model.js'
+import { Bank } from './models/bank.model.js'
+import { Statement } from './models/statement.model.js'
+import { FinancialMovement } from './models/financialMovement.model.js'
+import { FinancialMovementIntallment } from './models/financialMovementInstallment.model.js'
+import { Partner } from './models/partner.model.js'
+import { StatementData } from './models/statementData.model.js'
+import { StatementDataConciled } from './models/statementDataConciled.model.js'
+import { FinancialCategory } from './models/financialCategory.model.js'
+import { PaymentMethod } from './models/paymentMethod.model.js'
+
+const afterFind = (result) => {
+  const trimStrings = obj => {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        obj[key] = obj[key].trim()
+      }
+    }
+  }
+
+  if (Array.isArray(result)) {
+    result.forEach(row => trimStrings(row.dataValues))
+  } else if (result && result.dataValues) {
+    trimStrings(result.dataValues)
+  }
+}
+
+export class AppContext extends Sequelize {
+  
+  Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
+
+  BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
+
+  Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
+
+  CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
+
+  CompanyIntegration = this.define('companyIntegration', new CompanyIntegration(), { tableName: 'companyIntegration' })
+
+  CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
+
+  FinancialCategory = this.define('financialCategory', new FinancialCategory(), { tableName: 'PlanoContasContabil' })
+
+  FinancialMovement = this.define('financialMovement', new FinancialMovement(), { tableName: 'movimentos' })
+
+  FinancialMovementInstallment = this.define('financialMovementIntallment', new FinancialMovementIntallment(), { tableName: 'movimentos_detalhe' })
+
+  Integration = this.define('integration', new Integration(), { tableName: 'integration' })
+
+  Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
+
+  PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'paymentMethod' })
+
+  Statement = this.define('statement', new Statement(), { tableName: 'statement' })
+
+  StatementData = this.define('statementData', new StatementData(), { tableName: 'statementData' })
+
+  StatementDataConciled = this.define('statementDataConciled', new StatementDataConciled(), { tableName: 'statementDataConciled' })
+
+  User = this.define('user', new User(), { tableName: 'aspnet_Users' })
+
+  UserMember = this.define('userMember', new UserMember(), { tableName: 'aspnet_Membership' })
+
+  constructor() {
+
+    super({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_DATABASE,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      dialect: 'mssql',
+      dialectModule: tedious,
+      databaseVersion: '10.50.1600',
+      timezone: "America/Sao_Paulo",
+      dialectOptions: { options: { requestTimeout: 300000, encrypt: false }}, define: { timestamps: false },
+      logging: (query, options) => {
+        if (options.bind) {
+          Object.keys(options.bind).forEach((key) => query = query.replace(`@${key}`, `'${options.bind[key]}'`))
+        }
+        console.log(query)
+      },
+    })
+
+    this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId' })
+
+    this.BankAccount.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId' })
+
+    this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
+
+    this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
+    
+    this.CompanyIntegration.belongsTo(this.Integration, { as: 'integration', foreignKey: 'integrationId' })
+
+    this.CompanyUser.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
+    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+
+    this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
+    this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })
+    
+    this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa' })
+    this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta' })
+
+
+    this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria' })
+    this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId' })
+
+    this.StatementData.hasMany(this.StatementDataConciled, { as: 'concileds', foreignKey: 'statementDataId' })
+
+    this.StatementDataConciled.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa' })
+    this.StatementDataConciled.belongsTo(this.FinancialCategory, { as: 'category', foreignKey: 'categoryId', targetKey: 'id' })
+    
+
+    this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
+    this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
+
+
+    this.Bank.addHook('afterFind', afterFind)
+    this.BankAccount.addHook('afterFind', afterFind)
+    this.Company.addHook('afterFind', afterFind)
+    this.CompanyBusiness.addHook('afterFind', afterFind)
+    this.CompanyIntegration.addHook('afterFind', afterFind)
+    this.CompanyUser.addHook('afterFind', afterFind)
+    this.Integration.addHook('afterFind', afterFind)
+    this.Statement.addHook('afterFind', afterFind)
+    this.StatementData.addHook('afterFind', afterFind)
+    this.User.addHook('afterFind', afterFind)
+    this.UserMember.addHook('afterFind', afterFind)
+
+    /*
+    this.Called.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'id'})
+    this.Called.belongsTo(this.User, {as: 'responsible', foreignKey: 'responsibleId', targetKey: 'id'})
+    this.Called.belongsTo(this.Partner, {as: 'requested', foreignKey: 'requestedId', targetKey: 'codigo_pessoa'})
+    this.Called.belongsTo(this.CalledStatus, {as: 'status', foreignKey: 'statusId', targetKey: 'id'})
+    this.Called.belongsTo(this.CalledReason, {as: 'reason', foreignKey: 'reasonId', targetKey: 'id'})
+    this.Called.belongsTo(this.CalledOccurrence, {as: 'occurrence', foreignKey: 'occurrenceId', targetKey: 'id'})
+
+    this.Called.hasMany(this.CalledResolution, {as: 'resolutions', foreignKey: 'calledId'})
+    
+    this.CalledResolution.belongsTo(this.Called, {as: 'called', foreignKey: 'calledId', targetKey: 'id'})
+    this.CalledResolution.belongsTo(this.User, {as: 'user', foreignKey: 'userId', targetKey: 'id'})
+    this.CalledResolution.belongsTo(this.CalledStatus, {as: 'status', foreignKey: 'statusId', targetKey: 'id'})
+
+
+    this.City.belongsTo(this.State, {as: 'state', foreignKey: 'stateId', targetKey: 'id'})
+    
+    this.CompanyBusiness.hasMany(this.Company, {as: 'companies', foreignKey: 'companyBusinessId'})
+
+    this.Company.hasMany(this.CompanyUser, {as: 'companyUsers', foreignKey: 'companyId'})
+    this.Company.belongsTo(this.CompanyBusiness, {as: 'companyBusiness', foreignKey: 'companyBusinessId', targetKey: 'id'})
+
+    this.CompanyIntegration.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'codigo_empresa_filial'})
+    this.CompanyIntegration.belongsTo(this.Integration, {as: 'integration', foreignKey: 'integrationId', targetKey: 'id'})
+
+    //this.CompanyRole.belongsTo(this.Role, {as: 'role', foreignKey: 'roleId', targetKey: 'id'})
+
+    this.CompanyUser.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'codigo_empresa_filial'})
+    this.CompanyUser.belongsTo(this.User, {as: 'user', foreignKey: 'userId', targetKey: 'id'})
+    this.CompanyUser.belongsTo(this.Role, {as: 'role', foreignKey: 'roleId', targetKey: 'id'})
+    */
+    /*
+    this.Cte.belongsTo(this.Partner, {as: 'sender', foreignKey: 'senderId', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Partner, {as: 'recipient', foreignKey: 'IDCliente', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Partner, {as: 'dispatcher', foreignKey: 'dispatcherId', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Partner, {as: 'receiver', foreignKey: 'receiverId', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Partner, {as: 'taker', foreignKey: 'IdTomador', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Shippiment, {as: 'shippiment', foreignKey: 'IDCarga', targetKey: 'codigo_carga'})
+
+    
+    this.Cte.belongsTo(this.City, {as: 'origin', foreignKey: 'originId', targetKey: 'id'})
+    this.Cte.belongsTo(this.City, {as: 'destiny', foreignKey: 'destinyId', targetKey: 'id'})
+
+    this.Cte.hasMany(this.CteNfe, {as: 'cteNfes', foreignKey: 'cteId'})
+    */
+
+    //this.BankAccount.belongsTo(this.Bank, {as: 'bank', foreignKey: 'bankId', targetKey: 'id'})
+    //this.BankAccount.hasMany(this.BankAccountStatement, {as: 'bankAccountStatements', foreignKey: 'bankAccountId'})
+
+    //this.BankAccountStatement.belongsTo(this.Partner, {as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa'})
+    //this.BankAccountStatement.belongsTo(this.BankAccount, {as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'id'})
+    //this.BankAccountStatement.belongsTo(this.CurrencyMethod, {as: 'currencyMethod', foreignKey: 'currencyMethodId', targetKey: 'id'})
+    //this.BankAccountStatement.belongsTo(this.ContabilityCategorie, {as: 'categorie', foreignKey: 'categorieId', targetKey: 'id'})
+
+    //this.Cashier.belongsTo(this.BankAccount, {as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'id'})
+
+    //this.Payment.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'id'})
+    //this.Payment.belongsTo(this.Partner, {as: 'beneficiary', foreignKey: 'beneficiaryId', targetKey: 'codigo_pessoa'})
+    //this.Payment.belongsTo(this.BankAccount, {as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'id'})
+    //this.Payment.belongsTo(this.ContabilityCategorie, {as: 'categorie', foreignKey: 'categorieId', targetKey: 'id'})
+    //this.Payment.belongsTo(this.CurrencyMethod, {as: 'currencyMethod', foreignKey: 'currencyMethodId', targetKey: 'id'})
+
+    //this.PaymentMethod.belongsTo(this.CurrencyMethod, {as: 'currencyMethod', foreignKey: 'currencyMethodId', targetKey: 'id'})
+
+    //this.Receivement.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'id'})
+    //this.Receivement.belongsTo(this.Partner, {as: 'payer', foreignKey: 'payerId', targetKey: 'codigo_pessoa'})
+    //this.Receivement.belongsTo(this.BankAccount, {as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'id'})
+    //this.Receivement.belongsTo(this.ContabilityCategorie, {as: 'categorie', foreignKey: 'categorieId', targetKey: 'id'})
+    //this.Receivement.belongsTo(this.CurrencyMethod, {as: 'currencyMethod', foreignKey: 'currencyMethodId', targetKey: 'id'})
+
+    //this.ReceivementMethod.belongsTo(this.CurrencyMethod, {as: 'currencyMethod', foreignKey: 'currencyMethodId', targetKey: 'id'})
+
+    //this.Role.hasMany(this.RoleRule, {as: 'roleRules', foreignKey: 'roleId'})
+
+    /*
+    this.Session.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'codigo_empresa_filial'})
+    this.Session.belongsTo(this.User, {as: 'user', foreignKey: 'userId', targetKey: 'id'})
+
+    this.Shippiment.belongsTo(this.Partner, {as: 'sender', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa'})
+    this.Shippiment.hasMany(this.Cte, {as: 'ctes', foreignKey: 'IDCarga'})
+    */
+    
+    //this.Statement.belongsTo(this.Company, {as: 'company', foreignKey: 'companyId', targetKey: 'id'})
+    //this.Statement.belongsTo(this.BankAccount, {as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'id'})
+
+    
+    //this.StatementData.hasMany(this.StatementDataConciled, {as: 'concileds', foreignKey: 'statementDataId'})
+
+    /*
+    this.StockMovement.belongsTo(this.Product, {as: 'product', foreignKey: 'codigo_item_estoque', targetKey: 'codigo_item_estoque'})
+
+    this.InventoryItem.belongsTo(this.StockMovement, {as: 'stockMovement', foreignKey: 'stockMovementId', targetKey: 'codigo_movimento_estoque'})
+    */
+
+    //this.Task.belongsTo(this.TaskMethod, {as: 'method', foreignKey: 'methodId', targetKey: 'id'})
+    //this.Task.hasMany(this.TaskHistory, {as: 'taskHistories', foreignKey: 'taskId'})
+
+    //this.Trip.belongsTo(this.Partner, {as: 'driver', foreignKey: 'IDMotorista', targetKey: 'codigo_pessoa'})
+    //this.Trip.belongsTo(this.Vehicle, {as: 'vehicle', foreignKey: 'IDTracao', targetKey: 'codigo_veiculo'})
+    //this.Trip.belongsTo(this.Vehicle, {as: 'haulage1', foreignKey: 'IDReboque', targetKey: 'codigo_veiculo'})
+    //this.Trip.belongsTo(this.Vehicle, {as: 'haulage2', foreignKey: 'ID2Reboque', targetKey: 'codigo_veiculo'})
+    //this.Trip.hasMany(this.Shippiment, {as: 'shippiments', foreignKey: 'idViagemGrupo'})
+
+    /*
+    this.User.hasMany(this.CompanyUser, {as: 'companyUsers', foreignKey: 'userId'})
+
+    this.User.belongsTo(this.UserMember, {as: 'userMember', foreignKey: 'id', targetKey: 'id'})
+    */
+   
+    //this.CteNfe.belongsTo(this.Nfe, {as: 'nfe', foreignKey: 'nfeId', targetKey: 'id'})
+
+  }
+
+}
