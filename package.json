@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build:icons": "tsx src/assets/iconify-icons/bundle-icons-css.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "'": "file:mui/material'@6.2.1",
     "@emoji-mart/data": "^1.2.1",
     "@emotion/styled": "^11.14.0",
     "@floating-ui/react": "^0.27.12",
@@ -17,9 +19,13 @@
     "@fullcalendar/list": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
-    "@mui/lab": "^7.0.0-beta.13",
-    "@mui/material": "^7.1.1",
-    "@mui/material-nextjs": "^7.1.1",
+    "@iconify-json/ri": "^1.2.5",
+    "@iconify/json": "^2.2.348",
+    "@iconify/tools": "^4.1.2",
+    "@mui/lab": "6.0.0-beta.19",
+    "@mui/material": "6.2.1",
+    "@mui/material-nextjs": "6.2.1",
+    "@mui/x-date-pickers": "^8.5.1",
     "@reduxjs/toolkit": "^2.8.2",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-table": "^8.21.3",
@@ -53,6 +59,7 @@
     "sweetalert2": "^11.6.13",
     "tailwindcss-logical": "^4.0.0",
     "tedious": "^18.6.1",
+    "tsx": "^4.20.2",
     "yup": "^1.6.1"
   },
   "devDependencies": {

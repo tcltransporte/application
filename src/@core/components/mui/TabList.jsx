@@ -1,5 +1,5 @@
 // MUI Imports
-import { MuiTabList } from '@mui/material'
+import { MuiTabList } from '@mui/lab'
 import { styled } from '@mui/material/styles'
 
 const TabList = styled(MuiTabList)(({ color, theme, pill, orientation }) => ({
