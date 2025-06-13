@@ -2,7 +2,7 @@
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Select from '@mui/material/Select'

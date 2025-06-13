@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
 // MUI Imports
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import Tab from '@mui/material/Tab'
 import TabContext from '@mui/lab/TabContext'
 import TabPanel from '@mui/lab/TabPanel'

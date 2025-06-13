@@ -10,7 +10,7 @@ import KanbanBoard from '@views/apps/kanban'
 import { commonLayoutClasses } from '@layouts/utils/layoutClasses'
 
 // Styles Imports
-import styles from '@views/apps/kanban/styles.module.css'
+//import styles from '@views/apps/kanban/styles.module.css'
 import { getBankAccounts } from '@/views/apps/kanban/index.controller'
 
 const KanbanPage = async () => {

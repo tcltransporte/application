@@ -1,5 +1,5 @@
 // MUI Imports
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 
 // Components Imports
 import Award from '@views/dashboards/crm/Award'

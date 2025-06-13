@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 // MUI Imports
 import CardContent from '@mui/material/CardContent'
 import FormControl from '@mui/material/FormControl'
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'

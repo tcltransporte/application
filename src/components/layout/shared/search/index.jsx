@@ -29,7 +29,7 @@ import { getLocalizedUrl } from '@/utils/i18n'
 import './styles.css'
 
 // Data Imports
-import data from '@/sidebar/searchData'
+import data from '@/data/searchData'
 
 // Transform the data to group items by their sections
 const transformedData = data.reduce((acc, item) => {

@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import Button from '@mui/material/Button'
 
 // Component Imports

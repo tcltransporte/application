@@ -4,7 +4,7 @@
 import { useState } from 'react'
 
 // MUI Imports
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import Dialog from '@mui/material/Dialog'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'

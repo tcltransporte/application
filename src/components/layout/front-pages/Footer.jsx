@@ -1,5 +1,5 @@
 // MUI Imports
-import { Grid } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'

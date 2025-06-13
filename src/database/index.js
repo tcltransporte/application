@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize'
-import * as tedious from 'tedious'
+import tedious from 'tedious'
 import 'dotenv/config'
 
 import { Company } from './models/company.model.js'
