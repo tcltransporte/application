@@ -8,7 +8,7 @@ import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Typography from '@mui/material/Typography'
 import CardContent from '@mui/material/CardContent'
-import Grid from '@mui/material/Grid2'
+import Grid from '@mui/material/Grid'
 import { useTheme } from '@mui/material/styles'
 
 // Components Imports

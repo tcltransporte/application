@@ -10,7 +10,7 @@ import Divider from '@mui/material/Divider'
 import CardHeader from '@mui/material/CardHeader'
 import Typography from '@mui/material/Typography'
 import CardContent from '@mui/material/CardContent'
-import Grid from '@mui/material/Grid2'
+import Grid from '@mui/material/Grid'
 
 // Components Imports
 import CustomAvatar from '@core/components/mui/Avatar'

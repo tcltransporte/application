@@ -6,7 +6,7 @@ import { useState } from 'react'
 // MUI Imports
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
-import Grid from '@mui/material/Grid2'
+import Grid from '@mui/material/Grid'
 import Radio from '@mui/material/Radio'
 import Switch from '@mui/material/Switch'
 import Button from '@mui/material/Button'

@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic'
 
 // MUI Imports
-import Grid from '@mui/material/Grid2'
+import Grid from '@mui/material/Grid'
 
 // Component Imports
 import UserLeftOverview from '@views/apps/user/view/user-left-overview'
