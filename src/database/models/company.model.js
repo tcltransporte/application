@@ -1,31 +1,31 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class Company {
 
   codigo_empresa_filial = {
     field: 'codigo_empresa_filial',
     primaryKey: true,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   cnpj = {
     field: 'cnpj',
-    type: Sequelize.STRING(14)
+    type: DataTypes.STRING(14)
   }
 
   name = {
     field: 'nome_fantasia',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   surname = {
     field: 'descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   companyBusinessId = {
     field: 'codigo_empresa',
-    type: Sequelize.NUMBER
+    type: DataTypes.NUMBER
   }
 
 }

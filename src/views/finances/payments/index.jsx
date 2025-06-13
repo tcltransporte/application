@@ -15,8 +15,10 @@ import {
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { format } from 'date-fns'
-import { getPayments } from './index.controller'
 import { ViewPaymentInstallment } from './view.payment-installment'
+
+import { getPayments } from '@/app/server/finances/payments/index.controller'
+
 //import { ViewAddStatement } from './view.add-statement'
 //import { getStatements } from './index.controller'
 //import { ViewStatementDetail } from './view.statement-detail'

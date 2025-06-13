@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class PaymentMethod {
 
@@ -6,12 +6,12 @@ export class PaymentMethod {
     field: 'id',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   name = {
     field: 'name',
-    type: Sequelize.STRING(50)
+    type: DataTypes.STRING(50)
   }
 
 }

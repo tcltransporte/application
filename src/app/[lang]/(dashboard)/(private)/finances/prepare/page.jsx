@@ -1,6 +1,3 @@
-"use server"
-
-// Third-party Imports
 import classnames from 'classnames'
 
 // Component Imports
@@ -8,9 +5,6 @@ import KanbanBoard from '@views/apps/kanban'
 
 // Util Imports
 import { commonLayoutClasses } from '@layouts/utils/layoutClasses'
-
-// Styles Imports
-//import styles from '@views/apps/kanban/styles.module.css'
 import { getBankAccounts } from '@/views/apps/kanban/index.controller'
 
 const KanbanPage = async () => {
@@ -21,7 +15,7 @@ const KanbanPage = async () => {
     <div
       className={classnames(
         commonLayoutClasses.contentHeightFixed,
-        styles.scroll,
+        //styles.scroll,
         'is-full overflow-auto pis-2 -mis-2'
       )}
     >

@@ -10,11 +10,12 @@ import {
 } from '@mui/material'
 import { format } from 'date-fns'
 import { Fragment, useEffect, useState } from 'react'
-import { deleteStatementConciled, getStatement, saveStatementConciled } from './view.statement-detail.controller'
+//import { deleteStatementConciled, getStatement, saveStatementConciled } from './view.statement-detail.controller'
 import { toast } from 'react-toastify'
 import { AutoComplete } from '@/components/AutoComplete'
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
 import { ItemDetailDrawer } from './ItemDetailDrawer' // Import o novo componente
+import { deleteStatementConciled, getStatement, saveStatementConciled } from '@/app/server/finances/statements/view.statement-detail.controller'
 
 const entryTypeAlias = {
   '': {

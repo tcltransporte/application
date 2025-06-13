@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class FinancialMovementIntallment {
 
@@ -6,46 +6,46 @@ export class FinancialMovementIntallment {
     field: 'codigo_movimento_detalhe',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   financialMovementId = {
     field: 'codigo_movimento',
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   paymentMethodId = {
       field: 'paymentMethodId',
-      type: Sequelize.UUIDV4
+      type: DataTypes.UUIDV4
   }
 
   bankAccountId = {
       field: 'bankAccountId',
-      type: Sequelize.SMALLINT
+      type: DataTypes.SMALLINT
   }
 
   installment = {
     field: 'numero_parcela',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   description = {
     field: 'Descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   amount = {
     field: 'valor_parcela',
-    type: Sequelize.DECIMAL
+    type: DataTypes.DECIMAL
   }
 
   dueDate = {
     field: 'data_vencimento',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   status = {
-    type: Sequelize.VIRTUAL,
+    type: DataTypes.VIRTUAL,
     get() {
       const dueDateValue = this.getDataValue('dueDate') // pega o valor raw da data de vencimento
       if (!dueDateValue) return 'Sem data'

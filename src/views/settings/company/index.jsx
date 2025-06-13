@@ -14,8 +14,9 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
+import { onSubmit } from '@/app/server/settings/company/index.controller'
 
-import { onSubmit } from './index.controller'
+//import { onSubmit } from './index.controller'
 
 export const Company = ({company}) => {
 

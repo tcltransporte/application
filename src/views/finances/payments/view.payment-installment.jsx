@@ -1,10 +1,11 @@
+import { getInstallment, saveInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
+
 import { AutoComplete } from "@/components/AutoComplete";
 import { getPaymentMethod } from "@/utils/search";
 import { Backdrop, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { Formik, Form } from "formik";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
-import { getInstallment, saveInstallment } from "./view.payment-installment.controller";
 
 export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
 

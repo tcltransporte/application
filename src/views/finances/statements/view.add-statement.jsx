@@ -12,7 +12,8 @@ import * as yup from 'yup'
 import { AutoComplete } from '@/components/AutoComplete'
 import { getBankAccounts } from '@/utils/search'
 import { PluginRenderer } from '@/views/settings/integrations/plugins'
-import { onSubmitChanges } from './view.add-statement.controller'
+import { onSubmitChanges } from '@/app/server/finances/statements/view.add-statement.controller'
+//import { onSubmitChanges } from './view.add-statement.controller'
 
 export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
   const [integrationId, setIntegrationId] = useState(null)

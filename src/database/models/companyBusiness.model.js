@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class CompanyBusiness {
 
@@ -6,12 +6,12 @@ export class CompanyBusiness {
     field: 'codigo_empresa',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   description = {
     field: 'descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
 }

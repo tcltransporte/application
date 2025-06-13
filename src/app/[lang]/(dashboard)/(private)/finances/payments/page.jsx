@@ -1,7 +1,6 @@
-"use server"
+import { getPayments } from '@/app/server/finances/payments/index.controller';
 
 import { ViewFinancesPayments } from '@/views/finances/payments'
-import { getPayments } from '@/views/finances/payments/index.controller'
 
 const FinancesPayments = async () => {
 

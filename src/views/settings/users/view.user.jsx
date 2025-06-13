@@ -20,8 +20,9 @@ import * as Yup from 'yup'
 // Components
 import { AutoComplete } from '@/components/AutoComplete'
 import { getUser } from '@/utils/search'
-import { getCompanyUser, setCompanyUser } from './view.user.controller'
+//import { getCompanyUser, setCompanyUser } from './view.user.controller'
 import { Alert } from '@mui/material'
+import { getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
 
 export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
 

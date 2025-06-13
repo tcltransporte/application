@@ -1,111 +1,111 @@
 import { format } from 'date-fns'
-import Sequelize from 'sequelize'
+import { Sequelize, DataTypes } from 'sequelize'
 
 export class UserMember {
 
   userId = {
     field: 'UserId',
     primaryKey: true,
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   applicationId = {
     field: 'ApplicationId',
     allowNull: false,
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   email = {
     field: 'Email',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   password = {
     field: 'Password',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   passwordFormat = {
     field: 'PasswordFormat',
     allowNull: false,
     defaultValue: 1,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   passwordSalt = {
     field: 'PasswordSalt',
     allowNull: false,
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   isApproved = {
     field: 'isApproved',
     allowNull: false,
     defaultValue: true,
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
   isLockedOut = {
     field: 'IsLockedOut',
     allowNull: false,
     defaultValue: false,
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
   createAt = {
     field: 'CreateDate',
     allowNull: false,
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   lastLoginAt = {
     field: 'LastLoginDate',
     allowNull: false,
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   lastPasswordChangedAt = {
     field: 'LastPasswordChangedDate',
     allowNull: false,
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   lastLockoutAt = {
     field: 'LastLockoutDate',
     allowNull: false,
     defaultValue: '1754-01-01 00:00:00.000',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   failedPasswordAttemptCount = {
     field: 'FailedPasswordAttemptCount',
     allowNull: false,
     defaultValue: 0,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   failedPasswordAttemptWindowStart = {
     field: 'FailedPasswordAttemptWindowStart',
     allowNull: false,
     defaultValue: '1754-01-01 00:00:00.000',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   failedPasswordAnswerAttemptCount = {
     field: 'FailedPasswordAnswerAttemptCount',
     allowNull: false,
     defaultValue: 0,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   failedPasswordAnswerAttemptWindowStart = {
     field: 'FailedPasswordAnswerAttemptWindowStart',
     allowNull: false,
     defaultValue: '1754-01-01 00:00:00.000',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
 }

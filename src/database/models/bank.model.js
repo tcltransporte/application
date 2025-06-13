@@ -1,21 +1,21 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class Bank {
 
   id = {
     field: 'ID',
     primaryKey: true,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   }
 
   name = {
     field: 'Descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   icon = {
     field: 'icon',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
 }

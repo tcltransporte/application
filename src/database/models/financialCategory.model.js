@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class FinancialCategory {
 
@@ -6,27 +6,27 @@ export class FinancialCategory {
     field: 'id',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   code = {
     field: 'Codigo',
-    type: Sequelize.STRING(15)
+    type: DataTypes.STRING(15)
   }
 
   account = {
     field: 'Conta',
-    type: Sequelize.STRING(20)
+    type: DataTypes.STRING(20)
   }
 
   description = {
     field: 'Descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   externalId = {
     field: 'externalId',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
 }

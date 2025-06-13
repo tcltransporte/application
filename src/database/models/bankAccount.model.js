@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class BankAccount {
 
@@ -6,27 +6,27 @@ export class BankAccount {
     field: 'codigo_conta_bancaria',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   agency = {
     field: 'agencia',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   number = {
     field: 'numero_conta_bancaria',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   companyId = {
     field: 'CodigoEmpresaFilial',
-    type: Sequelize.TINYINT
+    type: DataTypes.TINYINT
   }
 
   companyIntegrationId = {
     field: 'companyIntegrationId',
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
 }

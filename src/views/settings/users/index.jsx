@@ -39,9 +39,10 @@ import { getInitials } from '@/utils/getInitials'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
-import { getUsers, onApprove, onDisable, onDisapprove } from './index.controller'
+//import { getUsers, onApprove, onDisable, onDisapprove } from './index.controller'
 import { ViewUser } from './view.user'
 import { signOut, useSession } from 'next-auth/react'
+import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)

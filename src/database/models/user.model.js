@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize'
+import { Sequelize, DataTypes } from 'sequelize'
 import { format, zonedTimeToUtc } from 'date-fns-tz';
 
 export class User {
@@ -6,37 +6,37 @@ export class User {
   userId = {
     field: 'UserId',
     primaryKey: true,
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   applicationId = {
     field: 'ApplicationId',
     allowNull: false,
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   userName = {
     field: 'UserName',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   loweredUserName = {
     field: 'LoweredUserName',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   lastActivityDate = {
     field: 'LastActivityDate',
     allowNull: false,
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   isAnonymous = {
     field: 'IsAnonymous',
     allowNull: false,
     defaultValue: false,
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
 }

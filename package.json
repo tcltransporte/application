@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build:icons": "tsx src/assets/iconify-icons/bundle-icons-css.mjs",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",

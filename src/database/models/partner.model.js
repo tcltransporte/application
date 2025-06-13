@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class Partner {
 
@@ -6,29 +6,29 @@ export class Partner {
     field: 'codigo_pessoa',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   surname = {
     field: 'nome',
     primaryKey: true,
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   companyIntegrationId = {
     field: 'companyIntegrationId',
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   externalId = {
     field: 'externalId',
-    type: Sequelize.UUIDV4
+    type: DataTypes.UUIDV4
   }
 
   isActive = {
     field: 'ativo',
     defaultValue: true,
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
 }

@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: process.env.BASEPATH,
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push('sequelize');
-    }
-    return config;
-  },
   redirects: async () => {
     return [
       {

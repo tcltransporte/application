@@ -1,32 +1,32 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class CompanyIntegration {
 
   id = {
     field: 'id',
     primaryKey: true,
-    type: Sequelize.UUID,
-    defaultValue: Sequelize.UUIDV4,
+    type: DataTypes.UUIDV4,
+    defaultValue: DataTypes.UUIDV4,
   }
 
   companyId = {
     field: 'companyId',
-    type: Sequelize.UUID
+    type: DataTypes.UUIDV4
   }
 
   integrationId = {
     field: 'integrationId',
-    type: Sequelize.UUID
+    type: DataTypes.UUIDV4
   }
 
   options = {
     field: 'options',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
   isActive = {
     field: 'isActive',
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
 }

@@ -15,15 +15,14 @@ import TabPanel from '@mui/lab/TabPanel'
 import CustomTabList from '@core/components/mui/TabList'
 
 import { Company } from './company'
-import UserListCards from '../apps/user/list/UserListCards'
-import UserList from '../apps/user/list'
+
+
 import { Users } from './users'
 import BillingPlans from './signature'
 import Security from '@views/pages/account-settings/security'
 import Integrations from '@/views/settings/integrations'
 
-//const SecurityTab = dynamic(() => import('@views/pages/account-settings/security'))
-//const Signature = dynamic(() => import('@views/settings/signature'))
+
 const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
 
 export const ViewSettings = ({ company, integrations }) => {

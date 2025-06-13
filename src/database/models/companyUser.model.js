@@ -1,32 +1,32 @@
-import Sequelize from 'sequelize'
+import { Sequelize, DataTypes } from 'sequelize'
 
 export class CompanyUser {
 
   id = {
     field: 'id',
     primaryKey: true,
-    type: Sequelize.UUID,
-    defaultValue: Sequelize.UUIDV4,
+    type: DataTypes.UUIDV4,
+    defaultValue: DataTypes.UUIDV4,
   }
 
   companyId = {
     field: 'companyId',
-    type: Sequelize.TINYINT
+    type: DataTypes.TINYINT
   }
 
   userId = {
     field: 'userId',
-    type: Sequelize.UUID
+    type: DataTypes.UUIDV4
   }
 
   roleId = {
     field: 'roleId',
-    type: Sequelize.UUID
+    type: DataTypes.UUIDV4
   }
 
   isActive = {
     field: 'isActive',
-    type: Sequelize.BOOLEAN
+    type: DataTypes.BOOLEAN
   }
 
 }

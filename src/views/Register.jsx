@@ -31,7 +31,7 @@ import { useSettings } from '@core/hooks/useSettings'
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-import { checkUserExists, getCompanyByCNPJ, getReceitaFederal, onRegister } from './Register.controller'
+import { checkUserExists, getCompanyByCNPJ, getReceitaFederal, onRegister } from '@/server/Register.controller'
 import { toast } from 'react-toastify'
 import { signIn } from 'next-auth/react'
 import Swal from 'sweetalert2'

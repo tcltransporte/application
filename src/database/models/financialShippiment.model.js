@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 
 export class FinancialShippiment {
 
@@ -6,12 +6,12 @@ export class FinancialShippiment {
     field: 'id',
     primaryKey: true,
     autoIncrement: true,
-    type: Sequelize.BIGINT
+    type: DataTypes.BIGINT
   }
 
   bankAccountId = {
     field: 'Descricao',
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   }
 
 }

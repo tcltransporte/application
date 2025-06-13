@@ -16,8 +16,8 @@ import {
 import Grid from '@mui/material/Grid'
 import { format } from 'date-fns'
 import { ViewAddStatement } from './view.add-statement'
-import { getStatements } from './index.controller'
 import { ViewStatementDetail } from './view.statement-detail'
+import { getStatements } from '@/app/server/finances/statements/index.controller'
 
 const exampleTransactions = [
   {

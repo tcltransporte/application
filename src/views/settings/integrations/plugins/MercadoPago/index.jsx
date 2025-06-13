@@ -12,8 +12,9 @@ import {
   Box,
   CircularProgress
 } from '@mui/material'
-import { getStatement, getStatements } from './index.controller'
+//import { getStatement, getStatements } from './index.controller'
 import { format, fromZonedTime } from 'date-fns-tz'
+import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
 
 export const ID = 'A4B0DD1D-74E7-4B22-BFAA-0A911A419B88'
 

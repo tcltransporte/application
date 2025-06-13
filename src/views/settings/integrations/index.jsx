@@ -13,9 +13,10 @@ import Typography from '@mui/material/Typography'
 import Drawer from '@mui/material/Drawer'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
-import { getIntegrations } from '../users/index.controller'
-import { getMyIntegrations, onDisconnect, onToggleActive } from './index.controller'
+//import { getIntegrations } from '../users/index.controller'
+//import { getMyIntegrations, onDisconnect, onToggleActive } from './index.controller'
 import { PluginRenderer } from './plugins'
+import { getMyIntegrations, onDisconnect, onToggleActive } from '@/app/server/settings/integrations/index.controller'
 
 const Integrations = ({ integrations }) => {
   const [connectedIntegrations, setConnectedIntegrations] = useState([])
