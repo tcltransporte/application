@@ -1,29 +1,105 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Tooltip, Drawer, Box, TextField, Divider, Grid } from '@mui/material'
-import { format } from 'date-fns'
+import {
+  Typography,
+  Button,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Tooltip,
+  Drawer,
+  Box,
+  TextField,
+  Divider,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TablePagination
+} from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import ptBR from 'date-fns/locale/pt-BR'
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  isSameDay,
+  isSameWeek
+} from 'date-fns'
 import { ViewPaymentInstallment } from './view.payment-installment'
-
 import { getPayments } from '@/app/server/finances/payments/index.controller'
-
 import { useTitle } from '@/contexts/TitleProvider'
 
-export const ViewFinancesPayments = ({ initialPayments }) => {
+export const ViewFinancesPayments = ({initialPayments}) => {
 
   const { setTitle } = useTitle()
 
   const [openDrawer, setOpenDrawer] = useState(false)
-  const [payments, setPayments] = useState([...initialPayments])
+  const [openPeriodModal, setOpenPeriodModal] = useState(false)
+  const [payments, setPayments] = useState(initialPayments)
   const [installmentId, setInstallmentId] = useState(undefined)
+  const [dateRange, setDateRange] = useState([null, null])
+  const [selectedPeriodLabel, setSelectedPeriodLabel] = useState('Período personalizado')
+  const [limit, setLimit] = useState(10)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
 
-  useEffect(() => {
-    setTitle(['Finanças', 'Contas a pagar'])
-  }, [])
+  const fetchPayments = async ({ limit, offset }) => {
+    
 
-  const fetch = async () => {
-    const payments = await getPayments()
-    setPayments(payments)
+    console.log(limit, offset)
+
+    const response = await getPayments({ limit, offset })
+    setPayments(response.data || [])
+    setTotal(response.total || 0)
+  }
+
+  const updateLabelFromDateRange = (start, end) => {
+    const today = new Date()
+    if (!start || !end) return setSelectedPeriodLabel('Período personalizado')
+
+    if (isSameDay(start, end) && isSameDay(start, today)) {
+      setSelectedPeriodLabel('Hoje')
+    } else if (isSameWeek(start, today, { weekStartsOn: 1 }) && isSameWeek(end, today, { weekStartsOn: 1 })) {
+      setSelectedPeriodLabel('Essa semana')
+    } else if (
+      start.getMonth() === today.getMonth() &&
+      start.getFullYear() === today.getFullYear() &&
+      end.getMonth() === today.getMonth() &&
+      end.getFullYear() === today.getFullYear()
+    ) {
+      setSelectedPeriodLabel('Esse mês')
+    } else {
+      setSelectedPeriodLabel('Período personalizado')
+    }
+  }
+
+  const setPeriodToday = () => {
+    const today = new Date()
+    setDateRange([today, today])
+    setSelectedPeriodLabel('Hoje')
+  }
+
+  const setPeriodThisWeek = () => {
+    const today = new Date()
+    setDateRange([startOfWeek(today, { weekStartsOn: 1 }), endOfWeek(today, { weekStartsOn: 1 })])
+    setSelectedPeriodLabel('Essa semana')
+  }
+
+  const setPeriodThisMonth = () => {
+    const today = new Date()
+    setDateRange([startOfMonth(today), endOfMonth(today)])
+    setSelectedPeriodLabel('Esse mês')
   }
 
   const handleEdit = ({ installmentId }) => {
@@ -31,59 +107,46 @@ export const ViewFinancesPayments = ({ initialPayments }) => {
   }
 
   const handleDelete = (id) => {
-    const updated = payments.filter((s) => s.sourceId !== id)
-    setPayments(updated)
+    setPayments((prev) => prev.filter((s) => s.sourceId !== id))
   }
 
+  const applyPeriod = () => {
+    updateLabelFromDateRange(dateRange[0], dateRange[1])
+    setOpenPeriodModal(false)
+  }
+
+  useEffect(() => {
+
+    setTitle(['Finanças', 'Contas a pagar'])
+
+    //setPeriodToday()
+    //fetchPayments({ limit, offset: 0 })
+  }, [])
+
   return (
-    <>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+      <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
 
-      {/* Header com Botões */}
-      <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        {/* Botão Adicionar à esquerda */}
-        <Grid item>
-          <Button
-            variant="contained"
-            startIcon={<i className="ri-add-circle-line" />}
-            onClick={() => setInstallmentId(null)}
-          >
-            Adicionar
+      <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
+        <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setInstallmentId(null)}>
+          Adicionar
+        </Button>
+
+        <Box display="flex" gap={3}>
+          <Button variant="text" startIcon={<i className="ri-calendar-line" />} onClick={() => setOpenPeriodModal(true)}>
+            {selectedPeriodLabel}
           </Button>
-        </Grid>
 
-        {/* Botões Período, Filtros e Pesquisar à direita */}
-        <Grid item>
-          <Box display="flex" gap={1}>
-            <Button
-              variant="outlined"
-              startIcon={<i className="ri-calendar-line" />}
-              onClick={() => console.log('Abrir seleção de período')}
-            >
-              Período
-            </Button>
+          <Button variant="text" startIcon={<i className="ri-equalizer-line" />} onClick={() => setOpenDrawer(true)}>
+            Filtros
+          </Button>
 
-            <Button
-              variant="outlined"
-              startIcon={<i className="ri-equalizer-line" />}
-              onClick={() => setOpenDrawer(true)}
-            >
-              Filtros
-            </Button>
+          <Button variant="outlined" startIcon={<i className="ri-search-line" />} onClick={() => fetchPayments({ limit, offset: page * limit })}>
+            Pesquisar
+          </Button>
+        </Box>
+      </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<i className="ri-search-line" />}
-              onClick={() => console.log('Executar pesquisa')}
-            >
-              Pesquisar
-            </Button>
-          </Box>
-        </Grid>
-      </Grid>
-
-
-
-      {/* Tabela de pagamentos */}
       <Paper>
         <Table size="small">
           <TableHead>
@@ -95,17 +158,12 @@ export const ViewFinancesPayments = ({ initialPayments }) => {
               <TableCell>Agendamento</TableCell>
               <TableCell>Valor</TableCell>
               <TableCell>Agência/Conta</TableCell>
-              <TableCell align="center">Ações</TableCell>
+              <TableCell>Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {payments.map((payment, index) => (
-              <TableRow
-                key={index}
-                sx={{
-                  '&:hover .action-buttons': { opacity: 1 },
-                }}
-              >
+            {(payments || []).map((payment, index) => (
+              <TableRow key={index}>
                 <TableCell>{payment.financialMovement?.documentNumber}</TableCell>
                 <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
                 <TableCell>{payment.paymentMethod?.name}</TableCell>
@@ -114,100 +172,93 @@ export const ViewFinancesPayments = ({ initialPayments }) => {
                 <TableCell align="right">
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'decimal',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2
                   }).format(payment.amount)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-start space-x-2">
-                    {payment.bankAccount?.bank?.icon && (
-                      <img
-                        src={payment.bankAccount?.bank?.icon}
-                        alt={payment.bankAccount?.bank?.name}
-                        className="mt-1 w-[1.725rem] h-[1.725rem]"
-                      />
-                    )}
-                    <div className="flex flex-col text-sm">
-                      <span className="font-medium">{payment.bankAccount?.bank?.name}</span>
-                      <span>
-                        Agência: {payment.bankAccount?.agency} / Conta:{' '}
-                        {payment.bankAccount?.number}
-                      </span>
-                    </div>
-                  </div>
+                  <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
+                  <Typography variant="caption">
+                    Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}
+                  </Typography>
                 </TableCell>
-                <TableCell align="center">
-                  <div className="action-buttons">
-                    <Tooltip title="Editar">
-                      <IconButton
-                        onClick={() =>
-                          handleEdit({
-                            installmentId: payment.codigo_movimento_detalhe,
-                          })
-                        }
-                      >
-                        <i className="ri-edit-2-line text-lg" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        onClick={() => handleDelete(payment.sourceId)}
-                        color="error"
-                      >
-                        <i className="ri-delete-bin-line text-lg" />
-                      </IconButton>
-                    </Tooltip>
-                  </div>
+                <TableCell>
+                  <IconButton onClick={() => handleEdit({ installmentId: payment.codigo_movimento_detalhe })}>
+                    <i className="ri-edit-2-line" />
+                  </IconButton>
+                  <IconButton onClick={() => handleDelete(payment.sourceId)} color="error">
+                    <i className="ri-delete-bin-line" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={total}
+          page={page}
+          onPageChange={(event, newPage) => {
+            setPage(newPage)
+            fetchPayments({ limit, offset: newPage * limit })
+          }}
+          rowsPerPage={limit}
+          onRowsPerPageChange={(event) => {
+            const newLimit = parseInt(event.target.value, 10)
+            setLimit(newLimit)
+            setPage(0)
+            fetchPayments({ limit: newLimit, offset: 0 })
+          }}
+        />
       </Paper>
-
-      {/* Modal de edição ou criação */}
-      <ViewPaymentInstallment
-        installmentId={installmentId}
-        onClose={() => setInstallmentId(undefined)}
-      />
 
       {/* Drawer de filtros */}
       <Drawer anchor="right" open={openDrawer} onClose={() => setOpenDrawer(false)}>
-
-        <div className='flex items-center justify-between pli-5 plb-4'>
-          <Typography variant='h5'>Filtros</Typography>
-          <IconButton size='small' onClick={() => setOpenDrawer(false)}>
-            <i className='ri-close-line text-2xl' />
-          </IconButton>
-        </div>
-
-        <Divider />
-        
-        <Box sx={{ width: 300, p: 3 }}>
-
-          <TextField
-            fullWidth
-            label="Beneficiário"
-            variant="outlined"
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Número documento"
-            variant="outlined"
-            margin="normal"
-          />
-          {/* Adicione mais filtros aqui */}
-
+        <Box sx={{ width: 400, p: 5 }}>
+          <Typography variant="h6">Filtros</Typography>
+          <Divider sx={{ my: 2 }} />
+          <TextField fullWidth label="Beneficiário" />
+          <TextField fullWidth label="Número documento" sx={{ mt: 2 }} />
           <Box display="flex" justifyContent="flex-end" mt={2}>
-            <Button onClick={() => setOpenDrawer(false)} variant="contained">
+            <Button variant="contained" startIcon={<i className="ri-check-line" />} onClick={() => setOpenDrawer(false)}>
               Aplicar
             </Button>
           </Box>
         </Box>
-
       </Drawer>
-    </>
-  )
 
+      {/* Modal de período */}
+      <Dialog open={openPeriodModal} onClose={() => setOpenPeriodModal(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Período</DialogTitle>
+        <DialogContent>
+          <Box display="flex" gap={2} mb={4}>
+            <Button variant={selectedPeriodLabel === 'Hoje' ? 'contained' : 'outlined'} onClick={setPeriodToday}>Hoje</Button>
+            <Button variant={selectedPeriodLabel === 'Essa semana' ? 'contained' : 'outlined'} onClick={setPeriodThisWeek}>Essa semana</Button>
+            <Button variant={selectedPeriodLabel === 'Esse mês' ? 'contained' : 'outlined'} onClick={setPeriodThisMonth}>Esse mês</Button>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <DatePicker
+                label="Data Inicial"
+                value={dateRange[0]}
+                onChange={(newValue) => setDateRange([newValue, dateRange[1]])}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <DatePicker
+                label="Data Final"
+                value={dateRange[1]}
+                onChange={(newValue) => setDateRange([dateRange[0], newValue])}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPeriodModal(false)}>Cancelar</Button>
+          <Button onClick={applyPeriod} variant="contained" startIcon={<i className="ri-check-line" />}>Aplicar</Button>
+        </DialogActions>
+      </Dialog>
+    </LocalizationProvider>
+  )
 }
