@@ -4,7 +4,7 @@ import { ViewFinancesPayments } from '@/views/finances/payments'
 
 const FinancesPayments = async () => {
 
-  const initialPayments = await getPayments();
+  const initialPayments = await getPayments({limit: 50, offset: 0});
   
   return <ViewFinancesPayments initialPayments={initialPayments} />
 

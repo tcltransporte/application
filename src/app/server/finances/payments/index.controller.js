@@ -5,13 +5,13 @@ import { authOptions } from "@/libs/auth"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 
-export async function getPayments(formData) {
+export async function getPayments({limit, offset}) {
     
     const session = await getServerSession(authOptions)
 
     const db = new AppContext()
 
-    const payments = await db.FinancialMovementInstallment.findAll({
+    const payments = await db.FinancialMovementInstallment.findAndCountAll({
         include: [
             {model: db.FinancialMovement, as: 'financialMovement', include: [
                 {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']}
@@ -21,9 +21,18 @@ export async function getPayments(formData) {
         where: [
             //{'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial}
         ],
-        limit: 20
+        limit: limit,
+        offset: offset
     })
 
-    return _.map(payments, (item) => item.get({ plain: true }))
+    return {
+        request: {
+            limit, offset
+        },
+        response: {
+            count: payments.count,
+            rows: _.map(payments.rows, (item) => item.get({ plain: true }))
+        }
+    }
 
 }

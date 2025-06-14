@@ -1,41 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
-  Tooltip,
-  Drawer,
-  Box,
-  TextField,
-  Divider,
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TablePagination
-} from '@mui/material'
+import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Drawer, Box, TextField, Divider, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, CircularProgress } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import ptBR from 'date-fns/locale/pt-BR'
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  isSameDay,
-  isSameWeek
-} from 'date-fns'
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameWeek } from 'date-fns'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 import { useTitle } from '@/contexts/TitleProvider'
@@ -44,24 +15,27 @@ export const ViewFinancesPayments = ({initialPayments}) => {
 
   const { setTitle } = useTitle()
 
+  const [loading, setLoading] = useState(false)
+
   const [openDrawer, setOpenDrawer] = useState(false)
   const [openPeriodModal, setOpenPeriodModal] = useState(false)
   const [payments, setPayments] = useState(initialPayments)
   const [installmentId, setInstallmentId] = useState(undefined)
   const [dateRange, setDateRange] = useState([null, null])
   const [selectedPeriodLabel, setSelectedPeriodLabel] = useState('Período personalizado')
-  const [limit, setLimit] = useState(10)
-  const [page, setPage] = useState(0)
-  const [total, setTotal] = useState(0)
 
   const fetchPayments = async ({ limit, offset }) => {
-    
+    try {
+      setLoading(true)
 
-    console.log(limit, offset)
+      const response = await getPayments({ limit, offset })
+      setPayments(response)
 
-    const response = await getPayments({ limit, offset })
-    setPayments(response.data || [])
-    setTotal(response.total || 0)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateLabelFromDateRange = (start, end) => {
@@ -119,20 +93,21 @@ export const ViewFinancesPayments = ({initialPayments}) => {
 
     setTitle(['Finanças', 'Contas a pagar'])
 
-    //setPeriodToday()
-    //fetchPayments({ limit, offset: 0 })
   }, [])
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+      
       <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
 
       <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
+
         <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setInstallmentId(null)}>
           Adicionar
         </Button>
 
         <Box display="flex" gap={3}>
+
           <Button variant="text" startIcon={<i className="ri-calendar-line" />} onClick={() => setOpenPeriodModal(true)}>
             {selectedPeriodLabel}
           </Button>
@@ -141,8 +116,8 @@ export const ViewFinancesPayments = ({initialPayments}) => {
             Filtros
           </Button>
 
-          <Button variant="outlined" startIcon={<i className="ri-search-line" />} onClick={() => fetchPayments({ limit, offset: page * limit })}>
-            Pesquisar
+          <Button variant="outlined" startIcon={loading ? <CircularProgress size={16} /> : <i className="ri-search-line" />} onClick={() => fetchPayments({ limit: payments.request.limit, offset: 0 })} disabled={loading}>
+            {loading ? 'Pesquisando...' : 'Pesquisar'}
           </Button>
         </Box>
       </Box>
@@ -162,7 +137,7 @@ export const ViewFinancesPayments = ({initialPayments}) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {(payments || []).map((payment, index) => (
+            {(payments.response?.rows || []).map((payment, index) => (
               <TableRow key={index}>
                 <TableCell>{payment.financialMovement?.documentNumber}</TableCell>
                 <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
@@ -193,20 +168,18 @@ export const ViewFinancesPayments = ({initialPayments}) => {
             ))}
           </TableBody>
         </Table>
+
         <TablePagination
           component="div"
-          count={total}
-          page={page}
+          labelRowsPerPage='Registro por páginas'
+          count={payments.response.count}
+          page={payments.request.offset}
           onPageChange={(event, newPage) => {
-            setPage(newPage)
-            fetchPayments({ limit, offset: newPage * limit })
+            fetchPayments({limit: payments.request.limit, offset: newPage})
           }}
-          rowsPerPage={limit}
+          rowsPerPage={payments.request.limit}
           onRowsPerPageChange={(event) => {
-            const newLimit = parseInt(event.target.value, 10)
-            setLimit(newLimit)
-            setPage(0)
-            fetchPayments({ limit: newLimit, offset: 0 })
+            fetchPayments({limit: event.target.value, offset: 0})
           }}
         />
       </Paper>
