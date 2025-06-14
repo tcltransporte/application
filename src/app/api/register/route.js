@@ -1,5 +1,6 @@
 // Next Imports
-import { checkUserExists } from '@/app/server/Register.controller'
+import { checkUserExists } from '@/app/server/register.controller'
+
 import { AppContext } from '@/database'
 //import { checkUserExists } from '@/views/Register.controller'
 import { NextResponse } from 'next/server'

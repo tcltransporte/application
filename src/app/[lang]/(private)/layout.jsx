@@ -23,6 +23,7 @@ import { i18n } from '@configs/i18n'
 // Util Imports
 import { getDictionary } from '@/utils/getDictionary'
 import { getMode, getSystemMode } from '@core/utils/serverHelpers'
+import RouteProgressBar from '@/components/RouteProgressBar'
 
 const Layout = async props => {
 
@@ -37,6 +38,7 @@ const Layout = async props => {
 
   return (
     <Providers direction={direction}>
+      <RouteProgressBar />
       <AuthGuard locale={params.lang}>
         <LayoutWrapper
           systemMode={systemMode}

@@ -8,6 +8,7 @@ import { i18n } from '@configs/i18n'
 
 // Util Imports
 import { getServerMode, getSystemMode } from '@core/utils/serverHelpers'
+import RouteProgressBar from '@/components/RouteProgressBar'
 
 const NotFoundPage = async props => {
   const params = await props.params
@@ -19,6 +20,7 @@ const NotFoundPage = async props => {
 
   return (
     <Providers direction={direction}>
+      <RouteProgressBar />
       <BlankLayout systemMode={systemMode}>
         <NotFound mode={mode} />
       </BlankLayout>

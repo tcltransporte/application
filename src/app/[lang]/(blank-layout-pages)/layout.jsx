@@ -7,6 +7,7 @@ import { i18n } from '@configs/i18n'
 
 // Util Imports
 import { getSystemMode } from '@core/utils/serverHelpers'
+import RouteProgressBar from '@/components/RouteProgressBar'
 
 const Layout = async props => {
   const params = await props.params
@@ -18,6 +19,7 @@ const Layout = async props => {
 
   return (
     <Providers direction={direction}>
+      <RouteProgressBar />
       <BlankLayout systemMode={systemMode}>{children}</BlankLayout>
     </Providers>
   )

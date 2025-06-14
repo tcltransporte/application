@@ -1,7 +1,6 @@
 "use server"
 
 import { AppContext } from "@/database"
-import { db } from "@/fake-db/apps/academy"
 import { authOptions } from "@/libs/auth"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
