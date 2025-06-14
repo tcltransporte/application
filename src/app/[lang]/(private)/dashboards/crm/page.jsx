@@ -21,12 +21,12 @@ import UserTable from '@views/dashboards/crm/UserTable'
 import { getServerMode } from '@core/utils/serverHelpers'
 
 // Data Imports
-import { getUserData } from '@/app/server/actions'
+//import { getUserData } from '@/app/server/actions'
 
 const DashboardCRM = async () => {
 
   // Vars
-  const data = await getUserData()
+  const data = [] //await getUserData()
   const serverMode = await getServerMode()
 
   return (
