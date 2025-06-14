@@ -20,15 +20,14 @@ export async function getInstallment({installmentId}) {
         ],
         where: [
             {codigo_movimento_detalhe: installmentId}
-        ],
-        limit: 20
+        ]
     })
 
     return payment?.get({ plain: true })
 
 }
 
-export async function saveInstallment(formData) {
+export async function submitInstallment(formData) {
 
     const db = new AppContext()
 

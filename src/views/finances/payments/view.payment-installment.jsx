@@ -1,4 +1,4 @@
-import { getInstallment, saveInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
+import { getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
 
 import { AutoComplete } from "@/components/AutoComplete";
 import { getPaymentMethod } from "@/utils/search";
@@ -57,7 +57,7 @@ export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
 
     values.paymentMethodId = values.paymentMethod?.id || null
 
-    const installment = await saveInstallment(values)
+    const installment = await submitInstallment(values)
 
     onClose(installment)
 

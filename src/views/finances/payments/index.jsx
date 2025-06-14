@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Drawer, Box, TextField, Divider, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, CircularProgress } from '@mui/material'
+import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Drawer, Box, TextField, Divider, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, CircularProgress, Skeleton } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -15,7 +15,7 @@ export const ViewFinancesPayments = ({initialPayments}) => {
 
   const { setTitle } = useTitle()
 
-  const [loading, setLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
 
   const [openDrawer, setOpenDrawer] = useState(false)
   const [openPeriodModal, setOpenPeriodModal] = useState(false)
@@ -26,7 +26,7 @@ export const ViewFinancesPayments = ({initialPayments}) => {
 
   const fetchPayments = async ({ limit, offset }) => {
     try {
-      setLoading(true)
+      setIsFetching(true)
 
       const response = await getPayments({ limit, offset })
       setPayments(response)
@@ -34,7 +34,7 @@ export const ViewFinancesPayments = ({initialPayments}) => {
     } catch (error) {
       console.log(error)
     } finally {
-      setLoading(false)
+      setIsFetching(false)
     }
   }
 
@@ -116,8 +116,8 @@ export const ViewFinancesPayments = ({initialPayments}) => {
             Filtros
           </Button>
 
-          <Button variant="outlined" startIcon={loading ? <CircularProgress size={16} /> : <i className="ri-search-line" />} onClick={() => fetchPayments({ limit: payments.request.limit, offset: 0 })} disabled={loading}>
-            {loading ? 'Pesquisando...' : 'Pesquisar'}
+          <Button variant="outlined" startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />} onClick={() => fetchPayments({ limit: payments.request.limit, offset: 0 })} disabled={isFetching}>
+            {isFetching ? 'Pesquisando...' : 'Pesquisar'}
           </Button>
         </Box>
       </Box>
@@ -137,36 +137,47 @@ export const ViewFinancesPayments = ({initialPayments}) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {(payments.response?.rows || []).map((payment, index) => (
-              <TableRow key={index}>
-                <TableCell>{payment.financialMovement?.documentNumber}</TableCell>
-                <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
-                <TableCell>{payment.paymentMethod?.name}</TableCell>
-                <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
-                <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
-                <TableCell align="right">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'decimal',
-                    minimumFractionDigits: 2
-                  }).format(payment.amount)}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
-                  <Typography variant="caption">
-                    Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleEdit({ installmentId: payment.codigo_movimento_detalhe })}>
-                    <i className="ri-edit-2-line" />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(payment.sourceId)} color="error">
-                    <i className="ri-delete-bin-line" />
-                  </IconButton>
+            {isFetching ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                  <CircularProgress />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              (payments.response?.rows || []).map((payment, index) => (
+                <TableRow key={index}>
+                  {/* renderização normal dos dados */}
+                  <TableCell>{payment.financialMovement?.documentNumber}</TableCell>
+                  <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
+                  <TableCell>{payment.paymentMethod?.name}</TableCell>
+                  <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
+                  <TableCell align="right">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'decimal',
+                      minimumFractionDigits: 2
+                    }).format(payment.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
+                    <Typography variant="caption">
+                      Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => handleEdit({ installmentId: payment.codigo_movimento_detalhe })}>
+                      <i className="ri-edit-2-line" />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(payment.sourceId)} color="error">
+                      <i className="ri-delete-bin-line" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
+
+
         </Table>
 
         <TablePagination
