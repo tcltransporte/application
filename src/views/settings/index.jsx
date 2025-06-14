@@ -19,11 +19,11 @@ import { Company } from './company'
 
 import { Users } from './users'
 import BillingPlans from './signature'
-import Security from '@views/pages/account-settings/security'
+import Security from './security'
 import Integrations from '@/views/settings/integrations'
 
 
-const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
+//const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
 
 export const ViewSettings = ({ company, integrations }) => {
     
@@ -33,8 +33,8 @@ export const ViewSettings = ({ company, integrations }) => {
     'users': <Users />,
     'security': <Security />,
     'billing-plans': <BillingPlans />,
-    'notifications': <NotificationsTab />,
-    connections: <Integrations integrations={integrations} />
+    //'notifications': <NotificationsTab />,
+    'connections': <Integrations integrations={integrations} />
   }
 
   const [activeTab, setActiveTab] = useState('company')

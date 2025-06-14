@@ -29,12 +29,12 @@ export const Company = ({company}) => {
 
   const validationSchema = {
     'company': Yup.object().shape({
-      cnpj: Yup.string().required('Campo obrigatório'),
-      name: Yup.string().required('Campo obrigatório'),
-      surname: Yup.string().required('Campo obrigatório'),
+      'cnpj': Yup.string().required('Campo obrigatório'),
+      'name': Yup.string().required('Campo obrigatório'),
+      'surname': Yup.string().required('Campo obrigatório'),
     }),
     'desactivate': Yup.object().shape({
-      checkbox: Yup.bool().oneOf([true], 'Por favor, confirme que você deseja excluir a empresa')
+      'checkbox': Yup.bool().oneOf([true], 'Por favor, confirme que você deseja excluir a empresa')
     }),
   }
 
