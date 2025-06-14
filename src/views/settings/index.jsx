@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 
 // React Imports
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // MUI Imports
 import Grid from '@mui/material/Grid'
@@ -16,16 +16,21 @@ import CustomTabList from '@core/components/mui/TabList'
 
 import { Company } from './company'
 
-
 import { Users } from './users'
 import BillingPlans from './signature'
 import Security from './security'
 import Integrations from '@/views/settings/integrations'
-
+import { useTitle } from '@/contexts/TitleProvider'
 
 //const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
 
 export const ViewSettings = ({ company, integrations }) => {
+
+  const { setTitle } = useTitle()
+
+  useEffect(() => {
+    setTitle(['Configurações'])
+  }, [])
     
   // Vars
   const tabContentList = {

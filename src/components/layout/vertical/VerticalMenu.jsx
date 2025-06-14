@@ -83,7 +83,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/finances/statements`}>Extratos</MenuItem>
         </SubMenu>
         <MenuItem href={`/${locale}/settings`} icon={<i className='ri-settings-3-line' />}>
-          Configurações
+          {dictionary['navigation'].settings}
         </MenuItem>
         {/*
         <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>

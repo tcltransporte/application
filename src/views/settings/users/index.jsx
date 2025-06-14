@@ -279,8 +279,6 @@ export const Users = () => {
           >
             Adicionar
           </Button>
-
-          
         </div>
 
         <div className='overflow-x-auto'>

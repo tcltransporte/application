@@ -24,6 +24,7 @@ import { i18n } from '@configs/i18n'
 import { getDictionary } from '@/utils/getDictionary'
 import { getMode, getSystemMode } from '@core/utils/serverHelpers'
 import RouteProgressBar from '@/components/RouteProgressBar'
+import { TitleProvider } from '@/contexts/TitleProvider'
 
 const Layout = async props => {
 
@@ -43,13 +44,15 @@ const Layout = async props => {
         <LayoutWrapper
           systemMode={systemMode}
           verticalLayout={
-            <VerticalLayout
-              navigation={<Navigation dictionary={dictionary} mode={mode} />}
-              navbar={<Navbar />}
-              footer={<VerticalFooter />}
-            >
-              {children}
-            </VerticalLayout>
+            <TitleProvider>
+              <VerticalLayout
+                navigation={<Navigation dictionary={dictionary} mode={mode} />}
+                navbar={<Navbar />}
+                footer={<VerticalFooter />}
+              >
+                {children}
+              </VerticalLayout>
+            </TitleProvider>
           }
           horizontalLayout={
             <HorizontalLayout header={<Header dictionary={dictionary} />} footer={<HorizontalFooter />}>

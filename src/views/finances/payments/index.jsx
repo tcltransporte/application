@@ -1,67 +1,32 @@
 'use client'
 
-import { useState } from 'react'
-import {
-  Typography,
-  Button,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
-  Tooltip,
-} from '@mui/material'
-import Grid from '@mui/material/Grid'
+import { useEffect, useState } from 'react'
+import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Tooltip, Drawer, Box, TextField, Divider, Grid } from '@mui/material'
 import { format } from 'date-fns'
 import { ViewPaymentInstallment } from './view.payment-installment'
 
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 
-//import { ViewAddStatement } from './view.add-statement'
-//import { getStatements } from './index.controller'
-//import { ViewStatementDetail } from './view.statement-detail'
+import { useTitle } from '@/contexts/TitleProvider'
 
-const exampleTransactions = [
-  {
-    id: '1',
-    date: new Date('2025-06-01'),
-    order: 'Pedido #12345',
-    amount: 500.0,
-    fee: 5.0,
-    type: 'credit',
-    balance: 1495.0,
-    concileds: [],
-  },
-  {
-    id: '2',
-    date: new Date('2025-06-02'),
-    order: 'Pedido #12346',
-    amount: 300.0,
-    fee: 3.0,
-    type: 'debit',
-    balance: 1195.0,
-    concileds: [],
-  },
-]
+export const ViewFinancesPayments = ({ initialPayments }) => {
 
-function Payments({ initialPayments }) {
+  const { setTitle } = useTitle()
 
-  const [open, setOpen] = useState(false)
+  const [openDrawer, setOpenDrawer] = useState(false)
   const [payments, setPayments] = useState([...initialPayments])
-  const [selectedStatement, setSelectedStatement] = useState(null)
-
   const [installmentId, setInstallmentId] = useState(undefined)
+
+  useEffect(() => {
+    setTitle(['Finanças', 'Contas a pagar'])
+  }, [])
 
   const fetch = async () => {
     const payments = await getPayments()
     setPayments(payments)
   }
 
-  const handleEdit = ({installmentId}) => {
-    //statement.transactions = exampleTransactions
-    //setSelectedStatement({statementId})
+  const handleEdit = ({ installmentId }) => {
     setInstallmentId(installmentId)
   }
 
@@ -72,19 +37,53 @@ function Payments({ initialPayments }) {
 
   return (
     <>
-      <Typography variant="h4" gutterBottom>
-        Contas a pagar
-      </Typography>
 
-      <Button
-        variant="contained"
-        sx={{ mb: 2 }}
-        startIcon={<i className="ri-add-circle-line" />}
-        onClick={() => setInstallmentId(null)}
-      >
-        Adicionar
-      </Button>
+      {/* Header com Botões */}
+      <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        {/* Botão Adicionar à esquerda */}
+        <Grid item>
+          <Button
+            variant="contained"
+            startIcon={<i className="ri-add-circle-line" />}
+            onClick={() => setInstallmentId(null)}
+          >
+            Adicionar
+          </Button>
+        </Grid>
 
+        {/* Botões Período, Filtros e Pesquisar à direita */}
+        <Grid item>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              startIcon={<i className="ri-calendar-line" />}
+              onClick={() => console.log('Abrir seleção de período')}
+            >
+              Período
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<i className="ri-equalizer-line" />}
+              onClick={() => setOpenDrawer(true)}
+            >
+              Filtros
+            </Button>
+
+            <Button
+              variant="contained"
+              startIcon={<i className="ri-search-line" />}
+              onClick={() => console.log('Executar pesquisa')}
+            >
+              Pesquisar
+            </Button>
+          </Box>
+        </Grid>
+      </Grid>
+
+
+
+      {/* Tabela de pagamentos */}
       <Paper>
         <Table size="small">
           <TableHead>
@@ -112,7 +111,13 @@ function Payments({ initialPayments }) {
                 <TableCell>{payment.paymentMethod?.name}</TableCell>
                 <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
                 <TableCell>{format(payment.dueDate, 'dd/MM/yyyy')}</TableCell>
-                <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.amount)}</TableCell>
+                <TableCell align="right">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'decimal',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(payment.amount)}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-start space-x-2">
                     {payment.bankAccount?.bank?.icon && (
@@ -134,12 +139,21 @@ function Payments({ initialPayments }) {
                 <TableCell align="center">
                   <div className="action-buttons">
                     <Tooltip title="Editar">
-                      <IconButton onClick={() => handleEdit({installmentId: payment.codigo_movimento_detalhe})}>
+                      <IconButton
+                        onClick={() =>
+                          handleEdit({
+                            installmentId: payment.codigo_movimento_detalhe,
+                          })
+                        }
+                      >
                         <i className="ri-edit-2-line text-lg" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Excluir">
-                      <IconButton onClick={() => handleDelete(payment.sourceId)} color="error">
+                      <IconButton
+                        onClick={() => handleDelete(payment.sourceId)}
+                        color="error"
+                      >
                         <i className="ri-delete-bin-line text-lg" />
                       </IconButton>
                     </Tooltip>
@@ -150,33 +164,50 @@ function Payments({ initialPayments }) {
           </TableBody>
         </Table>
       </Paper>
-      
-      <ViewPaymentInstallment installmentId={installmentId} onClose={(installment) => {
-        console.log("@".repeat(10))
-        console.log(installment)
-        console.log("@".repeat(10))
-        setInstallmentId(undefined)
-      }} />
-{/*
-      <ViewAddStatement open={open} setOpen={setOpen} onSubmit={fetch} />
 
-      <ViewStatementDetail
-        statementId={statementId}
-        onClose={() => setStatementId(undefined)}
-        onError={() => setStatementId(undefined)}
-        statement={selectedStatement}
+      {/* Modal de edição ou criação */}
+      <ViewPaymentInstallment
+        installmentId={installmentId}
+        onClose={() => setInstallmentId(undefined)}
       />
-*/}
+
+      {/* Drawer de filtros */}
+      <Drawer anchor="right" open={openDrawer} onClose={() => setOpenDrawer(false)}>
+
+        <div className='flex items-center justify-between pli-5 plb-4'>
+          <Typography variant='h5'>Filtros</Typography>
+          <IconButton size='small' onClick={() => setOpenDrawer(false)}>
+            <i className='ri-close-line text-2xl' />
+          </IconButton>
+        </div>
+
+        <Divider />
+        
+        <Box sx={{ width: 300, p: 3 }}>
+
+          <TextField
+            fullWidth
+            label="Beneficiário"
+            variant="outlined"
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Número documento"
+            variant="outlined"
+            margin="normal"
+          />
+          {/* Adicione mais filtros aqui */}
+
+          <Box display="flex" justifyContent="flex-end" mt={2}>
+            <Button onClick={() => setOpenDrawer(false)} variant="contained">
+              Aplicar
+            </Button>
+          </Box>
+        </Box>
+
+      </Drawer>
     </>
   )
-}
 
-export const ViewFinancesPayments = ({ initialPayments }) => {
-  return (
-    <Grid container spacing={6}>
-      <Grid size='grow'>
-        <Payments initialPayments={initialPayments} />
-      </Grid>
-    </Grid>
-  )
 }
