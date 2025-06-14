@@ -1,11 +1,12 @@
 import classnames from 'classnames'
 
 // Component Imports
-import KanbanBoard from '@views/apps/kanban'
+//import KanbanBoard from '@views/apps/kanban'
 
 // Util Imports
 import { commonLayoutClasses } from '@layouts/utils/layoutClasses'
-import { getBankAccounts } from '@/views/apps/kanban/index.controller'
+import { getBankAccounts } from '@/app/server/finances/prepare/index.controller'
+import KanbanBoard from '@/views/finances/prepare'
 
 const KanbanPage = async () => {
   

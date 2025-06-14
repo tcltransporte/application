@@ -5,6 +5,7 @@ import _ from "lodash"
 import { Op } from "sequelize"
 
 export async function getBankAccounts() {
+    
     const db = new AppContext()
 
     const bankAccounts = await db.BankAccount.findAll({

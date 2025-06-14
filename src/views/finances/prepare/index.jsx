@@ -17,9 +17,10 @@ import {
   DialogTitle,
 } from "@mui/material"
 import React, { useState, useEffect, useRef } from "react"
-import { updateInstallment } from "./index.controller"
+//import { updateInstallment } from "./index.controller"
 import { AutoComplete } from "@/components/AutoComplete";
 import { getPaymentMethod } from "@/utils/search";
+import { updateInstallment } from "@/app/server/finances/prepare/index.controller";
 
 // Novo componente para o Modal de Edição
 const EditInstallment = ({ open, onClose, installment, onSave }) => {

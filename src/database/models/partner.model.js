@@ -22,7 +22,7 @@ export class Partner {
 
   externalId = {
     field: 'externalId',
-    type: DataTypes.UUIDV4
+    type: DataTypes.STRING(15)
   }
 
   isActive = {
