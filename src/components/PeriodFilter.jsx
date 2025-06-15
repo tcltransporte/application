@@ -19,8 +19,8 @@ import {
 export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onChange }) => {
   // Estado "oficial" do período selecionado
   const [range, setRange] = useState({
-    startDate: initialDateRange[0] || new Date(),
-    endDate: initialDateRange[1] || new Date(),
+    startDate: new Date(initialDateRange[0]) || new Date(),
+    endDate: new Date(initialDateRange[1]) || new Date(),
     key: 'selection',
   })
 
@@ -33,8 +33,8 @@ export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onCh
   // Quando inicializa ou inicialDateRange mudar, sincroniza o estado oficial
   useEffect(() => {
     const newRange = {
-      startDate: initialDateRange[0] || new Date(),
-      endDate: initialDateRange[1] || new Date(),
+      startDate: new Date(initialDateRange[0]) || new Date(),
+      endDate: new Date(initialDateRange[1]) || new Date(),
       key: 'selection',
     }
     setRange(newRange)
@@ -88,7 +88,7 @@ export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onCh
   }
 
   // Label para o botão principal, baseado no estado oficial
-  const currentLabel = useMemo(() => updateLabelFromDateRange(range.startDate, range.endDate), [range])
+  const currentLabel = useMemo(() => updateLabelFromDateRange(new Date(range.startDate), new Date(range.endDate)), [range])
 
   // Funções para atualizar tempRange dentro do modal
   const setPeriodToday = () => {
