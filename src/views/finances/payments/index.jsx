@@ -1,24 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import {
-  Typography,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Paper,
-  Box,
-  CircularProgress,
-  Button,
-  TablePagination,
-  IconButton,
-  Drawer,
-  Divider,
-  TextField,
-  Checkbox,
-} from '@mui/material'
+import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, TextField, Checkbox } from '@mui/material'
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
@@ -94,10 +77,10 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
     setTitle(['Finanças', 'Contas a pagar'])
   }, [])
 
-  const fetchPayments = async ({ limit, offset, dueDate }) => {
+  const fetchPayments = async (request) => {
     try {
       setIsFetching(true)
-      const response = await getPayments({ limit, offset, dueDate })
+      const response = await getPayments(request)
       setInstallments(response)
       setSelectedIds(new Set()) // limpa seleção ao buscar nova página
     } catch (error) {
@@ -109,7 +92,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
   const handlePeriodChange = (dateRange) => {
     fetchPayments({
-      limit: installments.request.limit,
+      ...installments.request,
       offset: 0,
       dueDate: {
         start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
@@ -163,11 +146,8 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
     alert(`Excluindo registros: ${[...selectedIds].join(', ')}`)
 
     // Após exclusão, atualiza a lista (recarrega)
-    fetchPayments({
-      limit: installments.request.limit,
-      offset: installments.request.offset,
-      dueDate: installments.request.dueDate,
-    })
+    fetchPayments(installments.request)
+
   }
 
   const allIds = installments.response?.rows.map((p) => p.codigo_movimento_detalhe) || []
@@ -199,9 +179,8 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
               startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
               onClick={() =>
                 fetchPayments({
-                  limit: installments.request.limit,
+                  ...installments.request,
                   offset: 0,
-                  dueDate: installments.request.dueDate,
                 })
               }
               disabled={isFetching}
@@ -365,16 +344,15 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
               rowsPerPage={installments.request?.limit || 10}
               onPageChange={(event, offset) =>
                 fetchPayments({
-                  limit: installments.request.limit,
+                  ...installments.request,
                   offset: offset,
-                  dueDate: installments.request.dueDate,
                 })
               }
               onRowsPerPageChange={(event) =>
                 fetchPayments({
+                  ...installments.request,
                   limit: event.target.value,
                   offset: 0,
-                  dueDate: installments.request.dueDate,
                 })
               }
             />

@@ -84,16 +84,9 @@ export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle
-          sx={styles.dialogTitle}
-        >
+        <DialogTitle sx={styles.dialogTitle}>
           Editar
-          <IconButton
-            aria-label="close"
-            onClick={() => onClose()}
-            sx={styles.dialogClose}
-            size="large"
-          >
+          <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large">
             <i className="ri-close-line" />
           </IconButton>
         </DialogTitle>

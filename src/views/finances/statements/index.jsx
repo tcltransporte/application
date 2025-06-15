@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Typography,
   Button,
@@ -12,43 +12,35 @@ import {
   TableBody,
   IconButton,
   Tooltip,
+  Box,
+  Checkbox,
+  TablePagination,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { format } from 'date-fns'
 import { ViewAddStatement } from './view.add-statement'
 import { ViewStatementDetail } from './view.statement-detail'
 import { getStatements } from '@/app/server/finances/statements/index.controller'
+import { useTitle } from '@/contexts/TitleProvider'
+import { styles } from '@/components/styles'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import _ from 'lodash'
 
-const exampleTransactions = [
-  {
-    id: '1',
-    date: new Date('2025-06-01'),
-    order: 'Pedido #12345',
-    amount: 500.0,
-    fee: 5.0,
-    type: 'credit',
-    balance: 1495.0,
-    concileds: [],
-  },
-  {
-    id: '2',
-    date: new Date('2025-06-02'),
-    order: 'Pedido #12346',
-    amount: 300.0,
-    fee: 3.0,
-    type: 'debit',
-    balance: 1195.0,
-    concileds: [],
-  },
-]
+export const ViewFinancesStatements = ({ initialStatements }) => {
 
-function ExtratoScreen({ initialStatements }) {
+  const { setTitle } = useTitle()
+
+  const [isFetching, setIsFetching] = useState(false)
 
   const [open, setOpen] = useState(false)
   const [statements, setStatements] = useState([...initialStatements])
   const [selectedStatement, setSelectedStatement] = useState(null)
 
   const [statementId, setStatementId] = useState(undefined)
+
+  useEffect(() => {
+    setTitle(['Finanças', 'Extratos'])
+  }, [])
 
   const fetch = async () => {
     const statements = await getStatements()
@@ -68,10 +60,44 @@ function ExtratoScreen({ initialStatements }) {
 
   return (
     <>
-      <Typography variant="h4" gutterBottom>
-        Extratos
-      </Typography>
+    
+      <Box sx={styles.container}>
 
+        <Box sx={styles.header}>
+          <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setOpen(true)}>
+            Adicionar
+          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+
+            <PeriodFilter
+              title="Vencimento"
+              initialDateRange={[
+                //new Date(installments.request?.dueDate?.start),
+                //new Date(installments.request?.dueDate?.end),
+              ]}
+              //onChange={handlePeriodChange}
+            />
+
+            {/*<Filter />*/}
+
+            <Button
+              variant="outlined"
+              startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
+              onClick={() =>
+                fetch({
+                  limit: installments.request.limit,
+                  offset: 0,
+                  dueDate: installments.request.dueDate,
+                })
+              }
+              disabled={isFetching}
+            >
+              {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            </Button>
+          </Box>
+        </Box>
+
+      {/*
       <Button
         variant="contained"
         sx={{ mb: 2 }}
@@ -80,7 +106,9 @@ function ExtratoScreen({ initialStatements }) {
       >
         Adicionar
       </Button>
+      */}
 
+{/*
       <Paper>
         <Table size="small">
           <TableHead>
@@ -142,6 +170,150 @@ function ExtratoScreen({ initialStatements }) {
           </TableBody>
         </Table>
       </Paper>
+*/}
+
+
+      <Box sx={styles.tableWrapper}>
+        <Paper sx={styles.paperContainer}>
+          <Table sx={styles.tableLayout} stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell align="center" sx={{ width: 56, minWidth: 56, px: 1 }}>
+                  <Checkbox
+                    color="primary"
+                    //checked={allSelected}
+                    //indeterminate={selectedIds.size > 0 && !allSelected}
+                    //onChange={toggleSelectAll}
+                  />
+                </TableCell>
+                <TableCell>ID</TableCell>
+                <TableCell>Banco</TableCell>
+                <TableCell>Inicio</TableCell>
+                <TableCell>Fim</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="center">Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isFetching ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={styles.tableCellLoader}>
+                    <CircularProgress size={30} />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                statements.map((statement, index) => {
+                  return (
+                    <TableRow
+                      key={index}
+                      hover
+                      //onClick={() => toggleSelect(id)}
+                      role="checkbox"
+                      //aria-checked={isItemSelected}
+                      //selected={isItemSelected}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          color="primary"
+                          //checked={isItemSelected}
+                          //onChange={() => toggleSelect(id)}
+                        />
+                      </TableCell>
+                      <TableCell>{statement.sourceId}</TableCell>
+                      <TableCell>
+                        <div className="flex items-start space-x-2">
+                          {statement.bankAccount.bank?.icon && (
+                            <img
+                              src={statement.bankAccount.bank.icon}
+                              alt={statement.bankAccount.bank.name}
+                              className="mt-1 w-[1.725rem] h-[1.725rem]"
+                            />
+                          )}
+                          <div className="flex flex-col text-sm">
+                            <span className="font-medium">{statement.bankAccount.bank.name}</span>
+                            <span>
+                              Agência: {statement.bankAccount.agency} / Conta:{' '}
+                              {statement.bankAccount.number}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{format(statement.begin, 'dd/MM/yyyy HH:mm')}</TableCell>
+                      <TableCell>{format(statement.end, 'dd/MM/yyyy HH:mm')}</TableCell>
+                      <TableCell>{statement.isActive ? 'Pendente' : 'Excluído'}</TableCell>
+                      <TableCell align="center">
+                        <div className="action-buttons">
+                          <Tooltip title="Editar">
+                            <IconButton onClick={() => handleEdit({statementId: statement.id})}>
+                              <i className="ri-edit-2-line text-lg" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Excluir">
+                            <IconButton onClick={() => handleDelete(statement.sourceId)} color="error">
+                              <i className="ri-delete-bin-line text-lg" />
+                            </IconButton>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+
+
+      <Box sx={styles.pagination}>
+        
+        <Box sx={{ minWidth: 220 }}>
+          {/*selectedIds.size > 0 && (
+            <Typography
+              variant="subtitle1"
+              sx={{
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                fontWeight: 500,
+                userSelect: 'none',
+              }}
+            >
+              {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado{selectedIds.size > 1 ? 's' : ''}
+            </Typography>
+          )*/}
+        </Box>
+
+
+        {/* Paginação sempre à direita */}
+        <Box sx={{ ml: 'auto' }}>
+          <TablePagination
+            component="div"
+            labelRowsPerPage="Registros por página"
+            //count={installments.response?.count || 0}
+            //page={installments.request?.offset || 0}
+            //rowsPerPage={installments.request?.limit || 10}
+            onPageChange={(event, offset) =>
+              fetchPayments({
+                //limit: installments.request.limit,
+                //offset: offset,
+                //dueDate: installments.request.dueDate,
+              })
+            }
+            onRowsPerPageChange={(event) =>
+              fetchPayments({
+                //limit: event.target.value,
+                //offset: 0,
+                //dueDate: installments.request.dueDate,
+              })
+            }
+          />
+        </Box>
+      </Box>
+
+      </Box>
+
 
       <ViewAddStatement open={open} setOpen={setOpen} onSubmit={fetch} />
 
@@ -153,15 +325,5 @@ function ExtratoScreen({ initialStatements }) {
       />
 
     </>
-  )
-}
-
-export const ViewFinancesStatements = ({ initialStatements }) => {
-  return (
-    <Grid container spacing={6}>
-      <Grid size='grow'>
-        <ExtratoScreen initialStatements={initialStatements} />
-      </Grid>
-    </Grid>
   )
 }

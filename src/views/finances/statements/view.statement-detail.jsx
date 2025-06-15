@@ -16,6 +16,7 @@ import { AutoComplete } from '@/components/AutoComplete'
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
 import { ItemDetailDrawer } from './ItemDetailDrawer' // Import o novo componente
 import { deleteStatementConciled, getStatement, saveStatementConciled } from '@/app/server/finances/statements/view.statement-detail.controller'
+import { styles } from '@/components/styles'
 
 const entryTypeAlias = {
   '': {
@@ -213,7 +214,13 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           },
         }}
       >
-        <DialogTitle>Extrato Detalhado</DialogTitle>
+        <DialogTitle sx={styles.dialogTitle}>
+          Extrato Detalhado
+          <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large">
+            <i className="ri-close-line" />
+          </IconButton>
+        </DialogTitle>
+        
         <DialogContent>
           <Table size="small">
             <TableHead>
