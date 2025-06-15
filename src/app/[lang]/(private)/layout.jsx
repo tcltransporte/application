@@ -39,36 +39,42 @@ const Layout = async props => {
 
   return (
     <Providers direction={direction}>
+
       <RouteProgressBar />
+      
       <AuthGuard locale={params.lang}>
-        <LayoutWrapper
-          systemMode={systemMode}
-          verticalLayout={
-            <TitleProvider>
-              <VerticalLayout
-                navigation={<Navigation dictionary={dictionary} mode={mode} />}
-                navbar={<Navbar />}
-                footer={<VerticalFooter />}
+        <TitleProvider>
+          <LayoutWrapper
+            systemMode={systemMode}
+            verticalLayout={
+              
+                <VerticalLayout
+                  navigation={<Navigation dictionary={dictionary} mode={mode} />}
+                  navbar={<Navbar />}
+                  footer={<VerticalFooter />}
+                >
+                  {children}
+                </VerticalLayout>
+            }
+            horizontalLayout={
+              <HorizontalLayout
+                header={<Header dictionary={dictionary} />}
+                footer={<HorizontalFooter />}
               >
                 {children}
-              </VerticalLayout>
-            </TitleProvider>
-          }
-          horizontalLayout={
-            <HorizontalLayout header={<Header dictionary={dictionary} />} footer={<HorizontalFooter />}>
-              {children}
-            </HorizontalLayout>
-          }
-        />
-        <ScrollToTop className='mui-fixed'>
-          <Button
-            variant='contained'
-            className='is-10 bs-10 rounded-full p-0 min-is-0 flex items-center justify-center'
-          >
-            <i className='ri-arrow-up-line' />
-          </Button>
-        </ScrollToTop>
-        <Customizer dir={direction} />
+              </HorizontalLayout>
+            }
+          />
+          <ScrollToTop className='mui-fixed'>
+            <Button
+              variant='contained'
+              className='is-10 bs-10 rounded-full p-0 min-is-0 flex items-center justify-center'
+            >
+              <i className='ri-arrow-up-line' />
+            </Button>
+          </ScrollToTop>
+          <Customizer dir={direction} />
+        </TitleProvider>
       </AuthGuard>
     </Providers>
   )

@@ -1,5 +1,4 @@
 import { Sequelize, DataTypes } from 'sequelize';
-import { formatUTC } from '..';
 
 export class FinancialMovementIntallment {
 
@@ -44,7 +43,7 @@ export class FinancialMovementIntallment {
     field: 'data_vencimento',
     type: DataTypes.STRING,
     get() {
-      return formatUTC(this.getDataValue('dueDate'))
+      return this.getDataValue('dueDate').formatUTC()
     }
   }
 

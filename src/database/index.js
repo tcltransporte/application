@@ -36,13 +36,6 @@ const afterFind = (result) => {
   }
 }
 
-export const formatUTC = (rawValue) => {
-  if (!rawValue) return null
-  const utcDate = new Date(rawValue)
-  utcDate.setUTCHours(0, 0, 0, 0)
-  return utcDate.toISOString().replace('T', ' ').substring(0, 19)
-}
-
 export class AppContext extends Sequelize {
   
   Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
@@ -61,7 +54,7 @@ export class AppContext extends Sequelize {
 
   FinancialMovement = this.define('financialMovement', new FinancialMovement(), { tableName: 'movimentos' })
 
-  FinancialMovementInstallment = this.define('financialMovementIntallment', new FinancialMovementIntallment(), { tableName: 'movimentos_detalhe' })
+  FinancialMovementInstallment = this.define('financialMovementInstallment', new FinancialMovementIntallment(), { tableName: 'movimentos_detalhe' })
 
   Integration = this.define('integration', new Integration(), { tableName: 'integration' })
 

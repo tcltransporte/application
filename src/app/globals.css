@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 /* Scroll suave e estilizado */
 .scroll-smooth::-webkit-scrollbar {
   width: 8px;
