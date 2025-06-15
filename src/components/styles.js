@@ -35,6 +35,10 @@ export const styles = {
         bottom: 0,
         backgroundColor: theme.palette.background.default,
         borderTop: `1px solid ${theme.palette.divider}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
     }),
 
     paperContainer: (theme) => ({
