@@ -1,32 +1,73 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import {
-  Typography,
-  Tooltip,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Paper,
-  Box,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Button,
-  TextField,
-  TablePagination,
-  IconButton,
-} from '@mui/material'
+import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, TextField } from '@mui/material'
+
 import { useTheme } from '@mui/material/styles'
-import { updateInstallment } from '@/app/server/finances/prepare/index.controller' // ajuste seu import real aqui
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { PeriodFilter } from '@/components/PeriodFilter'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
+
+import { styles } from '@/components/styles'
+import _ from 'lodash'
+import { ViewPaymentInstallment } from './view.payment-installment'
+
+const Filter = () => {
+
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button
+        variant="text"
+        startIcon={<i className="ri-equalizer-line" />}
+        onClick={() => setOpen(true)}
+      >
+        Filtros
+      </Button>
+      
+      <Drawer
+        open={open}
+        anchor='right'
+        variant='temporary'
+        ModalProps={{ keepMounted: true }}
+        sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
+      >
+    
+        <div className='flex items-center justify-between pli-5 plb-4'>
+          <Typography variant='h5'>Filtros</Typography>
+          <IconButton size='small' onClick={() => setOpen(false)}>
+            <i className='ri-close-line text-2xl' />
+          </IconButton>
+        </div>
+
+        <Divider />
+
+        <Box sx={{p: 4}}>
+
+          <TextField fullWidth label="Beneficiário" />
+
+          <TextField fullWidth label="Número documento" sx={{ mt: 2 }} />
+
+          <Box display="flex" justifyContent="flex-end" mt={4}>
+
+            <Button
+              variant="contained"
+              color='success'
+              startIcon={<i className="ri-check-line" />}
+              onClick={() => setOpen(false)}
+            >
+              Aplicar
+            </Button>
+
+          </Box>
+
+        </Box>
+      </Drawer>
+    </>
+  )
+}
 
 export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
@@ -34,14 +75,13 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
   const { setTitle } = useTitle()
 
-  const [installments, setInstallments] = useState(initialPayments)
-  
   const [isFetching, setIsFetching] = useState(false)
+  const [installments, setInstallments] = useState(initialPayments)
+
+  const [installmentId, setInstallmentId] = useState(undefined)
 
   useEffect(() => {
-
     setTitle(['Finanças', 'Contas a pagar'])
-
   }, [])
 
   const fetchPayments = async ({ limit, offset, dueDate }) => {
@@ -56,265 +96,131 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
     }
   }
 
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedInstallment, setSelectedInstallment] = useState(null)
-
-  const handleCloseEditModal = () => {
-    setModalOpen(false)
-    setSelectedInstallment(null)
-  }
-  const handleSaveEditedAmount = async (installmentId, newAmount) => {
-    addLoadingInstallment(installmentId)
-    try {
-      await updateInstallment({ id: installmentId, amount: newAmount })
-      setInstallments((prev) =>
-        prev.map((inst) => (inst.id === installmentId ? { ...inst, amount: newAmount } : inst))
-      )
-      handleCloseEditModal()
-    } catch (error) {
-      alert(`Erro ao atualizar valor: ${error.message}`)
-    } finally {
-      removeLoadingInstallment(installmentId)
-    }
-  }
-
-  // Modal componente interno
-  const EditInstallment = ({ open, onClose, installment, onSave }) => {
-    const [amount, setAmount] = useState(installment.amount || 0)
-
-    useEffect(() => {
-      setAmount(installment.amount || 0)
-    }, [installment])
-
-    const handleSave = () => {
-      if (amount < 0 || isNaN(amount)) {
-        alert('Valor inválido')
-        return
+  const handlePeriodChange = (dateRange) => {
+    fetchPayments({
+      limit: installments.request.limit,
+      offset: 0,
+      dueDate: {
+        start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
+        end: DateFormat(new Date(dateRange[1]), 'yyyy-MM-dd 23:59')
       }
-      onSave(installment.id, amount)
-    }
-
-    return (
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-        <DialogTitle
-          sx={{
-            fontWeight: '700',
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-            py: 1.5,
-            userSelect: 'none',
-          }}
-        >
-          Editar Valor da Parcela #{installment.id}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <TextField
-            label="Valor"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={amount}
-            onChange={(e) => setAmount(parseFloat(e.target.value))}
-            inputProps={{ min: 0, step: 0.01 }}
-            autoFocus
-            margin="normal"
-            sx={{
-              '& input': {
-                fontWeight: 600,
-                fontSize: '1.1rem',
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={onClose} sx={{ textTransform: 'none' }}>
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 700,
-              backgroundColor: theme.palette.primary.main,
-              '&:hover': {
-                backgroundColor: theme.palette.primary.dark,
-              },
-            }}
-          >
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
-    )
+    })
   }
 
-  const totalCount = 0
+  const handleNew = () => {
+    setInstallmentId(null)
+  }
+
+  const handleEdit = ({ installmentId }) => {
+    setInstallmentId(installmentId)
+  }
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: theme.palette.background.default,
-      }}
-    >
-      {/* Cabeçalho fixo */}
-      <Box sx={{ p: 2, position: 'sticky', top: 0, zIndex: 1100, backgroundColor: theme.palette.background.default, display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 'var(--header-height)' }}>
-        
-        <Button variant="contained" startIcon={<i className="ri-add-circle-line" />}
-          //onClick={() => setInstallmentId(null)}
-        >
-          Adicionar
-        </Button>
+    <>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          
-          <PeriodFilter
-            title="Vencimento"
-            initialDateRange={[
-              new Date(installments.request?.dueDate?.start),
-              new Date(installments.request?.dueDate?.end)
-            ]}
-            //onChange={handlePeriodChange}
-          />
+      <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
+
+      <Box sx={styles.container(theme)}>
+
+        <Box sx={styles.header(theme)}>
 
           <Button
-            variant="text"
-            startIcon={<i className="ri-equalizer-line" />}
-            onClick={() => setOpenDrawer(true)}
+            variant="contained"
+            startIcon={<i className="ri-add-circle-line" />}
+            onClick={handleNew}
           >
-            Filtros
+            Adicionar
           </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
 
-          <Button
-            variant="outlined"
-            startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
-            onClick={() => fetchPayments({ limit: installments.request.limit, offset: 0 })}
-            disabled={isFetching}
-          >
-            {isFetching ? 'Pesquisando...' : 'Pesquisar'}
-          </Button>
-          
+            <PeriodFilter
+              title="Vencimento"
+              initialDateRange={[ new Date(installments.request?.dueDate?.start), new Date(installments.request?.dueDate?.end) ]}
+              onChange={handlePeriodChange}
+            />
+
+            <Filter />
+
+            <Button
+              variant="outlined"
+              startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
+              onClick={() => fetchPayments({ limit: installments.request.limit, offset: 0, dueDate: installments.request.dueDate })}
+              disabled={isFetching}
+            >
+              {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            </Button>
+
+          </Box>
+
         </Box>
-      </Box>
 
-      {/* Conteúdo da tabela */}
-      <Box sx={{ flex: 1, mt: 1, overflow: 'auto' }}>
-        {true ? (
-          <Paper
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 0,
-            }}
-            elevation={4}
-          >
-            <Box sx={{ flex: 1 }}>
-              <Table stickyHeader size="small">
-                <TableHead>
+        <Box sx={styles.tableWrapper(theme)}>
+          <Paper sx={styles.paperContainer(theme)}>
+            <Table sx={styles.tableLayout(theme)} stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="left" sx={{ width: 120 }}>Nº Doc.</TableCell>
+                  <TableCell align="left" sx={{ width: 'auto', minWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Beneficiário</TableCell>
+                  <TableCell align="left" sx={{ width: 180 }}>Forma de pagamento</TableCell>
+                  <TableCell align="center" sx={{ width: 120 }}>Vencimento</TableCell>
+                  <TableCell align="center" sx={{ width: 120 }}>Agendamento</TableCell>
+                  <TableCell align="right" sx={{ width: 100 }}>Valor</TableCell>
+                  <TableCell align="left" sx={{ width: 220 }}>Agência/Conta</TableCell>
+                  <TableCell align="center" sx={{ width: 120 }}>Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isFetching ? (
                   <TableRow>
-                    <TableCell>Número documento</TableCell>
-                    <TableCell>Beneficiário</TableCell>
-                    <TableCell>Forma de pagamento</TableCell>
-                    <TableCell>Vencimento</TableCell>
-                    <TableCell>Agendamento</TableCell>
-                    <TableCell>Valor</TableCell>
-                    <TableCell>Agência/Conta</TableCell>
-                    <TableCell>Ações</TableCell>
+                    <TableCell colSpan={8} align="center" sx={styles.tableCellLoader}>
+                      <CircularProgress size={30} /></TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {isFetching ? (
-                    <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ height: 'calc(100vh - 200px)' }}>
-                        <CircularProgress size={30} />
-                      </TableCell>
-                    </TableRow>
                   ) : (
-                    installments.response?.rows?.map((payment, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{payment.numero_documento}</TableCell>
-                        <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
-                        <TableCell>{payment.paymentMethod?.name}</TableCell>
-                        <TableCell>{DateFormat(new Date(payment.dueDate), "dd/MM/yyyy")}</TableCell>
-                        <TableCell>{DateFormat(new Date(), "dd/MM/yyyy")}</TableCell>
-                        <TableCell align="right">
-                          {/* Formatar valor aqui */}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
-                          <Typography variant="caption">
-                            Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton onClick={() => handleEdit({ installmentId: payment?.codigo_movimento_detalhe })}>
-                            <i className="ri-edit-2-line" />
-                          </IconButton>
-                          <IconButton onClick={() => handleDelete(payment.sourceId)} color="error">
-                            <i className="ri-delete-bin-line" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-
-              </Table>
-            </Box>
+                  _.map(installments.response?.rows, (payment, index) => (
+                    <TableRow key={index}>
+                      <TableCell align="left">{payment.numero_documento}</TableCell>
+                      <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.financialMovement?.partner?.surname}</TableCell>
+                      <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
+                      <TableCell align="center">{DateFormat(new Date(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell align="center">{DateFormat(new Date(), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell align="right">{payment.amount?.toFixed(2)}</TableCell><TableCell><Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography><Typography variant="caption">Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}</Typography></TableCell>
+                      <TableCell align="center"><IconButton size='small' onClick={() => handleEdit({ installmentId: payment.codigo_movimento_detalhe })}><i className="ri-edit-2-line" /></IconButton><IconButton size='small' onClick={() => alert('Deletar ainda não implementado')} color="error"><i className="ri-delete-bin-line" /></IconButton></TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Paper>
-        ) : (
-          <Typography sx={{ p: 2, color: theme.palette.text.secondary }}>
-            Nenhuma conta com id null encontrada
-          </Typography>
-        )}
+        </Box>
+
+        <Box sx={styles.pagination(theme)}>
+          <TablePagination
+            component="div"
+            labelRowsPerPage="Registros por página"
+            count={installments.response?.count || 0}
+            page={installments.request?.offset || 0}
+            rowsPerPage={installments.request?.limit || 10}
+            onPageChange={(event, offset) =>
+              fetchPayments({
+                limit: installments.request.limit,
+                offset: offset,
+                dueDate: installments.request.dueDate,
+              })
+            }
+            onRowsPerPageChange={(event) =>
+              fetchPayments({
+                limit: event.target.value,
+                offset: 0,
+                dueDate: installments.request.dueDate,
+              })
+            }
+          />
+        </Box>
+
       </Box>
 
-      {/* Paginação fixa */}
-      <Box
-        sx={{
-          position: 'sticky',
-          zIndex: 1100,
-          bottom: 0,
-          backgroundColor: theme.palette.background.default
-        }}
-      >
-        <TablePagination
-          component="div"
-          labelRowsPerPage="Registro por páginas"
-          count={installments.response?.count || 0}
-          page={installments.request?.offset || 0}
-          onPageChange={(event, newPage) => {
-            fetchPayments({
-              limit: installments.request.limit,
-              offset: newPage,
-              dueDate: installments.request.dueDate
-            })
-          }}
-          rowsPerPage={installments.request?.limit || 10}
-          onRowsPerPageChange={(event) => {
-            fetchPayments({
-              limit: parseInt(event.target.value, 10),
-              offset: 0,
-              dueDate: installments.request.dueDate
-            })
-          }}
-        />
-      </Box>
+    </>
 
-      {/* Modal */}
-      {selectedInstallment && (
-        <EditInstallment
-          open={modalOpen}
-          onClose={handleCloseEditModal}
-          installment={selectedInstallment}
-          onSave={handleSaveEditedAmount}
-        />
-      )}
-    </Box>
   )
+
 }
