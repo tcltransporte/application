@@ -1,47 +1,51 @@
+import { alpha } from "@mui/material";
+
 export const styles = {
 
-    header: (theme) => ({
+    header: () => ({
         p: 2,
         position: 'sticky',
         top: 0,
         zIndex: 1100,
-        backgroundColor: theme.palette.background.default,
+        backgroundColor: 'var(--mui-palette-background-default)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         height: 'var(--header-height)',
     }),
 
-    container: (theme) => ({
+    container: () => ({
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        //backgroundColor: theme.palette.background.default,
     }),
 
-    tableWrapper: (theme) => ({
+    tableWrapper: () => ({
         flex: 1,
         mt: 1,
         overflow: 'auto',
     }),
 
-    tableCellLoader: (theme) => ({
+    tableCellLoader: () => ({
         height: 'calc(100vh - 200px)',
     }),
 
-    pagination: (theme) => ({
+    pagination: () => ({
         position: 'sticky',
         zIndex: 1100,
         bottom: 0,
-        backgroundColor: theme.palette.background.default,
-        borderTop: `1px solid ${theme.palette.divider}`,
+        opacity: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 1,
+        backgroundColor: 'var(--mui-palette-background-default)',
+        borderTop: '1px solid var(--mui-palette-divider)', // borda elegante baseada no tema
+        backdropFilter: 'blur(4px)', // opcional: dá um toque de vidro fosco
     }),
 
-    paperContainer: (theme) => ({
+
+    paperContainer: () => ({
         width: '100%',
         height: '100%',
         display: 'flex',
@@ -49,38 +53,22 @@ export const styles = {
         borderRadius: 0,
     }),
 
-    tableLayout: (theme) => ({
+    tableLayout: () => ({
         tableLayout: 'fixed',
         width: '100%'
     }),
 
-    dialogTitle: (theme) => ({
-        fontWeight: '700',
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
-        py: 1.5,
-        userSelect: 'none',
+    dialogTitle: () => ({
+        backgroundColor: 'var(--mui-palette-primary-main)',
+        color: 'var(--mui-palette-primary-contrastText)',
+        py: 3,
     }),
 
-    dialogTextField: {
-        '& input': {
-            fontWeight: 600,
-            fontSize: '1.1rem',
-        },
-    },
-    
-    dialogActions: {
-        px: 3,
-        pb: 2,
-    },
-
-    saveButton: (theme) => ({
-        textTransform: 'none',
-        fontWeight: 700,
-        backgroundColor: theme.palette.primary.main,
-        '&:hover': {
-            backgroundColor: theme.palette.primary.dark,
-        },
+    dialogClose: () => ({
+        position: "absolute",
+        right: 8,
+        top: 8,
+        color: 'var(--mui-palette-primary-contrastText)',
     }),
 
 }

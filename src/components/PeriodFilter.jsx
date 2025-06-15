@@ -270,7 +270,7 @@ export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onCh
                 direction="horizontal"
                 showMonthAndYearPickers
                 showDateDisplay
-                rangeColors={['#3f51b5']}
+                rangeColors={['var(--mui-palette-primary-main)']}
                 locale={ptBR}
               />
             </Box>

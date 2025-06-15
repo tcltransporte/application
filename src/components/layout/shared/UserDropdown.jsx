@@ -104,6 +104,7 @@ const UserDropdown = () => {
         placement='bottom-end'
         anchorEl={anchorRef.current}
         className='min-is-[240px] !mbs-4 z-[1]'
+        style={{zIndex: 1200}}
       >
         {({ TransitionProps, placement }) => (
           <Fade

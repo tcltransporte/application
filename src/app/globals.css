@@ -3,6 +3,41 @@
 @tailwind utilities;
 
 
+/* Fundo do calendário */
+.rdrCalendarWrapper {
+  background-color: var(--mui-palette-background-default) !important;
+  color: var(--mui-palette-text-primary) !important;
+}
+
+/* Cabeçalho com mês e ano */
+.rdrMonthAndYearWrapper {
+  background-color: var(--mui-palette-background-default) !important;
+  color: var(--mui-palette-text-primary) !important;
+}
+
+/* Nomes dos dias da semana */
+.rdrWeekDays {
+  color: var(--mui-palette-text-secondary) !important;
+}
+
+/* Dias normais */
+.rdrDayNumber span {
+  color: var(--mui-palette-text-primary) !important;
+}
+
+/* Dias fora do mês atual (se desejar mais claro) */
+.rdrDayPassive .rdrDayNumber span {
+  opacity: 0.5;
+}
+
+/* Dias desabilitados */
+.rdrDayDisabled .rdrDayNumber span {
+  color: var(--mui-palette-text-disabled) !important;
+  opacity: 0.4;
+}
+
+
+
 /* Scroll suave e estilizado */
 .scroll-smooth::-webkit-scrollbar {
   width: 8px;

@@ -20,7 +20,6 @@ import {
   Checkbox,
 } from '@mui/material'
 
-import { useTheme } from '@mui/material/styles'
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { PeriodFilter } from '@/components/PeriodFilter'
@@ -81,7 +80,7 @@ const Filter = () => {
 }
 
 export const ViewFinancesPayments = ({ initialPayments = [] }) => {
-  const theme = useTheme()
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -178,8 +177,8 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
     <>
       <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
 
-      <Box sx={styles.container(theme)}>
-        <Box sx={styles.header(theme)}>
+      <Box sx={styles.container}>
+        <Box sx={styles.header}>
           <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={handleNew}>
             Adicionar
           </Button>
@@ -212,9 +211,9 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
           </Box>
         </Box>
 
-        <Box sx={styles.tableWrapper(theme)}>
-          <Paper sx={styles.paperContainer(theme)}>
-            <Table sx={styles.tableLayout(theme)} stickyHeader size="small">
+        <Box sx={styles.tableWrapper}>
+          <Paper sx={styles.paperContainer}>
+            <Table sx={styles.tableLayout} stickyHeader size="small">
               <TableHead>
                 <TableRow>
                   <TableCell align="center" sx={{ width: 56, minWidth: 56, px: 1 }}>
@@ -336,15 +335,25 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
           </Paper>
         </Box>
 
-        <Box sx={styles.pagination(theme)}>
+        <Box sx={styles.pagination}>
           
           <Box sx={{ minWidth: 220 }}>
             {selectedIds.size > 0 && (
-              <Button variant="contained" color="error" onClick={handleDeleteSelected}>
-                Excluir selecionados ({selectedIds.size})
-              </Button>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  fontWeight: 500,
+                  userSelect: 'none',
+                }}
+              >
+                {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado{selectedIds.size > 1 ? 's' : ''}
+              </Typography>
             )}
           </Box>
+
 
           {/* Paginação sempre à direita */}
           <Box sx={{ ml: 'auto' }}>

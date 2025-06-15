@@ -51,7 +51,7 @@ const Layout = async props => {
                 <VerticalLayout
                   navigation={<Navigation dictionary={dictionary} mode={mode} />}
                   navbar={<Navbar />}
-                  footer={<VerticalFooter />}
+                  //footer={<VerticalFooter />}
                 >
                   {children}
                 </VerticalLayout>
@@ -59,7 +59,7 @@ const Layout = async props => {
             horizontalLayout={
               <HorizontalLayout
                 header={<Header dictionary={dictionary} />}
-                footer={<HorizontalFooter />}
+                //footer={<HorizontalFooter />}
               >
                 {children}
               </HorizontalLayout>
