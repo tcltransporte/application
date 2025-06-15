@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize'
 import { format, zonedTimeToUtc } from 'date-fns-tz';
+import { formatUTC } from '..';
 
 export class User {
 
@@ -29,7 +30,10 @@ export class User {
     field: 'LastActivityDate',
     allowNull: false,
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    get() {
+      return formatUTC(this.getDataValue('lastActivityDate'))
+    }
   }
 
   isAnonymous = {

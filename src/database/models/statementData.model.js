@@ -16,7 +16,10 @@ export class StatementData {
 
   entryDate = {
     field: 'entryDate',
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    get() {
+      return formatUTC(this.getDataValue('entryDate'))
+    }
   }
 
   entryType = {

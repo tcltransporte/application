@@ -1,79 +1,57 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Typography, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Drawer, Box, TextField, Divider, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TablePagination, CircularProgress, Skeleton } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import {
+  Typography,
+  Button,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Drawer,
+  Box,
+  TextField,
+  Divider,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TablePagination,
+  CircularProgress
+} from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import ptBR from 'date-fns/locale/pt-BR'
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, isSameWeek } from 'date-fns'
+
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 import { useTitle } from '@/contexts/TitleProvider'
+import { PeriodFilter } from '@/components/PeriodFilter'
+import { format } from 'date-fns'
 
-export const ViewFinancesPayments = ({initialPayments}) => {
+export const ViewFinancesPayments = ({ initialPayments }) => {
 
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
-
   const [openDrawer, setOpenDrawer] = useState(false)
-  const [openPeriodModal, setOpenPeriodModal] = useState(false)
   const [payments, setPayments] = useState(initialPayments)
   const [installmentId, setInstallmentId] = useState(undefined)
-  const [dateRange, setDateRange] = useState([null, null])
-  const [selectedPeriodLabel, setSelectedPeriodLabel] = useState('Período personalizado')
 
-  const fetchPayments = async ({ limit, offset }) => {
+  const fetchPayments = async ({ limit, offset, dueDate }) => {
     try {
       setIsFetching(true)
-
-      const response = await getPayments({ limit, offset })
+      const response = await getPayments({ limit, offset, dueDate })
       setPayments(response)
-
     } catch (error) {
-      console.log(error)
+      console.error(error)
     } finally {
       setIsFetching(false)
     }
-  }
-
-  const updateLabelFromDateRange = (start, end) => {
-    const today = new Date()
-    if (!start || !end) return setSelectedPeriodLabel('Período personalizado')
-
-    if (isSameDay(start, end) && isSameDay(start, today)) {
-      setSelectedPeriodLabel('Hoje')
-    } else if (isSameWeek(start, today, { weekStartsOn: 1 }) && isSameWeek(end, today, { weekStartsOn: 1 })) {
-      setSelectedPeriodLabel('Essa semana')
-    } else if (
-      start.getMonth() === today.getMonth() &&
-      start.getFullYear() === today.getFullYear() &&
-      end.getMonth() === today.getMonth() &&
-      end.getFullYear() === today.getFullYear()
-    ) {
-      setSelectedPeriodLabel('Esse mês')
-    } else {
-      setSelectedPeriodLabel('Período personalizado')
-    }
-  }
-
-  const setPeriodToday = () => {
-    const today = new Date()
-    setDateRange([today, today])
-    setSelectedPeriodLabel('Hoje')
-  }
-
-  const setPeriodThisWeek = () => {
-    const today = new Date()
-    setDateRange([startOfWeek(today, { weekStartsOn: 1 }), endOfWeek(today, { weekStartsOn: 1 })])
-    setSelectedPeriodLabel('Essa semana')
-  }
-
-  const setPeriodThisMonth = () => {
-    const today = new Date()
-    setDateRange([startOfMonth(today), endOfMonth(today)])
-    setSelectedPeriodLabel('Esse mês')
   }
 
   const handleEdit = ({ installmentId }) => {
@@ -84,39 +62,45 @@ export const ViewFinancesPayments = ({initialPayments}) => {
     setPayments((prev) => prev.filter((s) => s.sourceId !== id))
   }
 
-  const applyPeriod = () => {
-    updateLabelFromDateRange(dateRange[0], dateRange[1])
-    setOpenPeriodModal(false)
+  // Callback passado para PeriodFilter para receber atualizações do período
+  const handlePeriodChange = (newDateRange) => {
+    fetchPayments({
+      limit: payments.request.limit,
+      offset: 0,
+      dueDate: {
+        start: format(newDateRange[0], 'yyyy-MM-dd 00:00'),
+        end: format(newDateRange[1], 'yyyy-MM-dd 23:59')
+      }
+    })
   }
 
   useEffect(() => {
-
     setTitle(['Finanças', 'Contas a pagar'])
-
-  }, [])
+  }, [setTitle])
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-      
       <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
 
       <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
-
         <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setInstallmentId(null)}>
           Adicionar
         </Button>
 
-        <Box display="flex" gap={3}>
+        <Box display="flex" gap={3} alignItems="center">
 
-          <Button variant="text" startIcon={<i className="ri-calendar-line" />} onClick={() => setOpenPeriodModal(true)}>
-            {selectedPeriodLabel}
-          </Button>
+          <PeriodFilter title='Vencimento' initialDateRange={[new Date(payments.request?.dueDate?.start), new Date(payments.request?.dueDate?.end)]} onChange={handlePeriodChange} />
 
           <Button variant="text" startIcon={<i className="ri-equalizer-line" />} onClick={() => setOpenDrawer(true)}>
             Filtros
           </Button>
 
-          <Button variant="outlined" startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />} onClick={() => fetchPayments({ limit: payments.request.limit, offset: 0 })} disabled={isFetching}>
+          <Button
+            variant="outlined"
+            startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
+            onClick={() => fetchPayments({ limit: payments.request.limit, offset: 0 })}
+            disabled={isFetching}
+          >
             {isFetching ? 'Pesquisando...' : 'Pesquisar'}
           </Button>
         </Box>
@@ -144,9 +128,9 @@ export const ViewFinancesPayments = ({initialPayments}) => {
                 </TableCell>
               </TableRow>
             ) : (
-              (payments.response?.rows || []).map((payment, index) => (
+              (payments.response?.rows || []).map((payment, index) => {
+                return (
                 <TableRow key={index}>
-                  {/* renderização normal dos dados */}
                   <TableCell>{payment.financialMovement?.documentNumber}</TableCell>
                   <TableCell>{payment.financialMovement?.partner?.surname}</TableCell>
                   <TableCell>{payment.paymentMethod?.name}</TableCell>
@@ -173,24 +157,22 @@ export const ViewFinancesPayments = ({initialPayments}) => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
-
-
         </Table>
 
         <TablePagination
           component="div"
-          labelRowsPerPage='Registro por páginas'
-          count={payments.response.count}
-          page={payments.request.offset}
+          labelRowsPerPage="Registro por páginas"
+          count={payments.response?.count || 0}
+          page={payments.request?.offset || 0}
           onPageChange={(event, newPage) => {
-            fetchPayments({limit: payments.request.limit, offset: newPage})
+            fetchPayments({ limit: payments.request.limit, offset: newPage })
           }}
-          rowsPerPage={payments.request.limit}
+          rowsPerPage={payments.request?.limit || 10}
           onRowsPerPageChange={(event) => {
-            fetchPayments({limit: event.target.value, offset: 0})
+            fetchPayments({ limit: parseInt(event.target.value, 10), offset: 0 })
           }}
         />
       </Paper>
@@ -209,40 +191,6 @@ export const ViewFinancesPayments = ({initialPayments}) => {
           </Box>
         </Box>
       </Drawer>
-
-      {/* Modal de período */}
-      <Dialog open={openPeriodModal} onClose={() => setOpenPeriodModal(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Período</DialogTitle>
-        <DialogContent>
-          <Box display="flex" gap={2} mb={4}>
-            <Button variant={selectedPeriodLabel === 'Hoje' ? 'contained' : 'outlined'} onClick={setPeriodToday}>Hoje</Button>
-            <Button variant={selectedPeriodLabel === 'Essa semana' ? 'contained' : 'outlined'} onClick={setPeriodThisWeek}>Essa semana</Button>
-            <Button variant={selectedPeriodLabel === 'Esse mês' ? 'contained' : 'outlined'} onClick={setPeriodThisMonth}>Esse mês</Button>
-          </Box>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <DatePicker
-                label="Data Inicial"
-                value={dateRange[0]}
-                onChange={(newValue) => setDateRange([newValue, dateRange[1]])}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <DatePicker
-                label="Data Final"
-                value={dateRange[1]}
-                onChange={(newValue) => setDateRange([dateRange[0], newValue])}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenPeriodModal(false)}>Cancelar</Button>
-          <Button onClick={applyPeriod} variant="contained" startIcon={<i className="ri-check-line" />}>Aplicar</Button>
-        </DialogActions>
-      </Dialog>
     </LocalizationProvider>
   )
 }
