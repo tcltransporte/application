@@ -11,8 +11,6 @@ const FinancesStatements = async () => {
     offset: 0
   })
 
-  console.log(initialStatements)
-
   return <ViewFinancesStatements initialStatements={initialStatements} />
 
 }

@@ -2,10 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /* Fundo do calendário */
 .rdrCalendarWrapper {
   background-color: var(--mui-palette-background-default) !important;
+  color: var(--mui-palette-text-primary) !important;
+}
+
+/*
+.rdrDateDisplayItemActive input {
+  color: var(--mui-palette-primary-contrastText) !important;
+}
+
+.rdrDateDisplayItem {
+  background-color: var(--mui-palette-background-default) !important;
+  color: var(--mui-palette-text-primary) !important;
+}
+*/
+
+.rdrDateDisplayWrapper {
+  background-color: var(--mui-palette-background-paper) !important;
   color: var(--mui-palette-text-primary) !important;
 }
 
@@ -22,7 +37,7 @@
 
 /* Dias normais */
 .rdrDayNumber span {
-  color: var(--mui-palette-text-primary) !important;
+  color: var(--mui-palette-primary-contrastText) !important;
 }
 
 /* Dias fora do mês atual (se desejar mais claro) */

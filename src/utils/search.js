@@ -15,8 +15,6 @@ export async function getUser (search) {
 
     const where = []
 
-    console.log(session.company)
-
     where.push({'$companyUsers.company.codigo_empresa$': session.company.companyBusiness.codigo_empresa})
 
     where.push({'$userName$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})

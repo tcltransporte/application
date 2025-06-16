@@ -15,8 +15,6 @@ export async function getBankAccounts() {
         where: [{ isAtivo: true }]
     })
 
-    console.log(bankAccounts)
-        
     const financialMovementInstallments = await db.FinancialMovementInstallment.findAll({
         include: [
             {model: db.FinancialMovement, as: 'financialMovement', include: [

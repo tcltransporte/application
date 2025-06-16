@@ -7,7 +7,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Box
+  Box,
+  IconButton
 } from '@mui/material'
 import { DateRange } from 'react-date-range'
 import 'react-date-range/dist/styles.css'
@@ -27,6 +28,7 @@ import {
   format
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { styles } from './styles'
 
 export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onChange }) => {
   const [range, setRange] = useState({
@@ -239,9 +241,14 @@ export const PeriodFilter = ({ title = '', initialDateRange = [null, null], onCh
       </Button>
 
       <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="md">
-        <DialogTitle>{title}</DialogTitle>
+        <DialogTitle sx={styles.dialogTitle}>
+          {title}
+          <IconButton aria-label="close" onClick={handleCancel} sx={styles.dialogClose} size="large">
+            <i className="ri-close-line" />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
-          <Box display="flex" gap={2}>
+          <Box display="flex" gap={2} sx={{pt: 4}}>
             
             <Box width="220px" display="flex" flexDirection="column" gap={1}>
               {predefinedRanges.map(({ label, action }) => (

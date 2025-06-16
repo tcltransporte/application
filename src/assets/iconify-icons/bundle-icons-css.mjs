@@ -213,7 +213,7 @@ return;
 
     // Save the CSS to a file
     await fs.writeFile(target, cssContent, 'utf8');
-    console.log(`Saved CSS to ${target}!`);
+    
 }
 
 generateIconsCSS().catch(err => {

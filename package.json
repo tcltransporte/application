@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prepublish": "rimraf build .next/cache",
+    "publish": "npm run prepublish && node publish.mjs"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -36,7 +38,6 @@
     "csvtojson": "^2.0.10",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "dotenv": "^16.5.0",
     "formik": "^2.4.6",
     "keen-slider": "^6.8.6",
     "lodash": "^4.17.21",
@@ -67,9 +68,13 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.10",
+    "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "fs-extra": "^11.3.0",
+    "ftp-deploy": "^2.4.7",
     "postcss-nesting": "^13.0.2",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.17"
   }
 }

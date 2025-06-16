@@ -55,8 +55,6 @@ export async function getStatement({ statementId }) {
     allEntryTypes
   }
 
-  console.log(allEntryTypes)
-
   return response;
 
 }

@@ -45,6 +45,8 @@ async function validateUserByEmail({ email, password, companyBusinessId, company
       body: JSON.stringify({ username: user.userName, password }),
     })
 
+    console.log(process.env.VALIDATE_USER)
+
     const result = await response.json()
     if (!result.d) throw new AuthError(201, 'Senha incorreta!')
   }
@@ -119,6 +121,7 @@ async function validateCompanyAccess(userId, companyBusinessId, companyId, db) {
 }
 
 export const authOptions = {
+  //trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'Credentials',

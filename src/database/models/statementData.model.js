@@ -1,3 +1,4 @@
+import { DateFormatUTC } from '@/utils/extensions';
 import { DataTypes } from 'sequelize';
 
 export class StatementData {
@@ -18,7 +19,7 @@ export class StatementData {
     field: 'entryDate',
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('entryDate')?.formatUTC()
+      return DateFormatUTC(this.getDataValue('entryDate'))
     }
   }
 

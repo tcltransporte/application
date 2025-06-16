@@ -100,8 +100,6 @@ const Login = ({ mode }) => {
           error = { status: 500, message: res.error }
         }
 
-        console.log(error)
-
         switch (error.status) {
           case 201:
             setErrorState(error.message)

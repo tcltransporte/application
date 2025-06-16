@@ -9,8 +9,6 @@ export async function onSubmitChanges(formData) {
 
     await db.transaction(async (transaction) => {
 
-        //console.log(formData.statement)
-
         const statement = await db.Statement.create({
             sourceId: formData.statement.sourceId,
             bankAccountId: formData.bankAccount.codigo_conta_bancaria,

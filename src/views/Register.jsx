@@ -128,8 +128,6 @@ const Register = ({ mode }) => {
 
       const response = await onRegister(values)
 
-      console.log(response)
-
       switch (response.status) {
 
         case 200:

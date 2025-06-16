@@ -129,9 +129,6 @@ export async function getStatement({companyIntegrationId, fileName}) {
 
     }
 
-    console.log(statements)
-
     return statements
-
 
 }

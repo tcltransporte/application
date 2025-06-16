@@ -18,8 +18,6 @@ export async function getTinyPartner(search) {
         }
         const r = await response.json();
 
-        console.log(r.retorno.erros)
-
         const externalIdsFromApi = r.retorno.contatos.map((item) => item.contato.id);
     
         const existingPartners = await db.Partner.findAll({

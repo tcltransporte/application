@@ -34,7 +34,7 @@ export class Statement {
     field: 'begin',
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('begin')?.formatUTC()
+      return DateFormatUTC(this.getDataValue('begin'))
     }
   }
 
@@ -42,7 +42,7 @@ export class Statement {
     field: 'end',
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('end')?.formatUTC()
+      return DateFormatUTC(this.getDataValue('end'))
     }
   }
 
