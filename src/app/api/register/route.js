@@ -13,19 +13,20 @@ export async function POST(req) {
   let companyId = null
   let companyBusinessId = null
 
+  let isActive = null
+
   await db.transaction(async (transaction) => {
     if (await checkUserExists(body.userName)) {
       throw new Error('Usuário já existe')
     }
 
     let company = await db.Company.findOne({
-      where: [{ cnpj: body.cnpj }],
+      where: [{ cnpj: body.cnpj.replace(/\D/g, '') }],
       transaction
     })
 
-    let isActive = null
-
     if (!company) {
+
       const companyBusiness = await db.CompanyBusiness.create(
         { description: body.description },
         { transaction }
@@ -34,13 +35,14 @@ export async function POST(req) {
       companyBusinessId = companyBusiness.codigo_empresa
 
       let codigo_empresa_filial = await db.Company.max('codigo_empresa_filial', { transaction })
+
       codigo_empresa_filial = (codigo_empresa_filial || 0) + 1
 
       company = await db.Company.create(
         {
           codigo_empresa_filial,
           companyBusinessId: companyBusiness.codigo_empresa,
-          cnpj: body.cnpj,
+          cnpj: body.cnpj.replace(/\D/g, ''),
           name: body.description,
           surname: 'MATRIZ'
         },
@@ -48,8 +50,11 @@ export async function POST(req) {
       )
 
       isActive = true
+
     } else {
+
       companyBusinessId = company.companyBusinessId
+
     }
 
     companyId = company.codigo_empresa_filial
@@ -84,13 +89,26 @@ export async function POST(req) {
       },
       { transaction }
     )
+
   })
 
-  return NextResponse.json(
-    {
-      companyId,
-      companyBusinessId
-    },
-    { status: 201 }
-  )
+  if (isActive) {
+    return NextResponse.json(
+      {
+        status: 200,
+        companyId,
+        companyBusinessId
+      },
+      { status: 200 }
+    )
+  } else {
+    return NextResponse.json(
+      {
+        status: 201,
+        message: 'Cadastro criado, mas pendente de aprovação.'
+      },
+      { status: 201 }
+    )
+  }
+  
 }

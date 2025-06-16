@@ -51,9 +51,9 @@ export const ViewSettings = ({ company, integrations }) => {
           <CustomTabList onChange={(event, value) => setActiveTab(value)} variant='scrollable'>
             <Tab label='Empresa' icon={<i className='ri-group-line' />} iconPosition='start' value='company' />
             <Tab label='Usuários' icon={<i className='ri-lock-2-line' />} iconPosition='start' value='users' />
-            <Tab label='Certificado' icon={<i className='ri-shield-check-line' />} iconPosition='start' value='security' />
-            <Tab label='Assinatura' icon={<i className='ri-bookmark-line' />} iconPosition='start' value='billing-plans' />
-            <Tab label='Notifications' icon={<i className='ri-notification-4-line' />} iconPosition='start' value='notifications' />
+            {/*<Tab label='Certificado' icon={<i className='ri-shield-check-line' />} iconPosition='start' value='security' />*/}
+            {/*<Tab label='Assinatura' icon={<i className='ri-bookmark-line' />} iconPosition='start' value='billing-plans' />*/}
+            {/*<Tab label='Notifications' icon={<i className='ri-notification-4-line' />} iconPosition='start' value='notifications' />*/}
             <Tab label='Integrações' icon={<i className='ri-link-m' />} iconPosition='start' value='connections' />
           </CustomTabList>
         </Grid>

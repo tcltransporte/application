@@ -4,11 +4,15 @@ Date.prototype.format = function (mask) {
   return format(this, mask)
 }
 
+Date.prototype.formatUTC = function () {
+  return DateFormatUTC(this)
+}
+
 export const DateFormat = (value, mask) => {
   return format(value, mask)
 }
 
-Date.prototype.formatUTC = function () {
-  const utcDate = new Date(this)
+export const DateFormatUTC = (value) => {
+  const utcDate = new Date(value)
   return utcDate.toISOString().replace('T', ' ').substring(0, 19)
 }

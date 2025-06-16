@@ -15,6 +15,7 @@ import {
   Box,
   Checkbox,
   TablePagination,
+  CircularProgress,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import { format } from 'date-fns'
@@ -33,7 +34,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
   const [isFetching, setIsFetching] = useState(false)
 
   const [open, setOpen] = useState(false)
-  const [statements, setStatements] = useState([...initialStatements])
+  const [statements, setStatements] = useState(initialStatements)
   const [selectedStatement, setSelectedStatement] = useState(null)
 
   const [statementId, setStatementId] = useState(undefined)
@@ -42,9 +43,17 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
     setTitle(['Finanças', 'Extratos'])
   }, [])
 
-  const fetch = async () => {
-    const statements = await getStatements()
-    setStatements(statements)
+  const fetchStatements = async (request) => {
+    try {
+      setIsFetching(true)
+      const response = await getStatements(request)
+      setStatements(response)
+      //setSelectedIds(new Set()) // limpa seleção ao buscar nova página
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsFetching(false)
+    }
   }
 
   const handleEdit = ({statementId}) => {
@@ -84,10 +93,9 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
               variant="outlined"
               startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
               onClick={() =>
-                fetch({
-                  limit: installments.request.limit,
-                  offset: 0,
-                  dueDate: installments.request.dueDate,
+                fetchStatements({
+                  ...statements.request,
+                  offset: 0
                 })
               }
               disabled={isFetching}
@@ -197,12 +205,12 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
             <TableBody>
               {isFetching ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={styles.tableCellLoader}>
+                  <TableCell colSpan={7} align="center" sx={styles.tableCellLoader}>
                     <CircularProgress size={30} />
                   </TableCell>
                 </TableRow>
               ) : (
-                statements.map((statement, index) => {
+                statements.response.rows.map((statement, index) => {
                   return (
                     <TableRow
                       key={index}
@@ -291,21 +299,20 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
           <TablePagination
             component="div"
             labelRowsPerPage="Registros por página"
-            //count={installments.response?.count || 0}
-            //page={installments.request?.offset || 0}
-            //rowsPerPage={installments.request?.limit || 10}
+            count={statements.response?.count || 0}
+            page={statements.request?.offset || 0}
+            rowsPerPage={statements.request?.limit || 10}
             onPageChange={(event, offset) =>
               fetchPayments({
-                //limit: installments.request.limit,
-                //offset: offset,
-                //dueDate: installments.request.dueDate,
+                ...statements.request,
+                offset: offset
               })
             }
             onRowsPerPageChange={(event) =>
               fetchPayments({
-                //limit: event.target.value,
-                //offset: 0,
-                //dueDate: installments.request.dueDate,
+                ...statements.request,
+                limit: event.target.value,
+                offset: 0
               })
             }
           />

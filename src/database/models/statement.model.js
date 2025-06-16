@@ -1,3 +1,4 @@
+import { DateFormatUTC } from '@/utils/extensions';
 import { format } from 'date-fns-tz';
 import { DataTypes } from 'sequelize';
 
@@ -25,7 +26,7 @@ export class Statement {
     defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('createdAt').formatUTC()
+      return DateFormatUTC(this.getDataValue('createdAt'))
     }
   }
 
@@ -33,7 +34,7 @@ export class Statement {
     field: 'begin',
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('begin').formatUTC()
+      return this.getDataValue('begin')?.formatUTC()
     }
   }
 
@@ -41,7 +42,7 @@ export class Statement {
     field: 'end',
     type: DataTypes.STRING,
     get() {
-      return this.getDataValue('end').formatUTC()
+      return this.getDataValue('end')?.formatUTC()
     }
   }
 

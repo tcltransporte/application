@@ -6,7 +6,12 @@ import { ViewFinancesStatements } from '@/views/finances/statements'
 
 const FinancesStatements = async () => {
 
-  const initialStatements = await getStatements()
+  const initialStatements = await getStatements({
+    limit: 50,
+    offset: 0
+  })
+
+  console.log(initialStatements)
 
   return <ViewFinancesStatements initialStatements={initialStatements} />
 

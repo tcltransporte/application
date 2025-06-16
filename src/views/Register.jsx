@@ -31,12 +31,13 @@ import { useSettings } from '@core/hooks/useSettings'
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-import { checkUserExists, getCompanyByCNPJ, getReceitaFederal, onRegister } from '@/server/Register.controller'
+import { checkUserExists, getCompanyByCNPJ, getReceitaFederal, onRegister } from '@/app/server/register.controller'
 import { toast } from 'react-toastify'
 import { signIn } from 'next-auth/react'
 import Swal from 'sweetalert2'
 
 const Register = ({ mode }) => {
+
   const router = useRouter()
   const { settings } = useSettings()
   const { lang: locale } = useParams()
@@ -115,7 +116,9 @@ const Register = ({ mode }) => {
 
   const handleRegister = async (values, { setFieldError }) => {
     try {
+
       setErrorState(null)
+
       const exists = await checkUserExists(values.userName)
 
       if (exists) {
@@ -125,27 +128,38 @@ const Register = ({ mode }) => {
 
       const response = await onRegister(values)
 
-      const loginRes = await signIn('credentials', {
-        email: values.userName,
-        password: values.password,
-        companyBusinessId: response.companyId,
-        companyId: response.companyBusinessId,
-        redirect: false
-      })
+      console.log(response)
 
-      if (loginRes?.ok && !loginRes.error) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Cadastrado com sucesso!',
-          text: 'Seja bem-vindo! Estamos felizes em ter você conosco.',
-          confirmButtonText: 'Vamos lá 🚀',
-          confirmButtonColor: '#4CAF50'
-        })
+      switch (response.status) {
 
-        router.replace('/')
-      } else {
-        if (JSON.parse(loginRes.error).status == 214) {
-          Swal.fire({
+        case 200:
+          const loginRes = await signIn('credentials', {
+            email: values.userName,
+            password: values.password,
+            companyId: response.companyId,
+            companyBusinessId: response.companyBusinessId,
+            redirect: false
+          })
+
+          if (loginRes?.ok && !loginRes.error) {
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Cadastrado com sucesso!',
+              text: 'Seja bem-vindo! Estamos felizes em ter você conosco.',
+              confirmButtonText: 'Vamos lá 🚀',
+              confirmButtonColor: '#4CAF50'
+            })
+
+            router.replace('/')
+
+          }
+
+        break;
+
+        case 201:
+
+          await Swal.fire({
             icon: 'info',
             title: 'Quase lá',
             text: 'Agora aguarde seu cadastro ser aprovado pela empresa!',
@@ -154,11 +168,14 @@ const Register = ({ mode }) => {
           })
 
           router.replace(`login`)
-          return
-        }
 
-        setErrorState(loginRes.message)
+        break;
+
+        default:
+          break;
+
       }
+      
     } catch (error) {
       setErrorState(error.message)
     }
@@ -216,6 +233,7 @@ const Register = ({ mode }) => {
                   setLoadingCompany(true)
 
                   try {
+
                     const result = await getCompanyByCNPJ(values.cnpj)
 
                     if (result.exists) {
@@ -227,9 +245,10 @@ const Register = ({ mode }) => {
                       // Busca na Receita Federal se não encontrar internamente
                       try {
                         const receitaResult = await getCompanyByCNPJFromReceitaFederal(values.cnpj)
+
                         if (receitaResult.exists) {
                           setFieldValue('description', receitaResult.name)
-                          setDescriptionDisabled(true)
+                          setDescriptionDisabled(false)
                         }
                       } catch (receitaError) {
                         setFieldValue('description', '')
