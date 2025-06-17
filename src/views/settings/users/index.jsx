@@ -221,8 +221,12 @@ export const Users = () => {
 
       <ViewUser
         companyUserId={companyUserId}
-        onClose={() => setCompanyUserId(undefined)}
-        onSubmit={onSearch}
+        onClose={(isUpdated) => {
+          setCompanyUserId(undefined)
+          if (isUpdated) {
+            onSearch()
+          }
+        }}
       />
 
     </>

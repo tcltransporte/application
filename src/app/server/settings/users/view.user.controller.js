@@ -7,18 +7,32 @@ import { getServerSession } from "next-auth"
 
 export async function getCompanyUser({id}) {
 
-    //const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions)
 
     const db = new AppContext()
 
+    const companies = await db.Company.findAll({
+        attributes: ['codigo_empresa_filial', 'surname'],
+        where: [{codigo_empresa: session.company.companyBusiness.codigo_empresa}]
+    })
+
     const companyUser = await db.CompanyUser.findOne({
         include: [
-            {model: db.User, as: 'user'}
+            {model: db.User, as: 'user', include: [
+                {
+                    model: db.CompanyUser,
+                    as: 'companyUsers',
+                    include: [{ model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname'] }]
+                }
+            ]}
         ],
         where: [{id: id}]
     })
 
-    return companyUser?.get({ plain: true })
+    return {
+        companies: _.map(companies, (item) => item.get({ plain: true })),
+        companyUser: companyUser?.get({ plain: true })
+    }
 
 }
 
@@ -50,5 +64,22 @@ export async function setCompanyUser(formData) {
 
     await db.CompanyUser.create({ companyId, userId: user.userId, isActive: true })
 
+}
+
+export async function deleteCompanyUser({companyUserId}) {
+
+    const db = new AppContext()
+
+    await db.CompanyUser.destroy({where: [{id: companyUserId}]})
+    
+}
+
+export async function createCompanyUser({ companyId, userId }) {
+
+    const db = new AppContext()
+
+    const companyUser = await db.CompanyUser.create({ companyId, userId, isActive: true })
+
+    return companyUser.toJSON()
 
 }
