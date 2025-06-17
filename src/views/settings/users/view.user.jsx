@@ -14,20 +14,16 @@ import Backdrop from '@mui/material/Backdrop'
 import { toast } from 'react-toastify'
 
 // Third-party Imports
-import { Formik, Form } from 'formik'
+import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 
 // Components
-import { AutoComplete } from '@/components/AutoComplete'
-import { getUser } from '@/utils/search'
-//import { getCompanyUser, setCompanyUser } from './view.user.controller'
-import { Alert } from '@mui/material'
+import { Alert, TextField } from '@mui/material'
 import { getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
 
 export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
 
   const [errorState, setErrorState] = useState(null)
-
   const [users, setUsers] = useState(null)
   const [shouldReset, setShouldReset] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -35,7 +31,6 @@ export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-
         setErrorState(null)
         setLoading(true)
         setShouldReset(true)
@@ -46,35 +41,37 @@ export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
         } else {
           setUsers(null)
         }
-
       } catch (error) {
-        setErrorState(error)
+        setErrorState(error.message || 'Erro ao carregar usuário')
       } finally {
         setLoading(false)
       }
     }
 
     fetchUser()
-
   }, [companyUserId])
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      
+
+      setErrorState(null)
+      setSubmitting(true)
+
+      // Ajuste conforme sua API espera os dados
       await setCompanyUser({ companyUserId, ...values })
 
-      onClose(onSubmit())
-
       toast.success('Salvo com sucesso!', { closeButton: true, theme: 'colored' })
-
+      onClose()
+      if (onSubmit) onSubmit()
     } catch (error) {
-      setErrorState(error.message)
+      setErrorState(error.message || 'Erro ao salvar')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
     <>
-
       <Backdrop open={loading} sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff', flexDirection: 'column' }}>
         <CircularProgress color='inherit' />
         <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>
@@ -89,7 +86,7 @@ export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
         ModalProps={{ keepMounted: true }}
         sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
       >
-        <div className='flex items-center justify-between pli-5 plb-4'>
+        <div className='flex items-center justify-between pli-5 plb-4' style={{padding: '16px'}}>
           <Typography variant='h5'>{companyUserId ? 'Editar' : 'Adicionar'} usuário</Typography>
           <IconButton size='small' onClick={onClose}>
             <i className='ri-close-line text-2xl' />
@@ -98,42 +95,41 @@ export const ViewUser = ({ companyUserId, onClose, onSubmit }) => {
 
         <Divider />
 
-        <div className='p-5'>
+        <div className='p-5' style={{padding: '16px'}}>
           <Formik
             enableReinitialize
-            initialValues={{ user: users }}
-            validationSchema={Yup.object({})}
+            initialValues={{ userName: users?.userName || '' }}
+            validationSchema={Yup.object({
+              userName: Yup.string().required('Usuário é obrigatório')
+            })}
             onSubmit={handleSubmit}
           >
-            {({ values, errors, touched, setFieldValue, setTouched, resetForm, isSubmitting }) => {
+            {({ errors, touched, isSubmitting, resetForm }) => {
               useEffect(() => {
                 if (shouldReset) {
                   resetForm()
                   setShouldReset(false)
                 }
-              }, [shouldReset])
+              }, [shouldReset, resetForm])
 
               return (
-                <Form className='flex flex-col gap-5'>
+                <Form className='flex flex-col gap-5' style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
 
                   {errorState && (<Alert severity="warning">{errorState}</Alert>)}
 
-                  <AutoComplete
+                  <Field
+                    as={TextField}
+                    size='small'
+                    name='userName'
                     label='Usuário'
-                    value={values.user}
-                    text={(item) => item?.userName}
-                    onChange={(val) => {
-                      setFieldValue('user', val)
-                      setTouched({ ...touched, user: true })
-                    }}
-                    onBlur={() => setTouched({ ...touched, user: true })}
-                    onSearch={getUser}
-                    error={touched.user && Boolean(errors.user)}
-                    helperText={touched.user && errors.user}
-                    disabled={companyUserId}
-                  >
-                    {(item) => <span>{item.userName}</span>}
-                  </AutoComplete>
+                    variant='filled'
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    autoFocus
+                    error={Boolean(touched.userName && errors.userName)}
+                    helperText={touched.userName && errors.userName}
+                    disabled={isSubmitting || companyUserId}
+                  />
 
                   <Divider />
 

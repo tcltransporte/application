@@ -12,7 +12,7 @@ export async function getUsers() {
 
   const db = new AppContext()
 
-  let users = await db.CompanyUser.findAll({
+  const users = await db.CompanyUser.findAll({
     where: {
       companyId: session.company.codigo_empresa_filial,
     },

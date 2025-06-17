@@ -24,31 +24,31 @@ export async function getCompanyUser({id}) {
 
 export async function setCompanyUser(formData) {
 
-    if (_.isEmpty(formData.user?.userId)) {
-        throw new Error('Informe o usuário!');
-    }
+    //if (_.isEmpty(formData.user?.userId)) {
+    //    throw new Error('Informe o usuário!');
+    //}
 
     const session = await getServerSession(authOptions)
 
     const db = new AppContext()
 
-    const { userId } = formData.user
+    const { userName } = formData
+
     const companyId = session.company.codigo_empresa_filial
 
-    if (_.isEmpty(formData.companyUserId)) {
+    const user = await db.User.findOne({where: [{userName}]})
 
-        const exists = await db.CompanyUser.count({ where: [{ companyId, userId }] })
-
-        if (exists > 0) {
-            throw new Error('Usuário já cadastrado!')
-        }
-
-        await db.CompanyUser.create({ companyId, userId, isActive: true })
-
-    } else {
-
-        await db.CompanyUser.update({ companyId, userId }, { where: [{ id: formData.companyUserId }] })
-
+    if (!user) {
+        throw new Error('Usuário não existe!')
     }
+
+    const exists = await db.CompanyUser.count({ where: [{ companyId, userId: user.userId }] })
+
+    if (exists > 0) {
+        throw new Error('Usuário já cadastrado!')
+    }
+
+    await db.CompanyUser.create({ companyId, userId: user.userId, isActive: true })
+
 
 }
