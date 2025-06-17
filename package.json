@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prepublish": "rimraf build .next/cache",
-    "publish": "npm run prepublish && node publish.mjs"
+    "publish": "node publish.mjs"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",

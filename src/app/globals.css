@@ -35,10 +35,11 @@
   color: var(--mui-palette-text-secondary) !important;
 }
 
-/* Dias normais */
+/*
 .rdrDayNumber span {
   color: var(--mui-palette-primary-contrastText) !important;
 }
+*/
 
 /* Dias fora do mês atual (se desejar mais claro) */
 .rdrDayPassive .rdrDayNumber span {
