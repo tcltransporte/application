@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "publish": "node publish.mjs"
+    "publish": "node publish.js"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
