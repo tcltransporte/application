@@ -28,13 +28,29 @@ export async function getInstallment({installmentId}) {
 }
 
 export async function submitInstallment(formData) {
+  console.log(formData);
 
-    const db = new AppContext()
+  const db = new AppContext();
 
-    const [installment] = await db.FinancialMovementInstallment.upsert(formData, {
-        returning: true,
-    })
+  let installment;
 
-    return installment?.get({ plain: true })
+  await db.transaction(async (transaction) => {
 
+    if (formData.codigo_movimento_detalhe) {
+        // Atualiza o registro existente
+        await db.FinancialMovementInstallment.update(
+        { ...formData },
+        { where: { codigo_movimento_detalhe: formData.codigo_movimento_detalhe } }
+        );
+
+        // Busca o registro atualizado
+        installment = await db.FinancialMovementInstallment.findByPk(formData.codigo_movimento_detalhe);
+    } else {
+        // Cria um novo registro
+        installment = await db.FinancialMovementInstallment.create({ ...formData });
+    }
+
+  })
+
+  return installment?.get({ plain: true });
 }

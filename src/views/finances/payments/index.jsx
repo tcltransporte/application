@@ -155,6 +155,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
   return (
     <>
+    
       <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
 
       <Box sx={styles.container}>
