@@ -132,10 +132,12 @@ const INTERVAL_OPTIONS = [
 
 const NewInstallmentModal = ({ installmentId, onClose }) => {
   const [parcelas, setParcelas] = useState([]);
+
+  const [documentNumber, setDocumentNumber] = useState('');
   const [valorTotal, setValorTotal] = useState('');
   const [numParcelas, setNumParcelas] = useState(1);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [description, setDescription] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [description, setDescription] = useState('');
   const [interval, setInterval] = useState('monthly');
   const [customDays, setCustomDays] = useState(30);
 
@@ -193,120 +195,151 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
   return (
     <Dialog open={installmentId == null} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={styles.dialogTitle}>
-        Novo Lançamento
+        Adicionar conta a pagar
         <IconButton aria-label="close" onClick={onClose} sx={styles.dialogClose}>
           <i className="ri-close-line" />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{m: 2}}>
-        
-          <Grid container spacing={2}>
-            <Grid item size={{ xs: 12, sm: 2 }}>
-              <TextField
-                fullWidth
-                label="Valor"
-                size="small"
-                variant="filled"
-                slotProps={{ inputLabel: { shrink: true }}}
-                type="number"
-                value={valorTotal}
-                onChange={(e) => setValorTotal(e.target.value)}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 2.2 }}>
-              <TextField
-                fullWidth
-                label="Vencimento"
-                size="small"
-                variant="filled"
-                slotProps={{ inputLabel: { shrink: true }}}
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </Grid>
-            <Grid item size={{ xs: 12, sm: 2 }}>
-              <TextField
-                fullWidth
-                label="Nº parcelas"
-                size="small"
-                variant="filled"
-                slotProps={{ inputLabel: { shrink: true }}}
-                select
-                value={numParcelas}
-                onChange={(e) => setNumParcelas(parseInt(e.target.value))}
-              >
-                {[...Array(12)].map((_, i) => (
-                  <MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            {numParcelas > 1 && (
-              <>
-                <Grid item size={{ xs: 12, sm: 2.3 }}>
+      <DialogContent sx={{ m: 2 }}>
+
+        <Grid container columnSpacing={2} rowSpacing={3}>
+
+          <Grid item size={{xs: 12, sm: 2.6}}>
+            <TextField
+              fullWidth
+              label="Número"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true } }}
+              type="text"
+              value={documentNumber}
+              onChange={(e) => setDocumentNumber(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item size={{xs: 12, sm: 2.2}}>
+            <TextField
+              fullWidth
+              label="Valor"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true } }}
+              type="number"
+              value={valorTotal}
+              onChange={(e) => setValorTotal(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item size={{xs: 12, sm: 2.5}}>
+            <TextField
+              fullWidth
+              label="Emissão"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true } }}
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item size={{xs: 12, sm: 2.5}}>
+            <TextField
+              fullWidth
+              label="Vencimento"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true } }}
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item size={{xs: 12, sm: 2.2}}>
+            <TextField
+              fullWidth
+              label="Nº de parcelas"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true } }}
+              select
+              value={numParcelas}
+              onChange={(e) => setNumParcelas(parseInt(e.target.value))}
+            >
+              {[...Array(12)].map((_, i) => (
+                <MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {numParcelas > 1 && (
+            <>
+              <Grid item size={{xs: 12, sm: 2.3}}>
+                <TextField
+                  fullWidth
+                  label="Intervalo"
+                  size="small"
+                  variant="filled"
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  select
+                  value={interval}
+                  onChange={(e) => setInterval(e.target.value)}
+                >
+                  {INTERVAL_OPTIONS.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              {interval === 'custom' && (
+                <Grid item size={{xs: 12, sm: 2}}>
                   <TextField
                     fullWidth
-                    label="Intervalo"
+                    label="A cada"
                     size="small"
                     variant="filled"
-                    slotProps={{ inputLabel: { shrink: true }}}
-                    select
-                    value={interval}
-                    onChange={(e) => setInterval(e.target.value)}
-                  >
-                    {INTERVAL_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                    ))}
-                  </TextField>
+                    type="number"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(parseInt(e.target.value))}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">dias</InputAdornment>
+                    }}
+                  />
                 </Grid>
+              )}
+            </>
+          )}
 
-                {interval === 'custom' && (
-                  <Grid item size={{ xs: 12, sm: 2 }}>
-                    <TextField
-                      fullWidth
-                      label="A cada"
-                      size="small"
-                      variant="filled"
-                      type="number"
-                      value={customDays}
-                      onChange={(e) => setCustomDays(parseInt(e.target.value))}
-                      InputProps={{
-                        endAdornment: <InputAdornment position="end">dias</InputAdornment>
-                      }}
-                    />
-                  </Grid>
-                )}
-                
-              </>
-            )}
-          </Grid>
-          <Grid item size={{ xs: 12, sm: 2.4 }}>
+          <Grid item size={{xs: 12, sm: 12}}>
             <TextField
               fullWidth
               label="Descrição"
               size="small"
               variant="filled"
-              slotProps={{ inputLabel: { shrink: true }}}
+              slotProps={{ inputLabel: { shrink: true } }}
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </Grid>
+        </Grid>
 
-        <Typography variant="subtitle1" sx={{ mt: 3 }}>Parcelas Geradas</Typography>
-        <Table size="small">
+        <Table size="small" sx={{mt: 5}}>
           <TableHead>
             <TableRow>
+              <TableCell>Nº Documento</TableCell>
               <TableCell>Valor</TableCell>
               <TableCell>Vencimento</TableCell>
-              <TableCell>Linha Digitável</TableCell>
-              <TableCell>Nosso Número</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {parcelas.map((parcela, index) => (
               <TableRow key={index}>
+                <TableCell>
+                  
+                </TableCell>
                 <TableCell>
                   <TextField
                     size="small"
@@ -321,20 +354,6 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                     type="date"
                     value={parcela.dueDate}
                     onChange={(e) => handleParcelaChange(index, 'dueDate', e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    value={parcela.digitableLine}
-                    onChange={(e) => handleParcelaChange(index, 'digitableLine', e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    value={parcela.boletoNumber}
-                    onChange={(e) => handleParcelaChange(index, 'boletoNumber', e.target.value)}
                   />
                 </TableCell>
               </TableRow>
