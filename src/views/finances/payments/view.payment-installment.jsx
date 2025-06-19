@@ -1,4 +1,6 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
+'use client';
+
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Table, TableHead, TableRow, TableCell, TableBody, MenuItem, Grid, InputAdornment } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import { Formik, Form } from "formik";
@@ -8,6 +10,7 @@ import { AutoComplete } from "@/components/AutoComplete";
 import { styles } from "@/components/styles";
 import { getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
 import { getPaymentMethod } from "@/utils/search";
+import { addDays, addMonths, format } from "date-fns";
 
 export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
 
@@ -118,37 +121,74 @@ const EditInstallmentModal = ({ installmentId, onClose }) => {
   );
 };
 
-export const NewInstallmentModal = ({ installmentId, onClose }) => {
+const INTERVAL_OPTIONS = [
+  { label: 'Semanal', value: 'weekly' },
+  { label: 'Quinzenal', value: 'biweekly' },
+  { label: 'Mensal', value: 'monthly' },
+  { label: 'Trimestral', value: 'quarterly' },
+  { label: 'Anual', value: 'yearly' },
+  { label: 'Personalizado', value: 'custom' }
+];
+
+const NewInstallmentModal = ({ installmentId, onClose }) => {
   const [parcelas, setParcelas] = useState([]);
+  const [valorTotal, setValorTotal] = useState('');
+  const [numParcelas, setNumParcelas] = useState(1);
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [description, setDescription] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [interval, setInterval] = useState('monthly');
+  const [customDays, setCustomDays] = useState(30);
 
-  const [newParcela, setNewParcela] = useState({
-    amount: "",
-    dueDate: "",
-    digitableLine: "",
-    boletoNumber: "",
-  });
+  const generateParcelas = () => {
+    if (!valorTotal || !startDate || !numParcelas) return;
 
-  const handleChange = (e) => {
-    setNewParcela({ ...newParcela, [e.target.name]: e.target.value });
+    const total = parseFloat(valorTotal);
+    const baseAmount = +(total / numParcelas).toFixed(2);
+    const diff = +(total - baseAmount * numParcelas).toFixed(2);
+
+    const list = [];
+    for (let i = 0; i < numParcelas; i++) {
+      const dueDate = getDueDate(startDate, i);
+      const amount = i === numParcelas - 1 ? +(baseAmount + diff).toFixed(2) : baseAmount;
+
+      list.push({
+        amount,
+        dueDate,
+        digitableLine: '',
+        boletoNumber: ''
+      });
+    }
+
+    setParcelas(list);
   };
 
-  const handleAddParcela = () => {
-    if (!newParcela.amount || !newParcela.dueDate) return;
-    setParcelas([...parcelas, newParcela]);
-    setNewParcela({ amount: "", dueDate: "", digitableLine: "", boletoNumber: "" });
+  const getDueDate = (start, index) => {
+    const date = new Date(start);
+    switch (interval) {
+      case 'weekly': return format(addDays(date, 7 * index), 'yyyy-MM-dd');
+      case 'biweekly': return format(addDays(date, 15 * index), 'yyyy-MM-dd');
+      case 'monthly': return format(addMonths(date, index), 'yyyy-MM-dd');
+      case 'quarterly': return format(addMonths(date, index * 3), 'yyyy-MM-dd');
+      case 'yearly': return format(addMonths(date, index * 12), 'yyyy-MM-dd');
+      case 'custom': return format(addDays(date, customDays * index), 'yyyy-MM-dd');
+      default: return format(date, 'yyyy-MM-dd');
+    }
   };
 
-  const handleRemoveParcela = (index) => {
+  const handleParcelaChange = (index, field, value) => {
     const updated = [...parcelas];
-    updated.splice(index, 1);
+    updated[index][field] = value;
     setParcelas(updated);
   };
 
   const handleSubmit = async () => {
-    // Aqui você envia `parcelas` para API ou lógica do movimento
-    console.log("Movimento criado com parcelas:", parcelas);
-    onClose(parcelas); // Ou retorne como quiser
+    console.log('Parcelas salvas:', parcelas);
+    onClose(parcelas);
   };
+
+  useEffect(() => {
+    generateParcelas();
+  }, [valorTotal, numParcelas, startDate, interval, customDays]);
 
   return (
     <Dialog open={installmentId == null} onClose={onClose} maxWidth="md" fullWidth>
@@ -159,110 +199,153 @@ export const NewInstallmentModal = ({ installmentId, onClose }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent>
-        <Typography variant="subtitle1" gutterBottom>Adicionar Parcela</Typography>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <TextField
-            label="Valor"
-            name="amount"
-            type="number"
-            size="small"
-            value={newParcela.amount}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Data de Vencimento"
-            name="dueDate"
-            type="date"
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            value={newParcela.dueDate}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Linha Digitável"
-            name="digitableLine"
-            size="small"
-            value={newParcela.digitableLine}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Nosso Número"
-            name="boletoNumber"
-            size="small"
-            value={newParcela.boletoNumber}
-            onChange={handleChange}
-          />
-          <Button variant="outlined" onClick={handleAddParcela} sx={{ height: 40 }}>
-            Adicionar
-          </Button>
-        </div>
+      <DialogContent sx={{m: 2}}>
+        
+          <Grid container spacing={2}>
+            <Grid item size={{ xs: 12, sm: 2 }}>
+              <TextField
+                fullWidth
+                label="Valor"
+                size="small"
+                variant="filled"
+                slotProps={{ inputLabel: { shrink: true }}}
+                type="number"
+                value={valorTotal}
+                onChange={(e) => setValorTotal(e.target.value)}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 2.2 }}>
+              <TextField
+                fullWidth
+                label="Vencimento"
+                size="small"
+                variant="filled"
+                slotProps={{ inputLabel: { shrink: true }}}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </Grid>
+            <Grid item size={{ xs: 12, sm: 2 }}>
+              <TextField
+                fullWidth
+                label="Nº parcelas"
+                size="small"
+                variant="filled"
+                slotProps={{ inputLabel: { shrink: true }}}
+                select
+                value={numParcelas}
+                onChange={(e) => setNumParcelas(parseInt(e.target.value))}
+              >
+                {[...Array(12)].map((_, i) => (
+                  <MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            {numParcelas > 1 && (
+              <>
+                <Grid item size={{ xs: 12, sm: 2.3 }}>
+                  <TextField
+                    fullWidth
+                    label="Intervalo"
+                    size="small"
+                    variant="filled"
+                    slotProps={{ inputLabel: { shrink: true }}}
+                    select
+                    value={interval}
+                    onChange={(e) => setInterval(e.target.value)}
+                  >
+                    {INTERVAL_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
 
-        <Typography variant="subtitle1" sx={{ mt: 3 }}>Parcelas Adicionadas</Typography>
-        {parcelas.length > 0 ? (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Valor</TableCell>
-                <TableCell>Vencimento</TableCell>
-                <TableCell>Linha Digitável</TableCell>
-                <TableCell>Nosso Número</TableCell>
-                <TableCell align="right">Ações</TableCell>
+                {interval === 'custom' && (
+                  <Grid item size={{ xs: 12, sm: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="A cada"
+                      size="small"
+                      variant="filled"
+                      type="number"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(parseInt(e.target.value))}
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">dias</InputAdornment>
+                      }}
+                    />
+                  </Grid>
+                )}
+                
+              </>
+            )}
+          </Grid>
+          <Grid item size={{ xs: 12, sm: 2.4 }}>
+            <TextField
+              fullWidth
+              label="Descrição"
+              size="small"
+              variant="filled"
+              slotProps={{ inputLabel: { shrink: true }}}
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Grid>
+
+        <Typography variant="subtitle1" sx={{ mt: 3 }}>Parcelas Geradas</Typography>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Valor</TableCell>
+              <TableCell>Vencimento</TableCell>
+              <TableCell>Linha Digitável</TableCell>
+              <TableCell>Nosso Número</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {parcelas.map((parcela, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={parcela.amount}
+                    onChange={(e) => handleParcelaChange(index, 'amount', e.target.value)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="date"
+                    value={parcela.dueDate}
+                    onChange={(e) => handleParcelaChange(index, 'dueDate', e.target.value)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    value={parcela.digitableLine}
+                    onChange={(e) => handleParcelaChange(index, 'digitableLine', e.target.value)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    value={parcela.boletoNumber}
+                    onChange={(e) => handleParcelaChange(index, 'boletoNumber', e.target.value)}
+                  />
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {parcelas.map((parcela, index) => (
-                <TableRow key={index}>
-                  <TableCell>R$ {Number(parcela.amount).toFixed(2)}</TableCell>
-                  <TableCell>{parcela.dueDate}</TableCell>
-                  <TableCell>{parcela.digitableLine}</TableCell>
-                  <TableCell>{parcela.boletoNumber}</TableCell>
-                  <TableCell align="right">
-                    <IconButton onClick={() => handleRemoveParcela(index)} size="small">
-                      <i className="ri-delete-bin-line" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Typography sx={{ mt: 1 }}>Nenhuma parcela adicionada ainda.</Typography>
-        )}
+            ))}
+          </TableBody>
+        </Table>
       </DialogContent>
 
       <DialogActions>
         <Button variant="contained" onClick={handleSubmit} disabled={parcelas.length === 0}>
           Criar Movimento
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-
-// Exemplo básico do modal de novo lançamento
-const NewInstallmentModal2 = ({ installmentId, onClose }) => {
-  const handleSubmit = async () => {
-    // lógica para criar um movimento com parcelas
-    onClose(); // retorne dados se necessário
-  };
-
-  return (
-    <Dialog open={installmentId == null} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={styles.dialogTitle}>
-        Novo Lançamento
-        <IconButton aria-label="close" onClick={onClose} sx={styles.dialogClose}>
-          <i className="ri-close-line" />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        {/* Aqui você colocaria os campos do novo lançamento (ex: número de parcelas, valor total etc.) */}
-        <Typography>Formulário de criação de novo movimento com parcelas</Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleSubmit} variant="contained">
-          Criar
         </Button>
       </DialogActions>
     </Dialog>
