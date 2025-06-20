@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { Sequelize, DataTypes } from 'sequelize';
 
 export class FinancialMovementIntallment {
@@ -45,6 +46,15 @@ export class FinancialMovementIntallment {
     get() {
       return this.getDataValue('dueDate').formatUTC()
     }
+  }
+
+  createdAt = {
+      field: 'data_sistema',
+      type: DataTypes.STRING,
+      defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+      get() {
+          return this.getDataValue('createdAt').formatUTC()
+      }
   }
 
   status = {

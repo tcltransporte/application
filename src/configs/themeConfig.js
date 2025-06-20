@@ -17,7 +17,7 @@
  */
 const themeConfig = {
   templateName: 'Materialize',
-  homePageUrl: '/dashboards/crm',
+  homePageUrl: '/',
   settingsCookieName: 'materialize-mui-next-demo-1',
   mode: 'system', // 'system', 'light', 'dark'
   skin: 'default', // 'default', 'bordered'

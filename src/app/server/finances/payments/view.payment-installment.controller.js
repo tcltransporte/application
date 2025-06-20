@@ -27,8 +27,51 @@ export async function getInstallment({installmentId}) {
 
 }
 
+export async function createMovement(formData) {
+
+    console.log(formData)
+
+    const db = new AppContext();
+
+    await db.transaction(async (transaction) => {
+
+        const movement = await db.FinancialMovement.create({...formData, partnerId: formData.receiver.codigo_pessoa}, {transaction})
+
+        for (const item of formData.installments) {
+
+            await db.FinancialMovementInstallment.create({...item, financialMovementId: movement.codigo_movimento}, {transaction})
+
+        }
+
+    })
+
+    return
+
+  let installment;
+
+  await db.transaction(async (transaction) => {
+
+    if (formData.codigo_movimento_detalhe) {
+        // Atualiza o registro existente
+        await db.FinancialMovementInstallment.update(
+        { ...formData },
+        { where: { codigo_movimento_detalhe: formData.codigo_movimento_detalhe } }
+        );
+
+        // Busca o registro atualizado
+        installment = await db.FinancialMovementInstallment.findByPk(formData.codigo_movimento_detalhe);
+    } else {
+        // Cria um novo registro
+        installment = await db.FinancialMovementInstallment.create({ ...formData });
+    }
+
+  })
+
+  return installment?.get({ plain: true });
+
+}
+
 export async function submitInstallment(formData) {
-  console.log(formData);
 
   const db = new AppContext();
 
