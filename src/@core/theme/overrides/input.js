@@ -1,4 +1,13 @@
 const input = {
+  MuiTextField: {
+    defaultProps: {
+      size: "small",
+      variant: 'filled',
+      margin: "dense",
+      slotProps: {inputLabel: {shrink: true}},
+      fullWidth: true,
+    }
+  },
   MuiFormControl: {
     styleOverrides: {
       root: {

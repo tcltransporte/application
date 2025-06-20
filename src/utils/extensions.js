@@ -13,6 +13,6 @@ export const DateFormat = (value, mask) => {
 }
 
 export const DateFormatUTC = (value) => {
-  const utcDate = new Date(value)
-  return utcDate.toISOString().replace('T', ' ').substring(0, 19)
+  const utcDate = new Date(value || null)
+  return utcDate?.toISOString().replace('T', ' ').substring(0, 19)
 }

@@ -23,6 +23,8 @@ export async function getInstallment({installmentId}) {
         ]
     })
 
+    console.log(payment?.get({ plain: true }))
+
     return payment?.get({ plain: true })
 
 }
@@ -78,6 +80,8 @@ export async function submitInstallment(formData) {
   let installment;
 
   await db.transaction(async (transaction) => {
+
+    console.log(formData)
 
     if (formData.codigo_movimento_detalhe) {
         // Atualiza o registro existente

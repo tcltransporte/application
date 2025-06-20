@@ -203,15 +203,17 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         fullWidth
         maxWidth="lg"
         scroll="paper"
-        PaperProps={{
-          sx: {
-            position: 'fixed',
-            top: '32px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            margin: 0,
-            maxHeight: 'calc(100vh - 64px)',
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              position: 'fixed',
+              top: '32px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              margin: 0,
+              maxHeight: 'calc(100vh - 64px)',
+            },
+          }
         }}
       >
         <DialogTitle sx={styles.dialogTitle}>
