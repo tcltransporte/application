@@ -1,12 +1,14 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
 
-const CurrencyField = ({
-  field, // { name, value, onChange, onBlur } do Formik
-  form,  // { setFieldValue, ... }
-  decimalPlaces = 2,
-  ...props
-}) => {
+const CurrencyField = (props) => {
+  const { field, form, decimalPlaces = 2, ...rest } = props;
+
+  // Se não recebeu field ou form, renderiza TextField simples (ex: para uso fora do Formik)
+  if (!field || !form) {
+    return <TextField {...props} />;
+  }
+
   const { name, value } = field;
   const { setFieldValue } = form;
 
@@ -36,15 +38,13 @@ const CurrencyField = ({
     setFieldValue(name, numberValue);
   };
 
-  // Valor exibido já formatado
-  const displayValue = value !== '' && value !== undefined && value !== null
-    ? formatCurrency(value)
-    : '';
+  const displayValue =
+    value !== '' && value !== undefined && value !== null ? formatCurrency(value) : '';
 
   return (
     <TextField
       {...field}
-      {...props}
+      {...rest}
       value={displayValue}
       onChange={handleChange}
     />

@@ -43,9 +43,9 @@ export class FinancialMovementIntallment {
 
   dueDate = {
     field: 'data_vencimento',
-    type: DataTypes.STRING,
+    type: DataTypes.DATE,
     get() {
-      return format(DateFormatUTC(this.getDataValue('dueDate')), 'yyyy-MM-dd')
+      return format(this.getDataValue('dueDate'), 'yyyy-MM-dd')
     }
   }
 

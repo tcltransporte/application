@@ -14,159 +14,6 @@ import { addDays, addMonths, format } from "date-fns";
 
 import { CurrencyField, TextField } from "@/components/field";
 
-export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
-
-  if (installmentId === null) {
-    return <NewInstallmentModal installmentId={installmentId} onClose={onClose} />;
-  }
-
-  return <EditInstallmentModal installmentId={installmentId} onClose={onClose} />;
-};
-
-const EditInstallmentModal = ({ installmentId, onClose }) => {
-
-  const theme = useTheme();
-  
-  const [loading, setLoading] = useState(false);
-  const [installment, setInstallment] = useState(null);
-  const [errorState, setErrorState] = useState(null);
-
-  useEffect(() => {
-    const fetchInstallment = async () => {
-      setLoading(true);
-      try {
-        const installment = await getInstallment({ installmentId });
-        setInstallment(installment);
-      } catch (error) {
-        setErrorState(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (installmentId) {
-      fetchInstallment();
-    }
-  }, [installmentId]);
-
-  const initialValues = {
-    amount: installment?.amount || 0,
-    paymentMethod: installment?.paymentMethod || null,
-    digitableLine: installment?.boleto?.digitableLine || "",
-    dueDate: installment?.dueDate || "",
-    boletoNumber: installment?.boleto?.number || "",
-  };
-
-  const handleSubmit = async (values, actions) => {
-    try {
-      values.codigo_movimento_detalhe = installmentId;
-      values.paymentMethodId = values.paymentMethod?.id || null;
-      const updated = await submitInstallment(values);
-      onClose(updated);
-    } catch (error) {
-      console.error(error.message);
-      actions.setSubmitting(false);
-    }
-  };
-
-  return (
-    <>
-      <Backdrop open={installmentId !== undefined && loading} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
-        <CircularProgress color="inherit" />
-        <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
-
-      <Dialog open={installmentId !== undefined && !loading} onClose={onClose} maxWidth="xs" fullWidth slotProps={{
-          paper: {
-            sx: {
-              position: 'fixed',
-              top: '32px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              margin: 0,
-              maxHeight: 'calc(100vh - 64px)',
-            },
-          }
-        }}>
-        <DialogTitle sx={styles.dialogTitle}>
-          Editar Parcela
-          <IconButton aria-label="close" onClick={onClose} sx={styles.dialogClose}>
-            <i className="ri-close-line" />
-          </IconButton>
-        </DialogTitle>
-
-        <Formik
-          initialValues={initialValues}
-          enableReinitialize
-          validationSchema={Yup.object({})}
-          onSubmit={handleSubmit}
-        >
-          {({ values, setFieldValue, isSubmitting }) => (
-            <Form>
-              <DialogContent>
-
-                <Field
-                  type="text"
-                  name="amount"
-                  label="Valor"
-                  component={CurrencyField}
-                />
-
-                <AutoComplete
-                  name="paymentMethod"
-                  label="Forma de pagamento"
-                  value={values.paymentMethod}
-                  text={(p) => p?.name}
-                  onChange={(val) => setFieldValue("paymentMethod", val)}
-                  onSearch={getPaymentMethod}
-                >
-                  {(item) => <span>{item.name}</span>}
-                </AutoComplete>
-
-                <Field
-                  type="text"
-                  name="digitableLine"
-                  label="Linha digitável"
-                  component={TextField}
-                />
-
-                <Field
-                  type="date"
-                  name="dueDate"
-                  label="Vencimento"
-                  component={TextField}
-                />
-
-                <Field
-                  type="text"
-                  name="boletoNumber"
-                  label="Nosso número / Nº do boleto"
-                  as={TextField}
-                />
-              </DialogContent>
-
-              <DialogActions>
-                <Button type="submit" variant="contained" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar"
-                  )}
-                </Button>
-              </DialogActions>
-            </Form>
-          )}
-        </Formik>
-      </Dialog>
-    </>
-  );
-};
-
 const INTERVAL_OPTIONS = [
   { label: 'Semanal', value: 'weekly' },
   { label: 'Quinzenal', value: 'biweekly' },
@@ -176,7 +23,13 @@ const INTERVAL_OPTIONS = [
   { label: 'Personalizado', value: 'custom' }
 ];
 
-const NewInstallmentModal = ({ installmentId, onClose }) => {
+export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
+
+  return installmentId === null ? <NewInstallment installmentId={installmentId} onClose={onClose} /> : <EditInstallment installmentId={installmentId} onClose={onClose} />
+
+}
+
+const NewInstallment = ({ installmentId, onClose }) => {
   
   const initialValues = {
     documentNumber: '',
@@ -190,26 +43,26 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
     receiver: undefined,
     description: '',
     installments: [],
-  };
+  }
 
   const getDueDate = (start, index, interval, customDays) => {
-    const date = new Date(start);
+    const date = new Date(start)
     switch (interval) {
-      case 'weekly': return format(addDays(date, 7 * index), 'yyyy-MM-dd');
-      case 'biweekly': return format(addDays(date, 15 * index), 'yyyy-MM-dd');
-      case 'monthly': return format(addMonths(date, index), 'yyyy-MM-dd');
-      case 'quarterly': return format(addMonths(date, index * 3), 'yyyy-MM-dd');
-      case 'yearly': return format(addMonths(date, index * 12), 'yyyy-MM-dd');
-      case 'custom': return format(addDays(date, customDays * index), 'yyyy-MM-dd');
+      case 'weekly': return format(addDays(date, 7 * index), 'yyyy-MM-dd')
+      case 'biweekly': return format(addDays(date, 15 * index), 'yyyy-MM-dd')
+      case 'monthly': return format(addMonths(date, index), 'yyyy-MM-dd')
+      case 'quarterly': return format(addMonths(date, index * 3), 'yyyy-MM-dd')
+      case 'yearly': return format(addMonths(date, index * 12), 'yyyy-MM-dd')
+      case 'custom': return format(addDays(date, customDays * index), 'yyyy-MM-dd')
       default: return format(date, 'yyyy-MM-dd');
     }
   };
 
   return (
-    <Dialog open={installmentId == null} onClose={onClose} maxWidth="md">
+    <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth="md">
       <DialogTitle>
         Adicionar conta a pagar
-        <IconButton aria-label="close" onClick={onClose} sx={styles.dialogClose}>
+        <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
           <i className="ri-close-line" />
         </IconButton>
       </DialogTitle>
@@ -217,8 +70,8 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
       <Formik
         initialValues={initialValues}
         onSubmit={async (values) => {
-          await createMovement(values);
-          onClose();
+          await createMovement(values)
+          onClose(true)
         }}
       >
         {({ values, setFieldValue }) => {
@@ -293,12 +146,9 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                   <Grid item size={{xs: 12, sm: 2.3}}>
                     <Field
                       name="numParcelas"
-                      as={TextField}
-                      select
-                      fullWidth
                       label="Nº de parcelas"
-                      size="small"
-                      variant="filled"
+                      select
+                      as={TextField}
                     >
                       {[...Array(12)].map((_, i) => (
                         <MenuItem key={i + 1} value={i + 1}>
@@ -359,22 +209,23 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                       <TableRow key={index}>
                         <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
                         <TableCell>
-                          <TextField
-                            size="small" type="number"
-                            value={inst.amount}
-                            onChange={(e) => handleInstallmentChange(index, 'amount', e.target.value)}
+                          <Field
+                            type="text"
+                            name={`installments[${index}].amount`}
+                            as={CurrencyField}
                           />
                         </TableCell>
                         <TableCell>
-                          <TextField
-                            size="small" type="date"
-                            value={inst.dueDate}
-                            onChange={(e) => handleInstallmentChange(index, 'dueDate', e.target.value)}
+                          <Field
+                            type="date"
+                            name={`installments[${index}].dueDate`}
+                            as={TextField}
                           />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
+
                 </Table>
               </DialogContent>
 
@@ -389,4 +240,148 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
       </Formik>
     </Dialog>
   );
-};
+}
+
+const EditInstallment = ({ installmentId, onClose }) => {
+
+  const theme = useTheme();
+  
+  const [loading, setLoading] = useState(false);
+  const [installment, setInstallment] = useState(null);
+  const [errorState, setErrorState] = useState(null);
+
+  useEffect(() => {
+    const fetchInstallment = async () => {
+      setLoading(true);
+      try {
+        const installment = await getInstallment({ installmentId });
+        setInstallment(installment);
+      } catch (error) {
+        setErrorState(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (installmentId) {
+      fetchInstallment();
+    }
+  }, [installmentId]);
+
+  const initialValues = {
+    amount: installment?.amount || 0,
+    paymentMethod: installment?.paymentMethod || null,
+    digitableLine: installment?.boleto?.digitableLine || "",
+    dueDate: installment?.dueDate || "",
+    boletoNumber: installment?.boleto?.number || "",
+  };
+
+  const handleSubmit = async (values, actions) => {
+    try {
+      values.codigo_movimento_detalhe = installmentId;
+      values.paymentMethodId = values.paymentMethod?.id || null;
+      const updated = await submitInstallment(values);
+      onClose(true);
+    } catch (error) {
+      console.error(error.message);
+      actions.setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Backdrop open={installmentId !== undefined && loading} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
+        <CircularProgress color="inherit" />
+        <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
+          Carregando...
+        </Typography>
+      </Backdrop>
+
+      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth="xs" fullWidth slotProps={{
+          paper: {
+            sx: {
+              position: 'fixed',
+              top: '32px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              margin: 0,
+              maxHeight: 'calc(100vh - 64px)',
+            },
+          }
+        }}>
+        <DialogTitle sx={styles.dialogTitle}>
+          Editar Parcela
+          <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
+            <i className="ri-close-line" />
+          </IconButton>
+        </DialogTitle>
+
+        <Formik
+          initialValues={initialValues}
+          enableReinitialize
+          validationSchema={Yup.object({})}
+          onSubmit={handleSubmit}
+        >
+          {({ values, setFieldValue, isSubmitting }) => (
+            <Form>
+              <DialogContent>
+
+                <Field
+                  type="text"
+                  name="amount"
+                  label="Valor"
+                  component={CurrencyField}
+                />
+
+                <AutoComplete
+                  name="paymentMethod"
+                  label="Forma de pagamento"
+                  value={values.paymentMethod}
+                  text={(p) => p?.name}
+                  onChange={(val) => setFieldValue("paymentMethod", val)}
+                  onSearch={getPaymentMethod}
+                >
+                  {(item) => <span>{item.name}</span>}
+                </AutoComplete>
+
+                <Field
+                  type="text"
+                  name="digitableLine"
+                  label="Linha digitável"
+                  component={TextField}
+                />
+
+                <Field
+                  type="date"
+                  name="dueDate"
+                  label="Vencimento"
+                  component={TextField}
+                />
+
+                <Field
+                  type="text"
+                  name="boletoNumber"
+                  label="Nosso número / Nº do boleto"
+                  as={TextField}
+                />
+              </DialogContent>
+
+              <DialogActions>
+                <Button type="submit" variant="contained" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
+                </Button>
+              </DialogActions>
+            </Form>
+          )}
+        </Formik>
+      </Dialog>
+    </>
+  );
+}

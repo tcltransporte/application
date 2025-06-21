@@ -82,7 +82,7 @@ export class AppContext extends Sequelize {
       password: process.env.DB_PASSWORD,
       dialect: 'mssql',
       dialectModule: tedious,
-      databaseVersion: '10.50.1600',
+      //databaseVersion: '12.0.2000',
       timezone: "America/Sao_Paulo",
       dialectOptions: { options: { requestTimeout: 300000, encrypt: false }}, define: { timestamps: false },
       logging: (query, options) => {

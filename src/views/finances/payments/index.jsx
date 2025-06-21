@@ -64,6 +64,8 @@ const Filter = () => {
 
 export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
+  console.log(initialPayments)
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -82,7 +84,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
       setIsFetching(true)
       const response = await getPayments(request)
       setInstallments(response)
-      setSelectedIds(new Set()) // limpa seleção ao buscar nova página
+      setSelectedIds(new Set())
     } catch (error) {
       console.error(error)
     } finally {
@@ -156,7 +158,13 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
   return (
     <>
     
-      <ViewPaymentInstallment installmentId={installmentId} onClose={() => setInstallmentId(undefined)} />
+      <ViewPaymentInstallment installmentId={installmentId} onClose={(updated) => {
+        setInstallmentId(undefined)
+        console.log(updated)
+        if (updated == true) {
+          fetchPayments()
+        }
+      }} />
 
       <Box sx={styles.container}>
         <Box sx={styles.header}>
@@ -276,7 +284,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                           {payment.financialMovement?.partner?.surname}
                         </TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
-                        <TableCell align="center">{DateFormat(new Date(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell align="center">{new Date(payment.dueDate).toDateString()}</TableCell>
                         <TableCell align="center">{DateFormat(new Date(), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="right">{payment.amount?.toFixed(2)}</TableCell>
                         <TableCell>
