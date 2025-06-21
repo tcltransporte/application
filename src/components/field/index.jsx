@@ -1,3 +1,3 @@
 export { default as CurrencyField } from './CurrencyField'
 
-export { TextField } from '@mui/material'
+export { default as TextField } from './TextField'

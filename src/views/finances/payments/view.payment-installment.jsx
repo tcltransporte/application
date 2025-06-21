@@ -177,6 +177,7 @@ const INTERVAL_OPTIONS = [
 ];
 
 const NewInstallmentModal = ({ installmentId, onClose }) => {
+  
   const initialValues = {
     documentNumber: '',
     amountTotal: '',
@@ -205,19 +206,8 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
   };
 
   return (
-    <Dialog open={installmentId == null} onClose={onClose} maxWidth="md" fullWidth scroll="paper" slotProps={{
-          paper: {
-            sx: {
-              position: 'fixed',
-              top: '32px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              margin: 0,
-              maxHeight: 'calc(100vh - 64px)',
-            },
-          }
-        }}>
-      <DialogTitle sx={styles.dialogTitle}>
+    <Dialog open={installmentId == null} onClose={onClose} maxWidth="md">
+      <DialogTitle>
         Adicionar conta a pagar
         <IconButton aria-label="close" onClick={onClose} sx={styles.dialogClose}>
           <i className="ri-close-line" />
@@ -301,14 +291,20 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                     />
                   </Grid>
                   <Grid item size={{xs: 12, sm: 2.3}}>
-                    <Field name="numParcelas">
-                      {({ field }) => (
-                        <TextField fullWidth label="Nº de parcelas" size="small" variant="filled" select {...field}>
-                          {[...Array(12)].map((_, i) => (
-                            <MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>
-                          ))}
-                        </TextField>
-                      )}
+                    <Field
+                      name="numParcelas"
+                      as={TextField}
+                      select
+                      fullWidth
+                      label="Nº de parcelas"
+                      size="small"
+                      variant="filled"
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <MenuItem key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </MenuItem>
+                      ))}
                     </Field>
                   </Grid>
 
@@ -327,7 +323,7 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                       </Grid>
 
                       {values.interval === 'custom' && (
-                        <Grid item size={{xs: 12, sm: 1.8}}>
+                        <Grid item size={{xs: 12, sm: 2}}>
                           <Field
                             type="number"
                             name="customDays"
@@ -361,7 +357,7 @@ const NewInstallmentModal = ({ installmentId, onClose }) => {
                   <TableBody>
                     {values.installments.map((inst, index) => (
                       <TableRow key={index}>
-                        <TableCell>{inst.installment}</TableCell>
+                        <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
                         <TableCell>
                           <TextField
                             size="small" type="number"
