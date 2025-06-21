@@ -129,7 +129,7 @@ export const AutoComplete = (props) => {
     <AutocompleteContainer>
       <TextField
         autoComplete="off"
-        size={props.size ?? 'medium'}
+        size={props.size ?? 'small'}
         inputRef={inputRef}
         name={props.name}
         label={label}

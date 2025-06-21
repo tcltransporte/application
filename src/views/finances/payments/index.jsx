@@ -11,6 +11,7 @@ import { getPayments } from '@/app/server/finances/payments/index.controller'
 import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
+import { format, parseISO } from 'date-fns'
 
 const Filter = () => {
   const [open, setOpen] = useState(false)
@@ -63,8 +64,6 @@ const Filter = () => {
 }
 
 export const ViewFinancesPayments = ({ initialPayments = [] }) => {
-
-  console.log(initialPayments)
 
   const { setTitle } = useTitle()
 
@@ -162,7 +161,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
         setInstallmentId(undefined)
         console.log(updated)
         if (updated == true) {
-          fetchPayments()
+          fetchPayments(installments.request)
         }
       }} />
 
@@ -276,7 +275,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                             onChange={() => toggleSelect(id)}
                           />
                         </TableCell>
-                        <TableCell align="left">{payment.numero_documento}</TableCell>
+                        <TableCell align="left">{payment.financialMovement?.documentNumber}</TableCell>
                         <TableCell
                           align="left"
                           sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
@@ -284,7 +283,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                           {payment.financialMovement?.partner?.surname}
                         </TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
-                        <TableCell align="center">{new Date(payment.dueDate).toDateString()}</TableCell>
+                        <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="center">{DateFormat(new Date(), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="right">{payment.amount?.toFixed(2)}</TableCell>
                         <TableCell>

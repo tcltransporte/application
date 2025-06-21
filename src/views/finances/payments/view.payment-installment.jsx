@@ -45,8 +45,13 @@ const NewInstallment = ({ installmentId, onClose }) => {
     installments: [],
   }
 
+  const parseLocalDate = (str) => {
+    const [year, month, day] = str.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const getDueDate = (start, index, interval, customDays) => {
-    const date = new Date(start)
+    const date = parseLocalDate(start);
     switch (interval) {
       case 'weekly': return format(addDays(date, 7 * index), 'yyyy-MM-dd')
       case 'biweekly': return format(addDays(date, 15 * index), 'yyyy-MM-dd')
@@ -74,7 +79,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
           onClose(true)
         }}
       >
-        {({ values, setFieldValue }) => {
+        {({ values, setFieldValue, isSubmitting }) => {
           // Atualiza parcelas sempre que campos relacionados mudarem
           useEffect(() => {
             const { amountTotal, startDate, numParcelas, interval, customDays } = values;
@@ -86,8 +91,13 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
             const list = [];
             for (let i = 0; i < numParcelas; i++) {
+
+              console.log(startDate)
+
               const dueDate = getDueDate(startDate, i, interval, customDays);
               const amount = i === numParcelas - 1 ? +(baseAmount + diff).toFixed(2) : baseAmount;
+
+              console.log(amount)
 
               list.push({
                 installment: i + 1,
@@ -109,8 +119,39 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
           return (
             <Form>
-              <DialogContent sx={{ m: 2 }}>
-                <Grid container spacing={2}>
+              <DialogContent>
+
+                <Grid container direction="row" spacing={2}>
+
+                  <Grid item size={{xs: 12, sm: 5}}>
+                    <AutoComplete
+                      name="receiver"
+                      label="Recebedor"
+                      value={values.receiver}
+                      text={(p) => p?.surname}
+                      onChange={(val) => setFieldValue("receiver", val)}
+                      onSearch={getPartner}
+                    >
+                      {(item) => <span>{item.surname}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                  <Grid item size={{xs: 12, sm: 4}}>
+                    <AutoComplete
+                      name="paymentMethod"
+                      label="Forma de pagamento"
+                      value={values.paymentMethod}
+                      text={(p) => p?.name}
+                      onChange={(val) => setFieldValue("paymentMethod", val)}
+                      onSearch={getPaymentMethod}
+                    >
+                      {(item) => <span>{item.name}</span>}
+                    </AutoComplete>
+                  </Grid>
+                </Grid>
+
+                <Grid container direction="row" spacing={2}>
+
                   <Grid item size={{xs: 12, sm: 2.7}}>
                     <Field
                       type="text"
@@ -119,7 +160,8 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       component={TextField}
                     />
                   </Grid>
-                  <Grid item size={{xs: 12, sm: 2.2}}>
+
+                  <Grid item size={{xs: 12, sm: 2.3}}>
                     <Field
                       type="text"
                       name="amountTotal"
@@ -127,6 +169,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       component={CurrencyField}
                     />
                   </Grid>
+
                   <Grid item size={{xs: 12, sm: 2.4}}>
                     <Field
                       type="date"
@@ -135,6 +178,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       component={TextField}
                     />
                   </Grid>
+
                   <Grid item size={{xs: 12, sm: 2.4}}>
                     <Field
                       type="date"
@@ -143,7 +187,8 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       component={TextField}
                     />
                   </Grid>
-                  <Grid item size={{xs: 12, sm: 2.3}}>
+
+                  <Grid item size={{xs: 12, sm: 2.2}}>
                     <Field
                       name="numParcelas"
                       label="Nº de parcelas"
@@ -158,34 +203,38 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     </Field>
                   </Grid>
 
-                  {values.numParcelas > 1 && (
-                    <>
-                      <Grid item size={{xs: 12, sm: 2.3}}>
-                        <Field name="interval">
-                          {({ field }) => (
-                            <TextField fullWidth label="Intervalo" size="small" variant="filled" select {...field}>
-                              {INTERVAL_OPTIONS.map((opt) => (
-                                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                              ))}
-                            </TextField>
-                          )}
-                        </Field>
+                </Grid>
+
+                {values.numParcelas > 1 && (
+                  <Grid container direction="row" spacing={2}>
+
+                    <Grid item size={{xs: 12, sm: 2.3}}>
+                      <Field name="interval">
+                        {({ field }) => (
+                          <TextField fullWidth label="Intervalo" size="small" variant="filled" select {...field}>
+                            {INTERVAL_OPTIONS.map((opt) => (
+                              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                            ))}
+                          </TextField>
+                        )}
+                      </Field>
+                    </Grid>
+
+                    {values.interval === 'custom' && (
+                      <Grid item size={{xs: 12, sm: 2}}>
+                        <Field
+                          type="number"
+                          name="customDays"
+                          label="A cada"
+                          InputProps={{ endAdornment: <InputAdornment position="end">dias</InputAdornment> }}
+                          component={TextField}
+                        />
                       </Grid>
+                    )}
+                  </Grid>
+                )}
 
-                      {values.interval === 'custom' && (
-                        <Grid item size={{xs: 12, sm: 2}}>
-                          <Field
-                            type="number"
-                            name="customDays"
-                            label="A cada"
-                            InputProps={{ endAdornment: <InputAdornment position="end">dias</InputAdornment> }}
-                            component={TextField}
-                          />
-                        </Grid>
-                      )}
-                    </>
-                  )}
-
+                <Grid container direction="row" spacing={2}>
                   <Grid item size={{xs: 12, sm: 12}}>
                     <Field
                       type="text"
@@ -212,14 +261,14 @@ const NewInstallment = ({ installmentId, onClose }) => {
                           <Field
                             type="text"
                             name={`installments[${index}].amount`}
-                            as={CurrencyField}
+                            component={CurrencyField}
                           />
                         </TableCell>
                         <TableCell>
                           <Field
                             type="date"
                             name={`installments[${index}].dueDate`}
-                            as={TextField}
+                            component={TextField}
                           />
                         </TableCell>
                       </TableRow>
@@ -227,11 +276,19 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   </TableBody>
 
                 </Table>
+
               </DialogContent>
 
               <DialogActions>
-                <Button variant="contained" type="submit" disabled={values.installments.length === 0}>
-                  Criar Movimento
+                <Button variant="contained" type="submit" disabled={isSubmitting || values.installments.length === 0}>
+                  {isSubmitting ? (
+                    <>
+                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
                 </Button>
               </DialogActions>
             </Form>
@@ -280,7 +337,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     try {
       values.codigo_movimento_detalhe = installmentId;
       values.paymentMethodId = values.paymentMethod?.id || null;
-      const updated = await submitInstallment(values);
+      await submitInstallment(values);
       onClose(true);
     } catch (error) {
       console.error(error.message);
@@ -297,18 +354,8 @@ const EditInstallment = ({ installmentId, onClose }) => {
         </Typography>
       </Backdrop>
 
-      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth="xs" fullWidth slotProps={{
-          paper: {
-            sx: {
-              position: 'fixed',
-              top: '32px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              margin: 0,
-              maxHeight: 'calc(100vh - 64px)',
-            },
-          }
-        }}>
+      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth="xs">
+
         <DialogTitle sx={styles.dialogTitle}>
           Editar Parcela
           <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
