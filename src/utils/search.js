@@ -5,7 +5,7 @@ import { authOptions } from "@/libs/auth"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
-import { getTinyCategories, getTinyPartner } from "./integrations/tny"
+import { getTinyCategories, getTinyPartner } from "./integrations/tiny"
 
 export async function getUser (search) {
     

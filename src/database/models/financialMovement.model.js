@@ -31,5 +31,10 @@ export class FinancialMovement {
             return this.getDataValue('issueDate').formatUTC()
         }
     }
+
+    externalId = {
+        field: 'externalId',
+        type: DataTypes.STRING(15)
+    }
   
 }

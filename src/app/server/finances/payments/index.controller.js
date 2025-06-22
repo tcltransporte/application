@@ -2,6 +2,8 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
+import { getTinyPayments } from "@/utils/integrations/tiny"
+import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Op } from "sequelize"
@@ -9,6 +11,8 @@ import { Op } from "sequelize"
 export async function getPayments({limit = 50, offset, dueDate}) {
 
     const session = await getServerSession(authOptions)
+
+    await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
 
     const db = new AppContext()
 

@@ -356,7 +356,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
       <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: {position: 'fixed', top: '32px', width: '750px'}} }}>
 
         <DialogTitle sx={styles.dialogTitle}>
-          Editar Parcela
+          Editar conta a pagar
           <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
             <i className="ri-close-line" />
           </IconButton>
