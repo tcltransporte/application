@@ -109,13 +109,8 @@ const NewInstallment = ({ installmentId, onClose }) => {
             }
 
             setFieldValue('installments', list);
-          }, [values.amountTotal, values.numParcelas, values.startDate, values.interval, values.customDays]);
 
-          const handleInstallmentChange = (index, field, value) => {
-            const updated = [...values.installments];
-            updated[index][field] = value;
-            setFieldValue('installments', updated);
-          };
+          }, [values.amountTotal, values.numParcelas, values.startDate, values.interval, values.customDays]);
 
           return (
             <Form>
@@ -312,6 +307,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
       setLoading(true);
       try {
         const installment = await getInstallment({ installmentId });
+        console.log(installment)
         setInstallment(installment);
       } catch (error) {
         setErrorState(error);
@@ -326,11 +322,14 @@ const EditInstallment = ({ installmentId, onClose }) => {
   }, [installmentId]);
 
   const initialValues = {
-    amount: installment?.amount || 0,
+    partner: installment?.financialMovement?.partner || null,
     paymentMethod: installment?.paymentMethod || null,
+    documentNumber: installment?.financialMovement?.documentNumber || "",
+    amount: installment?.amount || 0,
     digitableLine: installment?.boleto?.digitableLine || "",
     dueDate: installment?.dueDate || "",
     boletoNumber: installment?.boleto?.number || "",
+    description: installment?.description || "",
   };
 
   const handleSubmit = async (values, actions) => {
@@ -354,7 +353,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
         </Typography>
       </Backdrop>
 
-      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth="xs">
+      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: {position: 'fixed', top: '32px', width: '750px'}} }}>
 
         <DialogTitle sx={styles.dialogTitle}>
           Editar Parcela
@@ -369,64 +368,104 @@ const EditInstallment = ({ installmentId, onClose }) => {
           validationSchema={Yup.object({})}
           onSubmit={handleSubmit}
         >
-          {({ values, setFieldValue, isSubmitting }) => (
-            <Form>
-              <DialogContent>
+          {({ values, setFieldValue, isSubmitting }) => {
 
-                <Field
-                  type="text"
-                  name="amount"
-                  label="Valor"
-                  component={CurrencyField}
-                />
+            console.log(values)
 
-                <AutoComplete
-                  name="paymentMethod"
-                  label="Forma de pagamento"
-                  value={values.paymentMethod}
-                  text={(p) => p?.name}
-                  onChange={(val) => setFieldValue("paymentMethod", val)}
-                  onSearch={getPaymentMethod}
-                >
-                  {(item) => <span>{item.name}</span>}
-                </AutoComplete>
+            return (
+              <Form>
+                <DialogContent>
 
-                <Field
-                  type="text"
-                  name="digitableLine"
-                  label="Linha digitável"
-                  component={TextField}
-                />
+                  <Grid container direction="row" spacing={2}>
 
-                <Field
-                  type="date"
-                  name="dueDate"
-                  label="Vencimento"
-                  component={TextField}
-                />
+                    <Grid item size={{xs: 12, sm: 6}}>
+                      <TextField
+                        label="Recebedor"
+                        value={values.partner?.surname}
+                        readOnly
+                      />
+                    </Grid>
 
-                <Field
-                  type="text"
-                  name="boletoNumber"
-                  label="Nosso número / Nº do boleto"
-                  as={TextField}
-                />
-              </DialogContent>
+                    <Grid item size={{xs: 12, sm: 6}}>
+                      <AutoComplete
+                        name="paymentMethod"
+                        label="Forma de pagamento"
+                        value={values.paymentMethod}
+                        text={(p) => p?.name}
+                        onChange={(val) => setFieldValue("paymentMethod", val)}
+                        onSearch={getPaymentMethod}
+                      >
+                        {(item) => <span>{item.name}</span>}
+                      </AutoComplete>
+                    </Grid>
+                  </Grid>
 
-              <DialogActions>
-                <Button type="submit" variant="contained" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar"
-                  )}
-                </Button>
-              </DialogActions>
-            </Form>
-          )}
+                  <Grid container direction="row" spacing={2}>
+
+                    <Grid item size={{xs: 12, sm: 3}}>
+                      <TextField
+                        label="Nº Documento"
+                        value={values.documentNumber}
+                        readOnly
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: 3}}>
+                      <Field
+                        type="text"
+                        name="amount"
+                        label="Valor"
+                        component={CurrencyField}
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: 3}}>
+                      <Field
+                        type="date"
+                        name="issueDate"
+                        label="Emissão"
+                        component={TextField}
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: 3}}>
+                      <Field
+                        type="date"
+                        name="dueDate"
+                        label="Vencimento"
+                        component={TextField}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Grid container direction="row" spacing={2}>
+                    <Grid item size={{xs: 12, sm: 12}}>
+                      <Field
+                        type="text"
+                        name="description"
+                        label="Descrição"
+                        component={TextField}
+                      />
+                    </Grid>
+                  </Grid>
+
+                </DialogContent>
+
+                <DialogActions>
+                  <Button type="submit" variant="contained" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar"
+                    )}
+                  </Button>
+                </DialogActions>
+              </Form>
+            )
+          }}
         </Formik>
       </Dialog>
     </>

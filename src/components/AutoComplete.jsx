@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import styled from 'styled-components'
-import _ from 'lodash'
 import { IconButton, InputAdornment, TextField } from '@mui/material'
 
 const AutocompleteContainer = styled.div`
@@ -12,15 +12,11 @@ const AutocompleteContainer = styled.div`
 
 const SuggestionsBox = styled.div`
   position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
   max-height: 300px;
   overflow-y: auto;
   background-color: white;
-  z-index: 10;
+  z-index: 1300; /* acima de modais MUI */
   border: 1px solid #ccc;
-  border-top: none;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   border-radius: 0 0 4px 4px;
 `
@@ -43,8 +39,8 @@ const Nothing = styled.div`
 export const AutoComplete = (props) => {
   const [inputError, setInputError] = useState(false)
   const [inputHelperText, setInputHelperText] = useState('')
+  const ref = useRef()
   const inputRef = useRef()
-  const suggestionsBoxRef = useRef()
   const selectedItemRef = useRef()
 
   const [state, setState] = useState({
@@ -53,7 +49,22 @@ export const AutoComplete = (props) => {
     data: [],
     query: '',
     selectedIndex: -1,
+    boxPosition: null
   })
+
+  const updateBoxPosition = () => {
+    const rect = ref.current?.getBoundingClientRect()
+    if (rect) {
+      setState(prev => ({
+        ...prev,
+        boxPosition: {
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        }
+      }))
+    }
+  }
 
   const handleSearch = async () => {
     await handleInputChange()
@@ -65,9 +76,20 @@ export const AutoComplete = (props) => {
       setInputError(false)
       setInputHelperText('')
       const query = e?.target?.value || ''
-      setState(prev => ({ ...prev, query, selectedIndex: 0, loading: true, nothing: false }))
+      setState(prev => ({
+        ...prev,
+        query,
+        selectedIndex: 0,
+        loading: true,
+        nothing: false
+      }))
       const data = await props.onSearch(query)
-      setState(prev => ({ ...prev, data, nothing: data.length === 0 }))
+      updateBoxPosition()
+      setState(prev => ({
+        ...prev,
+        data,
+        nothing: data.length === 0
+      }))
     } catch (error) {
       setInputError(true)
       setInputHelperText(error.message || 'Erro desconhecido')
@@ -80,10 +102,16 @@ export const AutoComplete = (props) => {
     const { selectedIndex, data, nothing } = state
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setState(prev => ({ ...prev, selectedIndex: Math.min(prev.selectedIndex + 1, data.length - 1) }))
+      setState(prev => ({
+        ...prev,
+        selectedIndex: Math.min(prev.selectedIndex + 1, data.length - 1)
+      }))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setState(prev => ({ ...prev, selectedIndex: Math.max(prev.selectedIndex - 1, 0) }))
+      setState(prev => ({
+        ...prev,
+        selectedIndex: Math.max(prev.selectedIndex - 1, 0)
+      }))
     } else if (e.key === 'Enter' && selectedIndex !== -1) {
       e.preventDefault()
       handleSuggestionClick(data[selectedIndex])
@@ -101,13 +129,8 @@ export const AutoComplete = (props) => {
   }
 
   const handleClickOutside = (event) => {
-    if (
-      suggestionsBoxRef.current &&
-      !suggestionsBoxRef.current.contains(event.target) &&
-      inputRef.current &&
-      !inputRef.current.contains(event.target)
-    ) {
-      setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
+    if (!inputRef.current?.contains(event.target)) {
+      setState(prev => ({ ...prev, data: [], nothing: false }))
     }
   }
 
@@ -116,6 +139,15 @@ export const AutoComplete = (props) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (selectedItemRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        block: 'center',
+        behavior: 'smooth',
+      })
+    }
+  }, [state.selectedIndex])
+
   const handleClear = () => {
     setState(prev => ({ ...prev, query: '' }))
     props.onChange(null)
@@ -123,11 +155,36 @@ export const AutoComplete = (props) => {
   }
 
   const { label, text, value, children, autoFocus } = props
-  const { query, data, selectedIndex, loading, nothing } = state
+  const { query, data, selectedIndex, loading, nothing, boxPosition } = state
+
+  const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
+    <SuggestionsBox style={{
+      top: boxPosition.top,
+      left: boxPosition.left,
+      width: boxPosition.width
+    }}>
+      {data.map((item, index) => (
+        <Suggestion
+          key={index}
+          ref={index === selectedIndex ? selectedItemRef : null}
+          className={index === selectedIndex ? 'selected' : ''}
+          onMouseDown={() => handleSuggestionClick(item)}
+        >
+          {typeof children === 'function' ? children(item) : null}
+        </Suggestion>
+      ))}
+      {nothing && (
+        <Nothing onMouseDown={() => setState(prev => ({ ...prev, data: [], nothing: false }))}>
+          Nenhum resultado encontrado!
+        </Nothing>
+      )}
+    </SuggestionsBox>
+  )
 
   return (
     <AutocompleteContainer>
       <TextField
+        ref={ref}
         autoComplete="off"
         size={props.size ?? 'small'}
         inputRef={inputRef}
@@ -173,26 +230,7 @@ export const AutoComplete = (props) => {
         disabled={props.disabled}
       />
 
-      {(data.length > 0 || nothing) && (
-        <SuggestionsBox ref={suggestionsBoxRef}>
-          {data.map((item, index) => (
-            <Suggestion
-              key={index}
-              ref={index === selectedIndex ? selectedItemRef : null}
-              className={index === selectedIndex ? 'selected' : ''}
-              onMouseDown={() => handleSuggestionClick(item)}
-            >
-              {typeof children === 'function' ? children(item) : null}
-            </Suggestion>
-          ))}
-
-          {nothing && (
-            <Nothing onMouseDown={() => setState(prev => ({ ...prev, data: [], nothing: false }))}>
-              Nenhum resultado encontrado!
-            </Nothing>
-          )}
-        </SuggestionsBox>
-      )}
+      {ReactDOM.createPortal(suggestionsContent, document.body)}
     </AutocompleteContainer>
   )
 }

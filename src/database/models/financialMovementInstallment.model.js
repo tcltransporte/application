@@ -49,12 +49,12 @@ export class FinancialMovementIntallment {
     }
   }
 
-  createdAt = {
+  issueDate = {
       field: 'data_sistema',
       type: DataTypes.STRING,
       defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
       get() {
-          return DateFormatUTC(this.getDataValue('createdAt'))
+          return DateFormatUTC(this.getDataValue('issueDate'))
       }
   }
 

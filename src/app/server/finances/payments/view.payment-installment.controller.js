@@ -12,20 +12,21 @@ export async function getInstallment({installmentId}) {
     const db = new AppContext()
 
     const payment = await db.FinancialMovementInstallment.findOne({
+        attributes: ['amount', 'issueDate', 'dueDate', 'description'],
         include: [
-            {model: db.FinancialMovement, as: 'financialMovement', include: [
-                {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']}
-            ]},
+            {model: db.FinancialMovement, as: 'financialMovement', attributes: ['documentNumber'],
+                include: [
+                    {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']}
+                ]
+            },
             {model: db.PaymentMethod, as: 'paymentMethod'}
         ],
         where: [
             {codigo_movimento_detalhe: installmentId}
         ]
     })
-
-    console.log(payment?.get({ plain: true }))
-
-    return payment?.get({ plain: true })
+    
+    return payment.toJSON()
 
 }
 
@@ -38,15 +39,25 @@ export async function createMovement(formData) {
         const movement = await db.FinancialMovement.create({
             ...formData,
             partnerId: formData.receiver.codigo_pessoa,
+            description: formData.description
         }, {transaction})
 
+        let installment = 1
+        let description = formData.description
         for (const item of formData.installments) {
+
+            if (_.size(formData.installments > 1)) {
+                description += ` - Parcela ${installment}`
+            }
 
             await db.FinancialMovementInstallment.create({
                 ...item,
                 financialMovementId: movement.codigo_movimento,
                 paymentMethodId: formData.paymentMethod.id,
+                description
             }, {transaction})
+
+            installment++
 
         }
 

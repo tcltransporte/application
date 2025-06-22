@@ -285,7 +285,8 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="center">{DateFormat(new Date(), 'dd/MM/yyyy')}</TableCell>
-                        <TableCell align="right">{payment.amount?.toFixed(2)}</TableCell>
+                        <TableCell align="right">{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.amount)}
+                      </TableCell>
                         <TableCell>
                           <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
                           <Typography variant="caption">
