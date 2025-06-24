@@ -1,7 +1,6 @@
 'use client';
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Typography, Table, TableHead, TableRow, TableCell, TableBody, MenuItem, Grid, InputAdornment } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -39,8 +38,8 @@ const NewInstallment = ({ installmentId, onClose }) => {
     startDate: format(new Date(), 'yyyy-MM-dd'),
     interval: 'monthly',
     customDays: 30,
-    paymentMethod: undefined,
-    receiver: undefined,
+    paymentMethod: null,
+    receiver: null,
     description: '',
     installments: [],
   }
@@ -296,11 +295,8 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
 const EditInstallment = ({ installmentId, onClose }) => {
 
-  const theme = useTheme();
-  
   const [loading, setLoading] = useState(false);
   const [installment, setInstallment] = useState(null);
-  const [errorState, setErrorState] = useState(null);
 
   useEffect(() => {
     const fetchInstallment = async () => {

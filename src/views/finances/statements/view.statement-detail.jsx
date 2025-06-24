@@ -7,6 +7,7 @@ import {
   DialogActions, Select, MenuItem, TextField, Paper, Grid, Backdrop,
   Badge,
   Tooltip,
+  Menu,
 } from '@mui/material'
 import { format } from 'date-fns'
 import { Fragment, useEffect, useState } from 'react'
@@ -14,8 +15,8 @@ import { Fragment, useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { AutoComplete } from '@/components/AutoComplete'
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
-import { ItemDetailDrawer } from './ItemDetailDrawer' // Import o novo componente
-import { deleteStatementConciled, getStatement, saveStatementConciled } from '@/app/server/finances/statements/view.statement-detail.controller'
+import { ItemDetailDrawer } from './view.vincule-payment' // Import o novo componente
+import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller'
 import { styles } from '@/components/styles'
 
 const entryTypeAlias = {
@@ -79,37 +80,44 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(null)
 
-  useEffect(() => {
-    const fetchStatement = async () => {
-      try {
-        setLoading(true)
-        if (statementId) {
-          const statement = await getStatement({ statementId })
+  const fetchStatement = async () => {
 
-          setOriginalData(statement.statementData)
-          // Inicialmente, já aplicar filtro (ou carregar todos)
-          const filteredData = statement.statementData.filter((data) =>
-            statement.entryTypes?.length > 0 ? statement.entryTypes.includes(data.entryType) : true
-          )
+    if (statementId) {
 
-          setStatement({
-            ...statement,
-            statementData: filteredData,
-            entryTypes: statement.entryTypes ?? [],
-          })
-          setEntryTypeFilters(statement.entryTypes ?? [])
-        }
-      } catch (error) {
-        toast.error(error.message)
-        onError()
-      } finally {
-        setLoading(false)
-      }
+      const statement = await getStatement({ statementId })
+
+      setOriginalData(statement.statementData)
+      const filteredData = statement.statementData.filter((data) =>
+        statement.entryTypes?.length > 0 ? statement.entryTypes.includes(data.entryType) : true
+      )
+
+      setStatement({
+        ...statement,
+        statementData: filteredData,
+        entryTypes: statement.entryTypes ?? [],
+      })
+
+      setEntryTypeFilters(statement.entryTypes ?? [])
+
     }
 
-    fetchStatement()
-  }, [statementId])
+  }
 
+  const onOpened = async () => {
+    try {
+      setLoading(true)
+      await fetchStatement()
+    } catch (error) {
+      toast.error(error.message)
+      onError()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+   onOpened()
+  }, [statementId])
 
   const toggleExpand = (idx) => {
     setExpandedRow((prev) => (prev === idx ? null : idx))
@@ -186,6 +194,17 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false)
     setSelectedItemId(null)
+  }
+
+  const handleVinculePayment = async (statementDataConciledId, id) => {
+    await vinculePayment({statementDataConciledId, codigo_movimento_detalhe: id})
+    await fetchStatement()
+    handleCloseDrawer()
+  }
+
+  const handleDesvinculePayment = async (statementDataConciledId) => {
+    await desvinculePayment({statementDataConciledId})
+    await fetchStatement()
   }
 
   return (
@@ -312,6 +331,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                           toast.error(error.message)
                         }
                       }}
+                      onDesvincule={handleDesvinculePayment}
                       onViewDetails={handleOpenDrawer} // Passa o novo handler
                     />
                   )}
@@ -382,13 +402,29 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             zIndex: 99999, // <<< Aumentado drasticamente para depuração
           },
         }}
+        onSelected={handleVinculePayment}
       />
     </>
   )
 }
 
 // O restante do seu arquivo (ExpandedRow, ConciliationForm) permanece igual...
-function ExpandedRow({ index, data, input, editing, onAdd, onChange, onConfirm, onCancelAdd, onCancelEdit, onStartEdit, onDelete, onViewDetails }) {
+function ExpandedRow({ index, data, input, editing, onAdd, onChange, onConfirm, onCancelAdd, onCancelEdit, onStartEdit, onDesvincule, onDelete, onViewDetails }) {
+
+  const [infoAnchorEls, setInfoAnchorEls] = useState({})
+
+  const handleInfoClick = (event, i) => {
+    setInfoAnchorEls(prev => ({ ...prev, [i]: event.currentTarget }))
+  }
+
+  const handleInfoClose = (i) => {
+    setInfoAnchorEls(prev => ({ ...prev, [i]: null }))
+  }
+
+  const handleDesvinculePayment = async (statementDataConciledId) => {
+    onDesvincule({statementDataConciledId})
+  }
+
   return (
     <TableRow>
       <TableCell colSpan={9} sx={{ p: 0 }}>
@@ -419,7 +455,7 @@ function ExpandedRow({ index, data, input, editing, onAdd, onChange, onConfirm, 
                 ) : (
                   <TableRow key={i}>
                     <TableCell>{typeDescription(item.type)}</TableCell>
-                    <TableCell>{item.partner?.surname}<br></br>{item.category?.description}</TableCell>
+                    <TableCell>{item.partner?.surname}<br />{item.category?.description}</TableCell>
                     <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
                     <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
                     <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
@@ -434,11 +470,45 @@ function ExpandedRow({ index, data, input, editing, onAdd, onChange, onConfirm, 
                           <i className="ri-delete-bin-line" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title='Vincular'>
-                        <IconButton onClick={() => onViewDetails(item.id)}> {/* Passa item.id aqui */}
-                          <i className="ri-search-line" />
-                        </IconButton>
-                      </Tooltip>
+
+                      {(!item.paymentId && !item.receivementId) && (
+                        <Tooltip title='Vincular'>
+                          <IconButton onClick={() => onViewDetails(item.id)}>
+                            <i className="ri-search-line" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {item.paymentId && (
+                        <>
+                          <Tooltip title='Informações'>
+                            <IconButton onClick={(e) => handleInfoClick(e, i)}>
+                              <i className="ri-information-line" style={{ color: '#1976d2' }} />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Menu
+                            anchorEl={infoAnchorEls[i]}
+                            open={Boolean(infoAnchorEls[i])}
+                            onClose={() => handleInfoClose(i)}
+                          >
+                            <MenuItem onClick={() => {
+                              handleInfoClose(i)
+                              onStartEdit(i, item)
+                            }}>
+                              <i className="ri-pencil-line" style={{ marginRight: 8 }} />
+                              Editar
+                            </MenuItem>
+                            <MenuItem onClick={() => {
+                              handleInfoClose(i)
+                              handleDesvinculePayment(item.id)
+                            }}>
+                              <i className="ri-link-unlink" style={{ marginRight: 8 }} />
+                              Desvincular
+                            </MenuItem>
+                          </Menu>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 )

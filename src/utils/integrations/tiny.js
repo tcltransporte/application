@@ -113,140 +113,136 @@ export async function getTinyCategories(search) {
 
 }
 
-export async function getTinyPayments({start, end}) {
+export async function getTinyPayments({ start, end }) {
+  const token = '23a552cec9aa74bb452efbc9f56c63d4e8dc72ec1377d41bca32f2e4b58cc871';
 
-    const token ='23a552cec9aa74bb452efbc9f56c63d4e8dc72ec1377d41bca32f2e4b58cc871'
+  const payments = async ({ token, start, end, offset }) => {
+    const url = `https://api.tiny.com.br/api2/contas.pagar.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`);
+    return await res.json();
+  };
 
-    const payments = async ({ token, start, end, offset }) => {
+  const firstPage = await payments({ token, start, end, offset: 1 });
+  const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1;
+  let contas = [...(firstPage?.retorno?.contas || [])];
 
-        const url = `https://api.tiny.com.br/api2/contas.pagar.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`;
+  if (totalPages > 1) {
+    const promises = [];
+    for (let i = 2; i <= totalPages; i++) {
+      promises.push(payments({ token, start, end, offset: i }));
+    }
+    const responses = await Promise.all(promises);
+    for (const response of responses) {
+      contas.push(...(response?.retorno?.contas || []));
+    }
+  }
 
-        const res = await fetch(url);
-        if (!res.ok) {
-            throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`);
-        }
+  const db = new AppContext();
 
-        const data = await res.json();
+  await db.transaction(async (transaction) => {
+    // 1. Garantir que os parceiros existem
+    const partnerNames = _.uniq(contas.map((item) => item.conta.nome_cliente).filter(Boolean));
+    const existingPartners = await db.Partner.findAll({
+      where: { surname: partnerNames },
+      transaction,
+    });
 
-        return data;
+    const partnerMap = new Map(existingPartners.map(p => [p.surname, p]));
 
-    };
-
-    const firstPage = await payments({ token, start, end, offset: 1 });
-
-    const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1;
-    let contas = [...(firstPage?.retorno?.contas || [])];
-
-    if (totalPages > 1) {
-        const promises = [];
-
-        for (let i = 2; i <= totalPages; i++) {
-        promises.push(payments({ token, start, end, offset: i }));
-        }
-
-        const responses = await Promise.all(promises);
-
-        for (const response of responses) {
-            contas.push(...(response?.retorno?.contas || []));
-        }
-
+    for (const name of partnerNames) {
+      if (!partnerMap.has(name)) {
+        const newPartner = await db.Partner.create({ surname: name }, { transaction });
+        partnerMap.set(name, newPartner);
+      }
     }
 
-    console.log(contas)
+    // 2. Mapear pagamentos
+    const allPayments = contas.map((item) => {
 
-    const db = new AppContext()
+        console.log(item)
 
-    await db.transaction(async (transaction) => {
+      const id = item.conta.id;
+      const name = item.conta.nome_cliente;
+      const partner = partnerMap.get(name);
 
-        const externalIdsFromApi = contas.map((item) => item.conta.id);
-    
-        const existingPayments = await db.FinancialMovement.findAll({
-            attributes: ['externalId'],
-            where: {
-                externalId: externalIdsFromApi,
-            },
-            transaction,
-        });
-    
-        const existingExternalIds = existingPayments.map((p) => p.externalId);
-    
-        const newPayments = contas
-        .filter((item) => !existingExternalIds.includes(item.conta.id))
-        .map((item) => ({
-            externalId: item.conta.id,
-            documentNumber: item.conta.id,
-            amountTotal: item.conta.valor,
-            issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-            dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-            partnerId: 1,
-        }));
-
-        if (newPayments.length === 0) return;
-
-        // Cria os movimentos em lote
-        const createdMovements = await db.FinancialMovement.bulkCreate(newPayments, {
-            transaction,
-            returning: true, // necessário para recuperar os IDs gerados
-        });
-
-        // Prepara os installments vinculando ao movimento correspondente
-        // Combina os dados dos movimentos com os dados originais do `newPayments`
-        const installments = createdMovements.map((movement, index) => {
-            const original = newPayments[index]; // mantém a ordem
-            return {
-                financialMovementId: movement.codigo_movimento, // ou `movement.id` se for esse o campo
-                externalId: original.externalId,
-                documentNumber: original.documentNumber,
-                amountTotal: original.amountTotal,
-                issueDate: original.issueDate,
-                dueDate: original.dueDate,
-                partnerId: original.partnerId,
-                installment: 1,
-                amount: original.amountTotal,
-            };
-        });
-
-        // Cria os installments em lote
-        await db.FinancialMovementInstallment.bulkCreate(installments, { transaction });
-    
+      return {
+        externalId: id,
+        documentNumber: id,
+        amountTotal: item.conta.valor,
+        issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
+        dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
+        description: item.conta.historico,
+        partnerId: partner?.codigo_pessoa || null,
+      };
     });
 
-    return contas;
-
-    await db.transaction(async (transaction) => {
-
-        const token = '23a552cec9aa74bb452efbc9f56c63d4e8dc72ec1377d41bca32f2e4b58cc871';
-        const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${token}&formato=json&pesquisa=${search}`;
-
-        const response = await fetch(url, { method: 'GET' });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const r = await response.json();
-
-        const externalIdsFromApi = r.retorno.contatos.map((item) => item.contato.id);
-    
-        const existingPartners = await db.Partner.findAll({
-          where: {
-            externalId: externalIdsFromApi,
-          },
-          transaction,
-          attributes: ['externalId'],
-        });
-    
-        const existingExternalIds = existingPartners.map((p) => p.externalId);
-    
-        const newPartners = r.retorno.contatos
-          .filter((item) => !existingExternalIds.includes(item.contato.id))
-          .map((item) => ({
-            externalId: item.contato.id,
-            surname: item.contato.nome,
-          }));
-    
-        if (newPartners.length > 0) {
-          await db.Partner.bulkCreate(newPartners, { transaction });
-        }
-    
+    // 3. Buscar movimentos financeiros existentes
+    const existingMovements = await db.FinancialMovement.findAll({
+      where: {
+        externalId: allPayments.map(p => p.externalId),
+      },
+      transaction,
     });
+
+    const existingMap = new Map(existingMovements.map(m => [m.externalId, m]));
+
+    const toUpdate = [];
+    const toCreate = [];
+
+    for (const payment of allPayments) {
+      if (existingMap.has(payment.externalId)) {
+        const existing = existingMap.get(payment.externalId);
+        existing.documentNumber = payment.documentNumber;
+        existing.amountTotal = payment.amountTotal;
+        existing.issueDate = payment.issueDate;
+        existing.dueDate = payment.dueDate;
+        existing.partnerId = payment.partnerId;
+        existing.description = payment.description;
+        toUpdate.push(existing);
+      } else {
+        toCreate.push(payment);
+      }
+    }
+
+    for (const m of toUpdate) {
+      await m.save({ transaction });
+    }
+
+    const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
+      transaction,
+      returning: true,
+    });
+
+    const allMovements = [...toUpdate, ...createdMovements];
+    const movementMap = new Map(allMovements.map(m => [m.externalId, m]));
+
+    // 4. Upsert das parcelas
+    for (const payment of allPayments) {
+      const movement = movementMap.get(payment.externalId);
+
+      const [installment, created] = await db.FinancialMovementInstallment.findOrCreate({
+        where: {
+          financialMovementId: movement.codigo_movimento,
+          installment: 1,
+        },
+        defaults: {
+          issueDate: payment.issueDate,
+          dueDate: payment.dueDate,
+          amount: payment.amountTotal,
+          description: payment.description,
+        },
+        transaction,
+      });
+
+      if (!created) {
+        installment.amount = payment.amountTotal;
+        installment.dueDate = payment.dueDate;
+        installment.issueDate = payment.issueDate;
+        installment.description = payment.description;
+        await installment.save({ transaction });
+      }
+    }
+  });
 
 }

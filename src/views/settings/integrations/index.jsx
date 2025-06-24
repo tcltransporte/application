@@ -13,14 +13,25 @@ import Typography from '@mui/material/Typography'
 import Drawer from '@mui/material/Drawer'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
-//import { getIntegrations } from '../users/index.controller'
-//import { getMyIntegrations, onDisconnect, onToggleActive } from './index.controller'
+
+// Plugin renderer
 import { PluginRenderer } from './plugins'
-import { getMyIntegrations, onDisconnect, onToggleActive } from '@/app/server/settings/integrations/index.controller'
+
+// Controller
+import {
+  getMyIntegrations,
+  onDisconnect,
+  onToggleActive
+} from '@/app/server/settings/integrations/index.controller'
+import { Paper } from '@mui/material'
+import { useTitle } from '@/contexts/TitleProvider'
+import { useSearchParams } from 'next/navigation'
+import { setCompanyIntegration } from '@/app/server/settings/index.controller'
 
 const Integrations = ({ integrations }) => {
   const [connectedIntegrations, setConnectedIntegrations] = useState([])
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [connectDrawerOpen, setConnectDrawerOpen] = useState(false)
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState(null)
   const [loading, setLoading] = useState(false)
   const [hoveredIntegration, setHoveredIntegration] = useState(null)
@@ -75,22 +86,25 @@ const Integrations = ({ integrations }) => {
 
   const handleConfigureClick = (integration) => {
     setSelectedIntegration(integration)
-    setDrawerOpen(true)
+    setEditDrawerOpen(true)
   }
 
   const handleConnectClick = (integration) => {
     setSelectedIntegration(integration)
-    setDrawerOpen(true)
+    setConnectDrawerOpen(true)
   }
 
   const handleSave = () => {
-    // Lógica de salvar configurações/conexões aqui
-    setDrawerOpen(false)
+    // Lógica de salvar configurações ou conexões
+    setConnectDrawerOpen(false)
+    setEditDrawerOpen(false)
     setSelectedIntegration(null)
+    fetchMyIntegrations()
   }
 
-  const handleClose = () => {
-    setDrawerOpen(false)
+  const handleCloseDrawers = () => {
+    setConnectDrawerOpen(false)
+    setEditDrawerOpen(false)
     setSelectedIntegration(null)
   }
 
@@ -172,13 +186,11 @@ const Integrations = ({ integrations }) => {
                       justifyContent="space-between"
                       alignItems="center"
                     >
-                      
                       <Switch
                         checked={integration.isActive}
                         onChange={() => handleToggleActive({ id: integration.id })}
                       />
 
-                      {/* Botão desconectar só aparece sempre se estiver ativo */}
                       {integration.isActive ? (
                         <Button
                           variant="outlined"
@@ -190,25 +202,22 @@ const Integrations = ({ integrations }) => {
                             ? 'Desconectando...'
                             : 'Desconectar'}
                         </Button>
+                      ) : hoveredIntegration === integration.id ? (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => disconnectIntegration({ id: integration.id })}
+                          disabled={disconnectingId === integration.id}
+                        >
+                          {disconnectingId === integration.id
+                            ? 'Desconectando...'
+                            : 'Desconectar'}
+                        </Button>
                       ) : (
-                        hoveredIntegration === integration.id ? (
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={() => disconnectIntegration({ id: integration.id })}
-                            disabled={disconnectingId === integration.id}
-                          >
-                            {disconnectingId === integration.id
-                              ? 'Desconectando...'
-                              : 'Desconectar'}
-                          </Button>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-                            Inativada
-                          </Typography>
-                        )
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
+                          Inativada
+                        </Typography>
                       )}
-
                     </Box>
                   </Box>
                 </Card>
@@ -272,7 +281,7 @@ const Integrations = ({ integrations }) => {
                   >
                     <Button
                       variant="outlined"
-                      color='success'
+                      color="success"
                       onClick={() => handleConnectClick(integration)}
                     >
                       Conectar
@@ -291,33 +300,165 @@ const Integrations = ({ integrations }) => {
         )}
       </Grid>
 
+      {/* Drawer de Edição */}
       <Drawer
         anchor="right"
-        open={drawerOpen}
-        onClose={handleClose}
+        open={editDrawerOpen}
+        onClose={handleCloseDrawers}
         PaperProps={{ sx: { width: 350, p: 3 } }}
       >
         {selectedIntegration && (
           <>
             <Typography variant="h5" mb={2}>
-              Configurar {selectedIntegration.name || selectedIntegration.integration?.name}
+              Configurar {selectedIntegration.integration?.name}
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            
-            <PluginRenderer pluginId={selectedIntegration.integration.id} componentName={'Settings'} data={selectedIntegration.options} />
 
-            <Box display="flex" justifyContent="flex-end" gap={2}>
-              <Button variant="outlined" onClick={handleClose}>
-                Cancelar
-              </Button>
-              <Button variant="contained" onClick={handleSave}>
-                Salvar
-              </Button>
-            </Box>
+            <PluginRenderer
+              pluginId={
+                selectedIntegration.integration
+                  ? selectedIntegration.integration.id // para integração conectada
+                  : selectedIntegration.id // para integração disponível
+              }
+              componentName={editDrawerOpen ? 'Settings' : 'Connect'}
+              data={editDrawerOpen ? selectedIntegration.options : {}}
+            />
+
+          </>
+        )}
+      </Drawer>
+
+      {/* Drawer de Conexão */}
+      <Drawer
+        anchor="right"
+        open={connectDrawerOpen}
+        onClose={handleCloseDrawers}
+        PaperProps={{ sx: { width: 350, p: 3 } }}
+      >
+        {selectedIntegration && (
+          <>
+            <Typography variant="h5" mb={2}>
+              Conectar {selectedIntegration.name}
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+
+            <PluginRenderer
+              pluginId={selectedIntegration.id}
+              componentName="Connect"
+              data={{}}
+            />
+
           </>
         )}
       </Drawer>
     </Box>
+  )
+}
+
+
+export const Successfully = () => {
+
+  const searchParams = useSearchParams()
+  const code = searchParams.get('code')
+
+  const {setTitle} = useTitle()
+
+  useEffect(() => {
+
+    setTitle(['Configurações', 'Integração'])
+
+    setCompanyIntegration({code})
+
+  }, [])
+
+  return (
+    <Paper
+      elevation={1}
+      sx={{
+        maxWidth: 360,
+        mx: 'auto',
+        p: 4,
+        textAlign: 'center',
+        borderRadius: 3,
+        bgcolor: 'background.paper',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+      }}
+    >
+      <Box
+        component="div"
+        sx={{
+          mb: 3,
+          display: 'inline-flex',
+          borderRadius: '50%',
+          border: theme => `2px solid ${theme.palette.success.main}`,
+          width: 72,
+          height: 72,
+          alignItems: 'center',
+          justifyContent: 'center',
+          mx: 'auto',
+          color: 'success.main',
+        }}
+      >
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 52 52"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="26"
+            cy="26"
+            r="25"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeDasharray="157"
+            strokeDashoffset="157"
+            style={{
+              animation: 'dash 1s ease forwards',
+              animationDelay: '0.2s',
+            }}
+          />
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="48"
+            strokeDashoffset="48"
+            d="M14 27l7 7 17-17"
+            style={{
+              animation: 'dash 0.8s ease forwards',
+              animationDelay: '1.2s',
+            }}
+          />
+          <style>{`
+            @keyframes dash {
+              to {
+                stroke-dashoffset: 0;
+              }
+            }
+          `}</style>
+        </svg>
+      </Box>
+
+      <Typography variant="h6" fontWeight={600} gutterBottom>
+        Integration Successful
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Your integration with Tiny has been completed successfully.
+      </Typography>
+
+      <Button
+        variant="outlined"
+        color="success"
+        sx={{ textTransform: 'none' }}
+      >
+        Minhas integrações
+      </Button>
+    </Paper>
   )
 }
 

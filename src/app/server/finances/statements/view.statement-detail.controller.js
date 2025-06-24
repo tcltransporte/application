@@ -95,3 +95,19 @@ export async function deleteStatementConciled({id}) {
   await db.StatementDataConciled.destroy({where: [{id}]})
 
 }
+
+export async function vinculePayment({statementDataConciledId, codigo_movimento_detalhe}) {
+  
+  const db = new AppContext()
+
+  await db.StatementDataConciled.update({paymentId: codigo_movimento_detalhe}, {where: [{id: statementDataConciledId}]})
+
+}
+
+export async function desvinculePayment({statementDataConciledId}) {
+  
+  const db = new AppContext()
+
+  await db.StatementDataConciled.update({paymentId: null}, {where: [{id: statementDataConciledId}]})
+
+}
