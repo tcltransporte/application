@@ -29,6 +29,7 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
   const [payments, setPayments] = useState([])
   const [selectedCodigo, setSelectedCodigo] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     setSelectedCodigo('')
@@ -58,12 +59,17 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
     // lógica de filtro a ser aplicada
   }
 
-  const handleConfirmar = () => {
-    const item = _.find(payments.response?.rows, {
-      codigo_movimento_detalhe: selectedCodigo,
-    })
-    if (item && onSelected) {
-      onSelected(itemId, item.codigo_movimento_detalhe)
+  const handleConfirmar = async () => {
+    setConfirming(true)
+    try {
+      const item = _.find(payments.response?.rows, {
+        codigo_movimento_detalhe: selectedCodigo,
+      })
+      if (item && onSelected) {
+        await onSelected(itemId, item.codigo_movimento_detalhe)
+      }
+    } finally {
+      setConfirming(false)
     }
   }
 
@@ -179,11 +185,12 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
               <Button
                 variant="contained"
-                color="primary"
-                disabled={!selectedCodigo}
+                color="success"
+                disabled={!selectedCodigo || confirming}
                 onClick={handleConfirmar}
+                startIcon={confirming ? <CircularProgress size={16} color="inherit" /> : <i className='ri-check-line text-lg' />}
               >
-                Confirmar
+                {confirming ? 'Confirmando...' : 'Confirmar'}
               </Button>
             </Box>
           </>

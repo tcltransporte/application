@@ -1,4 +1,3 @@
-// view.statement-detail.jsx
 'use client'
 
 import {
@@ -10,15 +9,20 @@ import {
   Menu,
 } from '@mui/material'
 import { format } from 'date-fns'
-import { Fragment, useEffect, useState } from 'react'
-//import { deleteStatementConciled, getStatement, saveStatementConciled } from './view.statement-detail.controller'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-toastify'
-import { AutoComplete } from '@/components/AutoComplete'
-import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
-import { ItemDetailDrawer } from './view.vincule-payment' // Import o novo componente
-import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller'
-import { styles } from '@/components/styles'
+import { Formik } from 'formik'
+import * as Yup from 'yup'
 
+// --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
+// Certifique-se de que estes caminhos correspondem à estrutura do seu projeto.
+import { AutoComplete } from '@/components/AutoComplete' // Caminho para o seu componente AutoComplete
+import { getFinancialCategory, getPartner, getUser } from '@/utils/search' // Caminho para suas funções de busca
+import { ItemDetailDrawer } from './view.vincule-payment' // Caminho para o seu ItemDetailDrawer (pode ser necessário ajustar)
+import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller' // Caminho para suas funções de controle de servidor
+import { styles } from '@/components/styles' // Caminho para seus estilos globais ou objeto de estilo
+
+// --- Funções Utilitárias ---
 const entryTypeAlias = {
   '': {
     title: 'Abertura e fechamento',
@@ -46,7 +50,6 @@ const entryTypeAlias = {
   }
 }
 
-// Formatador de moeda sem símbolo R$
 const formatCurrency = (value) => {
   if (value == null || isNaN(value)) return ''
   return new Intl.NumberFormat('pt-BR', {
@@ -66,111 +69,50 @@ const typeDescription = (raw) => {
 }
 
 export function ViewStatementDetail({ statementId, onClose, onError }) {
-
   const [loading, setLoading] = useState(false)
   const [statement, setStatement] = useState(null)
   const [originalData, setOriginalData] = useState(null)
   const [entryTypeFilters, setEntryTypeFilters] = useState([])
   const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
-  const [newConciledInput, setNewConciledInput] = useState({})
-  const [editingConciled, setEditingConciled] = useState({})
-
-  // State para o novo drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(null)
 
-  const fetchStatement = async () => {
-
+  const fetchStatement = useCallback(async () => {
     if (statementId) {
-
-      const statement = await getStatement({ statementId })
-
-      setOriginalData(statement.statementData)
-      const filteredData = statement.statementData.filter((data) =>
-        statement.entryTypes?.length > 0 ? statement.entryTypes.includes(data.entryType) : true
-      )
-
-      setStatement({
-        ...statement,
-        statementData: filteredData,
-        entryTypes: statement.entryTypes ?? [],
-      })
-
-      setEntryTypeFilters(statement.entryTypes ?? [])
-
+      try {
+        setLoading(true)
+        const statementData = await getStatement({ statementId })
+        setOriginalData(statementData.statementData)
+        const filteredData = statementData.statementData.filter((data) =>
+          statementData.entryTypes?.length > 0 ? statementData.entryTypes.includes(data.entryType) : true
+        )
+        setStatement({
+          ...statementData,
+          statementData: filteredData,
+          entryTypes: statementData.entryTypes ?? [],
+        })
+        setEntryTypeFilters(statementData.entryTypes ?? [])
+      } catch (error) {
+        toast.error(error.message)
+        onError()
+      } finally {
+        setLoading(false)
+      }
     }
-
-  }
-
-  const onOpened = async () => {
-    try {
-      setLoading(true)
-      await fetchStatement()
-    } catch (error) {
-      toast.error(error.message)
-      onError()
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [statementId, onError])
 
   useEffect(() => {
-   onOpened()
-  }, [statementId])
+    fetchStatement()
+  }, [fetchStatement])
 
   const toggleExpand = (idx) => {
     setExpandedRow((prev) => (prev === idx ? null : idx))
   }
 
-  const handleAddConciled = (idx) => {
-    setNewConciledInput((prev) => ({
-      ...prev,
-      [idx]: { type: '', partner: null, category: null, amount: '', fee: '', discount: '' },
-    }))
-  }
-
-  const handleInputChange = (idx, field, value) => {
-    if (editingConciled[idx]) {
-      setEditingConciled((prev) => ({
-        ...prev,
-        [idx]: {
-          ...prev[idx],
-          values: { ...prev[idx].values, [field]: value },
-        },
-      }))
-    } else {
-      setNewConciledInput((prev) => ({
-        ...prev,
-        [idx]: { ...prev[idx], [field]: value },
-      }))
-    }
-  }
-
-  const updateStatementAfterSave = (idx, updatedConciled, editIndex = null) => {
-    const updated = [...statement.statementData]
-    if (editIndex !== null) {
-      updated[idx].concileds[editIndex] = updatedConciled
-    } else {
-      updated[idx].concileds.push(updatedConciled)
-    }
-    setStatement({ ...statement, statementData: updated })
-  }
-
-  const handleCancelConciledEdit = (idx) => {
-    setEditingConciled((prev) => {
-      const copy = { ...prev }
-      delete copy[idx]
-      return copy
-    })
-  }
-
-  const handleCancelConciledAdd = (idx) => {
-    setNewConciledInput((prev) => {
-      const copy = { ...prev }
-      delete copy[idx]
-      return copy
-    })
+  const handleOpenFilterDialog = () => {
+    setEntryTypeFilters(statement?.entryTypes ?? [])
+    setShowFilterDialog(true)
   }
 
   const applyEntryTypeFilter = () => {
@@ -185,7 +127,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     setShowFilterDialog(false)
   }
 
-  // Nova função para abrir o drawer
   const handleOpenDrawer = (id) => {
     setSelectedItemId(id)
     setIsDrawerOpen(true)
@@ -197,14 +138,24 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   }
 
   const handleVinculePayment = async (statementDataConciledId, id) => {
-    await vinculePayment({statementDataConciledId, codigo_movimento_detalhe: id})
-    await fetchStatement()
-    handleCloseDrawer()
+    try {
+      await vinculePayment({ statementDataConciledId, codigo_movimento_detalhe: id })
+      await fetchStatement()
+      handleCloseDrawer()
+      toast.success('Pagamento vinculado com sucesso!')
+    } catch (error) {
+      toast.error(error.message)
+    }
   }
 
   const handleDesvinculePayment = async (statementDataConciledId) => {
-    await desvinculePayment({statementDataConciledId})
-    await fetchStatement()
+    try {
+      await desvinculePayment({ statementDataConciledId })
+      await fetchStatement()
+      toast.success('Pagamento desvinculado com sucesso!')
+    } catch (error) {
+      toast.error(error.message)
+    }
   }
 
   return (
@@ -241,7 +192,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             <i className="ri-close-line" />
           </IconButton>
         </DialogTitle>
-        
+
         <DialogContent>
           <Table size="small">
             <TableHead>
@@ -286,53 +237,13 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                       </IconButton>
                     </TableCell>
                   </TableRow>
-
+                  {/* Renderiza as linhas de detalhe de conciliação diretamente aqui */}
                   {expandedRow === index && (
-                    <ExpandedRow
-                      index={index}
+                    <ConciledDetailRowsGroup
                       data={data}
-                      input={newConciledInput[index]}
-                      editing={editingConciled[index]}
-                      onAdd={handleAddConciled}
-                      onChange={handleInputChange}
-                      onConfirm={async (input, editIndex = null) => {
-                        try {
-                          const saved = await saveStatementConciled(data.id, input)
-                          updateStatementAfterSave(index, saved, editIndex)
-                          editIndex !== null
-                            ? handleCancelConciledEdit(index)
-                            : handleCancelConciledAdd(index)
-                        } catch (error) {
-                          toast.error(error.message)
-                        }
-                      }}
-                      onCancelAdd={handleCancelConciledAdd}
-                      onCancelEdit={handleCancelConciledEdit}
-                      onStartEdit={(editIndex, item) =>
-                        setEditingConciled((prev) => ({
-                          ...prev,
-                          [index]: { editIndex, values: { ...item } },
-                        }))
-                      }
-                      onDelete={async (item) => {
-                        try {
-
-                          await deleteStatementConciled({ id: item.id })
-                          
-                          setStatement((prev) => {
-                            const updatedData = [...prev.statementData]
-                            const concileds = updatedData[index].concileds.filter((c) => c.id !== item.id)
-                            updatedData[index] = { ...updatedData[index], concileds }
-                            return { ...prev, statementData: updatedData }
-                          })
-
-                          toast.success('Registro excluído com sucesso')
-                        } catch (error) {
-                          toast.error(error.message)
-                        }
-                      }}
                       onDesvincule={handleDesvinculePayment}
-                      onViewDetails={handleOpenDrawer} // Passa o novo handler
+                      onViewDetails={handleOpenDrawer}
+                      onStatementUpdate={fetchStatement}
                     />
                   )}
                 </Fragment>
@@ -342,10 +253,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'space-between' }}>
           <IconButton
-            onClick={() => {
-              setEntryTypeFilters(statement?.entryTypes ?? [])
-              setShowFilterDialog(true)
-            }}
+            onClick={handleOpenFilterDialog}
             size="small"
           >
             <i className="ri-filter-line" />
@@ -358,48 +266,23 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         </DialogActions>
       </Dialog>
 
-      {/* Filtro de Tipos */}
-      <Dialog open={showFilterDialog} onClose={() => setShowFilterDialog(false)}>
-        <DialogTitle>Tipos de lançamentos</DialogTitle>
-        <DialogContent>
-          {statement?.allEntryTypes?.map((type) => {
-            const isChecked = entryTypeFilters.includes(type)
-            return (
-              <div key={type}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) => {
-                      setEntryTypeFilters((prev) =>
-                        e.target.checked
-                          ? [...prev, type]
-                          : prev.filter((t) => t !== type)
-                      )
-                    }}
-                  />
-                  &nbsp;{entryTypeAlias[type] ? `${entryTypeAlias[type]?.content || ''} - ${entryTypeAlias[type].title}` : type}
-                </label>
-              </div>
-            )
-          })}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowFilterDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={applyEntryTypeFilter}>Aplicar</Button>
-        </DialogActions>
-      </Dialog>
+      <EntryTypeFilterDialog
+        open={showFilterDialog}
+        onClose={() => setShowFilterDialog(false)}
+        allEntryTypes={statement?.allEntryTypes || []}
+        selectedFilters={entryTypeFilters}
+        onFilterChange={setEntryTypeFilters}
+        onApplyFilter={applyEntryTypeFilter}
+      />
 
-      {/* Item Detail Drawer */}
       <ItemDetailDrawer
         open={isDrawerOpen}
         onClose={handleCloseDrawer}
         itemId={selectedItemId}
-        // Use ModalProps para garantir que o z-index seja aplicado corretamente
         container={document.body}
         ModalProps={{
           sx: {
-            zIndex: 99999, // <<< Aumentado drasticamente para depuração
+            zIndex: 99999,
           },
         }}
         onSelected={handleVinculePayment}
@@ -408,259 +291,413 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   )
 }
 
-// O restante do seu arquivo (ExpandedRow, ConciliationForm) permanece igual...
-function ExpandedRow({ index, data, input, editing, onAdd, onChange, onConfirm, onCancelAdd, onCancelEdit, onStartEdit, onDesvincule, onDelete, onViewDetails }) {
+function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatementUpdate }) {
+  const [newConciledInputActive, setNewConciledInputActive] = useState(false)
+  const [editingConciledIndex, setEditingConciledIndex] = useState(null)
+  const [editingConciledData, setEditingConciledData] = useState(null)
 
-  const [infoAnchorEls, setInfoAnchorEls] = useState({})
+  const handleConciliationSubmitSuccess = () => {
+    onStatementUpdate();
+    setNewConciledInputActive(false);
+    setEditingConciledIndex(null);
+    setEditingConciledData(null);
+  };
 
-  const handleInfoClick = (event, i) => {
-    setInfoAnchorEls(prev => ({ ...prev, [i]: event.currentTarget }))
+  const handleCancelForm = () => {
+    setNewConciledInputActive(false);
+    setEditingConciledIndex(null);
+    setEditingConciledData(null);
+  };
+
+  const handleAddConciled = () => {
+    setNewConciledInputActive(true)
+    setEditingConciledIndex(null)
+    setEditingConciledData(null)
   }
 
-  const handleInfoClose = (i) => {
-    setInfoAnchorEls(prev => ({ ...prev, [i]: null }))
+  const handleStartEdit = (i, item) => {
+    setEditingConciledIndex(i)
+    setEditingConciledData(item)
+    setNewConciledInputActive(false)
   }
 
-  const handleDesvinculePayment = async (statementDataConciledId) => {
-    onDesvincule({statementDataConciledId})
+  const handleDeleteConciled = async (item) => {
+    try {
+      await deleteStatementConciled({ id: item.id })
+      toast.success('Registro excluído com sucesso')
+      handleConciliationSubmitSuccess()
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  // Define o número de colunas do cabeçalho principal
+  const mainTableColSpan = 9; // ID, Data, Descrição, Valor, Taxa, Crédito, Débito, Saldo, Ações
+
+  return (
+    <>
+      {/* Linha para o sub-cabeçalho de conciliações, ocupando a largura total da tabela principal */}
+      <TableRow>
+        <TableCell>Tipo</TableCell>
+        <TableCell colSpan={2}>Descrição</TableCell>
+        <TableCell>Valor</TableCell>
+        <TableCell>Taxa</TableCell>
+        <TableCell>Desconto</TableCell>
+        <TableCell colSpan={3} />
+      </TableRow>
+
+      {(data.concileds || []).map((item, i) =>
+        editingConciledIndex === i ? (
+          <ConciliationForm
+            key={`edit-${i}`}
+            statementDataId={data.id}
+            initialValues={editingConciledData}
+            onFormSubmitted={handleConciliationSubmitSuccess}
+            onCancel={handleCancelForm}
+            mainTableColSpan={mainTableColSpan} // Passa o colspan para o formulário
+          />
+        ) : (
+          <ConciledItemRow
+            key={i}
+            item={item}
+            onStartEdit={() => handleStartEdit(i, item)}
+            onDelete={handleDeleteConciled}
+            onDesvincule={onDesvincule}
+            onViewDetails={onViewDetails}
+            mainTableColSpan={mainTableColSpan} // Passa o colspan para o item
+          />
+        )
+      )}
+
+      {newConciledInputActive ? (
+        <ConciliationForm
+          statementDataId={data.id}
+          initialValues={{ type: '', partner: null, category: null, amount: '', fee: '', discount: '' }}
+          onFormSubmitted={handleConciliationSubmitSuccess}
+          onCancel={handleCancelForm}
+          mainTableColSpan={mainTableColSpan} // Passa o colspan para o formulário
+        />
+      ) : (
+        <TableRow>
+          <TableCell colSpan={mainTableColSpan} sx={{ borderBottom: 'none', textAlign: 'left', pl: 2 }}>
+            <Button
+              variant="text"
+              startIcon={<i className="ri-add-circle-line" />}
+              onClick={handleAddConciled}
+            >
+              Adicionar
+            </Button>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  )
+}
+
+function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDetails, mainTableColSpan }) {
+  const [infoAnchorEl, setInfoAnchorEl] = useState(null)
+
+  const handleInfoClick = (event) => {
+    setInfoAnchorEl(event.currentTarget)
+  }
+
+  const handleInfoClose = () => {
+    setInfoAnchorEl(null)
   }
 
   return (
-    <TableRow>
-      <TableCell colSpan={9} sx={{ p: 0 }}>
-        <Collapse in>
-          <Table size="small" sx={{ mb: 1 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Tipo</TableCell>
-                <TableCell>Descrição</TableCell>
-                <TableCell>Valor</TableCell>
-                <TableCell>Taxa</TableCell>
-                <TableCell>Desconto</TableCell>
-                <TableCell />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(data.concileds || []).map((item, i) =>
-                editing?.editIndex === i ? (
-                  <ConciliationForm
-                    key={`edit-${i}`}
-                    statementDataId={data.id}
-                    index={index}
-                    input={editing.values}
-                    onChange={onChange}
-                    onConfirm={() => onConfirm(editing.values, i)}
-                    onCancel={() => onCancelEdit(index)}
-                  />
-                ) : (
-                  <TableRow key={i}>
-                    <TableCell>{typeDescription(item.type)}</TableCell>
-                    <TableCell>{item.partner?.surname}<br />{item.category?.description}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
-                    <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
-                    <TableCell>
-                      <Tooltip title='Editar'>
-                        <IconButton onClick={() => onStartEdit(i, item)}>
-                          <i className="ri-pencil-line" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title='Excluir'>
-                        <IconButton onClick={() => onDelete(item)}>
-                          <i className="ri-delete-bin-line" />
-                        </IconButton>
-                      </Tooltip>
+    <TableRow sx={{ backgroundColor: '#f5f5f5' }}> {/* Cor de fundo para diferenciar */}
+      {/* Células vazias para alinhar com as colunas iniciais da tabela principal */}
+      <TableCell>{typeDescription(item.type)}</TableCell>
+      <TableCell colSpan={2}>{item.partner?.surname}<br />{item.category?.description}</TableCell>
+      <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
+      <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
+      <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
+      {/* A última célula agrupa as ações e usa colSpan para completar a linha */}
+      <TableCell colSpan={3}> {/* 9 (total) - 2 (vazias) - 5 (dados) = 2. Ajuste conforme sua contagem final */}
+        <Tooltip title='Editar'>
+          <IconButton onClick={onStartEdit}>
+            <i className="ri-pencil-line" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title='Excluir'>
+          <IconButton onClick={() => onDelete(item)}>
+            <i className="ri-delete-bin-line" />
+          </IconButton>
+        </Tooltip>
 
-                      {(!item.paymentId && !item.receivementId) && (
-                        <Tooltip title='Vincular'>
-                          <IconButton onClick={() => onViewDetails(item.id)}>
-                            <i className="ri-search-line" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+        {(!item.paymentId && !item.receivementId) && (
+          <Tooltip title='Vincular'>
+            <IconButton onClick={() => onViewDetails(item.id)}>
+              <i className="ri-search-line" />
+            </IconButton>
+          </Tooltip>
+        )}
 
-                      {item.paymentId && (
-                        <>
-                          <Tooltip title='Informações'>
-                            <IconButton onClick={(e) => handleInfoClick(e, i)}>
-                              <i className="ri-information-line" style={{ color: '#1976d2' }} />
-                            </IconButton>
-                          </Tooltip>
+        {item.paymentId && (
+          <>
+            <Tooltip title='Informações'>
+              <IconButton onClick={handleInfoClick}>
+                <i className="ri-information-line" style={{ color: '#1976d2' }} />
+              </IconButton>
+            </Tooltip>
 
-                          <Menu
-                            anchorEl={infoAnchorEls[i]}
-                            open={Boolean(infoAnchorEls[i])}
-                            onClose={() => handleInfoClose(i)}
-                          >
-                            <MenuItem onClick={() => {
-                              handleInfoClose(i)
-                              onStartEdit(i, item)
-                            }}>
-                              <i className="ri-pencil-line" style={{ marginRight: 8 }} />
-                              Editar
-                            </MenuItem>
-                            <MenuItem onClick={() => {
-                              handleInfoClose(i)
-                              handleDesvinculePayment(item.id)
-                            }}>
-                              <i className="ri-link-unlink" style={{ marginRight: 8 }} />
-                              Desvincular
-                            </MenuItem>
-                          </Menu>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              )}
-
-              {input ? (
-                <ConciliationForm
-                  statementDataId={data.id}
-                  index={index}
-                  input={input}
-                  onChange={onChange}
-                  onConfirm={() => onConfirm(input)}
-                  onCancel={() => onCancelAdd(index)}
-                />
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Button
-                      variant="text"
-                      startIcon={<i className="ri-add-circle-line" />}
-                      onClick={() => onAdd(index)}
-                    >
-                      Adicionar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Collapse>
+            <Menu
+              anchorEl={infoAnchorEl}
+              open={Boolean(infoAnchorEl)}
+              onClose={handleInfoClose}
+            >
+              <MenuItem onClick={() => {
+                handleInfoClose()
+                onStartEdit()
+              }}>
+                <i className="ri-pencil-line" style={{ marginRight: 8 }} />
+                Editar
+              </MenuItem>
+              <MenuItem onClick={() => {
+                handleInfoClose()
+                onDesvincule(item.id)
+              }}>
+                <i className="ri-link-unlink" style={{ marginRight: 8 }} />
+                Desvincular
+              </MenuItem>
+            </Menu>
+          </>
+        )}
       </TableCell>
     </TableRow>
   )
 }
 
-function ConciliationForm({ statementDataId, index, input, onChange, onConfirm, onCancel }) {
-  const [localInput, setLocalInput] = useState(input || {})
-  const [localLoading, setLocalLoading] = useState(false)
+function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onCancel, mainTableColSpan }) {
 
-  useEffect(() => {
-    setLocalInput(input || {})
-  }, [input])
+  const validationSchema = Yup.object({
+    type: Yup.string().required('Tipo é obrigatório'),
+    partner: Yup.object().nullable().when('type', {
+      is: (type) => type === 'payment' || type === 'receivement',
+      then: (schema) => schema.required('Parceiro é obrigatório para Pagamento/Recebimento'),
+      otherwise: (schema) => schema.nullable(),
+    }),
+    category: Yup.object().nullable().required('Categoria é obrigatória'),
+    amount: Yup.number()
+      .typeError('Valor deve ser um número')
+      .required('Valor é obrigatório')
+      .min(0.01, 'Valor deve ser maior que zero'),
+    fee: Yup.number()
+      .typeError('Taxa deve ser um número')
+      .min(0, 'Taxa não pode ser negativa')
+      .nullable(),
+    discount: Yup.number()
+      .typeError('Desconto deve ser um número')
+      .min(0, 'Desconto não pode ser negativa')
+      .nullable(),
+  });
 
-  const handleChange = (field, value) => {
-    const updated = { ...localInput, [field]: value }
-    setLocalInput(updated)
-    onChange(index, field, value)
-  }
-
-  const handleConfirm = async () => {
-    setLocalLoading(true)
+  const handleSubmitInternal = async (values, { setSubmitting }) => {
+    setSubmitting(true);
     try {
-      await onConfirm()
+      await saveStatementConciled(statementDataId, values);
+      toast.success('Conciliação salva com sucesso!');
+      onFormSubmitted();
+    } catch (error) {
+      toast.error(error.message);
     } finally {
-      setLocalLoading(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <TableRow>
-      <TableCell colSpan={9} sx={{ p: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={1.8}>
-              <Select
-                fullWidth
-                size="small"
-                value={localInput.type || ''}
-                onChange={(e) => handleChange('type', e.target.value)}
-                displayEmpty
-              >
-                <MenuItem value="">[Selecione]</MenuItem>
-                <MenuItem value="payment">Pagamento</MenuItem>
-                <MenuItem value="receivement">Recebimento</MenuItem>
-                <MenuItem value="transfer">Transferência</MenuItem>
-              </Select>
-            </Grid>
+    <Formik
+      initialValues={initialValues || {
+        type: '',
+        partner: null,
+        category: null,
+        amount: '',
+        fee: '',
+        discount: '',
+      }}
+      validationSchema={validationSchema}
+      enableReinitialize={true}
+      onSubmit={handleSubmitInternal}
+    >
+      {({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+        setFieldValue,
+        setFieldTouched,
+      }) => (
+        <TableRow sx={{ backgroundColor: '#e0e0e0' }}> {/* Cor de fundo para o formulário */}
 
-            {localInput.type !== '' && (
-              <>
-                <Grid item xs={12} sm={2.8}>
-                  <AutoComplete
-                    size="small"
-                    variant="outlined"
-                    placeholder="Cliente"
-                    value={localInput.partner}
-                    text={(partner) => partner.surname}
-                    onChange={(partner) => handleChange('partner', partner)}
-                    onSearch={getPartner}
-                  >
-                    {(item) => <span>{item.surname}</span>}
-                  </AutoComplete>
-
-                  <AutoComplete
-                    size="small"
-                    variant="outlined"
-                    placeholder="Categoria"
-                    value={localInput.category}
-                    text={(category) => category.description}
-                    onChange={(category) => handleChange('category', category)}
-                    onSearch={getFinancialCategory}
-                  >
-                    {(item) => <span>{item.description}</span>}
-                  </AutoComplete>
-                </Grid>
-
-                <Grid item xs={12} sm={1.31}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Valor"
-                    value={localInput.amount || ''}
-                    onChange={(e) => handleChange('amount', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={1.31}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Taxa"
-                    value={localInput.fee || ''}
-                    onChange={(e) => handleChange('fee', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={1.31}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="number"
-                    placeholder="Desconto"
-                    value={localInput.discount || ''}
-                    onChange={(e) => handleChange('discount', e.target.value)}
-                  />
-                </Grid>
-              </>
+          <TableCell>
+            <Select
+              fullWidth
+              size="small"
+              name="type"
+              value={values.type}
+              onChange={(e) => {
+                handleChange(e);
+                if (e.target.value !== 'payment' && e.target.value !== 'receivement') {
+                  setFieldValue('partner', null);
+                  setFieldTouched('partner', false);
+                }
+              }}
+              onBlur={handleBlur}
+              displayEmpty
+              error={touched.type && Boolean(errors.type)}
+            >
+              <MenuItem value="">[Selecione]</MenuItem>
+              <MenuItem value="payment">Pagamento</MenuItem>
+              <MenuItem value="receivement">Recebimento</MenuItem>
+              <MenuItem value="transfer">Transferência</MenuItem>
+            </Select>
+            {touched.type && errors.type && (
+              <Typography variant="caption" color="error">{errors.type}</Typography>
             )}
+          </TableCell>
 
-            <Grid item xs={12} sm={1}>
-              <Tooltip title='Confirmar'>
-                <IconButton color="success" size="small" onClick={handleConfirm} disabled={localLoading}>
-                  {localLoading ? <CircularProgress size={18} /> : <i className="ri-check-line" />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip title='Cancelar'>
-                <IconButton color="error" size="small" onClick={onCancel} disabled={localLoading}>
-                  <i className="ri-close-line" />
-                </IconButton>
-              </Tooltip>
-            </Grid>
-          </Grid>
-        </Paper>
-      </TableCell>
-    </TableRow>
+          <TableCell colSpan={2} sx={{p: 2}}>
+            {(values.type === 'payment' || values.type === 'receivement') && (
+              <AutoComplete
+                size="small"
+                variant="outlined"
+                placeholder="Cliente"
+                value={values.partner}
+                text={(partner) => partner.surname}
+                onChange={(partner) => setFieldValue('partner', partner)}
+                onSearch={getPartner}
+                onBlur={() => setFieldTouched('partner', true)}
+                error={touched.partner && Boolean(errors.partner)}
+                helperText={touched.partner && errors.partner}
+                sx={{ mb: 1 }}
+              >
+                {(item) => <span>{item.surname}</span>}
+              </AutoComplete>
+            )}
+            <AutoComplete
+              size="small"
+              variant="outlined"
+              placeholder="Categoria"
+              value={values.category}
+              text={(category) => category.description}
+              onChange={(category) => setFieldValue('category', category)}
+              onSearch={getFinancialCategory}
+              onBlur={() => setFieldTouched('category', true)}
+              error={touched.category && Boolean(errors.category)}
+              helperText={touched.category && errors.category}
+            >
+              {(item) => <span>{item.description}</span>}
+            </AutoComplete>
+          </TableCell>
+
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Valor"
+              variant='outlined'
+              name="amount"
+              value={values.amount}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.amount && Boolean(errors.amount)}
+              helperText={touched.amount && errors.amount}
+            />
+          </TableCell>
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Taxa"
+              variant='outlined'
+              name="fee"
+              value={values.fee}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.fee && Boolean(errors.fee)}
+              helperText={touched.fee && errors.fee}
+            />
+          </TableCell>
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              placeholder="Desconto"
+              variant='outlined'
+              name="discount"
+              value={values.discount}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.discount && Boolean(errors.discount)}
+              helperText={touched.discount && errors.discount}
+            />
+          </TableCell>
+
+          {/* A última célula para os botões de ação, usando colSpan para preencher o restante da linha */}
+          <TableCell>
+            <Tooltip title='Confirmar'>
+              <IconButton
+                color="success"
+                size="small"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title='Cancelar'>
+              <IconButton
+                color="error"
+                size="small"
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
+                <i className="ri-close-line" />
+              </IconButton>
+            </Tooltip>
+          </TableCell>
+        </TableRow>
+      )}
+    </Formik>
+  )
+}
+
+function EntryTypeFilterDialog({ open, onClose, allEntryTypes, selectedFilters, onFilterChange, onApplyFilter }) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Tipos de lançamentos</DialogTitle>
+      <DialogContent>
+        {allEntryTypes?.map((type) => {
+          const isChecked = selectedFilters.includes(type)
+          return (
+            <div key={type}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => {
+                    onFilterChange((prev) =>
+                      e.target.checked
+                        ? [...prev, type]
+                        : prev.filter((t) => t !== type)
+                    )
+                  }}
+                />
+                &nbsp;{entryTypeAlias[type] ? `${entryTypeAlias[type]?.content || ''} - ${entryTypeAlias[type].title}` : type}
+              </label>
+            </div>
+          )
+        })}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button variant="contained" onClick={onApplyFilter}>Aplicar</Button>
+      </DialogActions>
+    </Dialog>
   )
 }
