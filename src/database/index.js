@@ -19,6 +19,8 @@ import { StatementData } from './models/statementData.model.js'
 import { StatementDataConciled } from './models/statementDataConciled.model.js'
 import { FinancialCategory } from './models/financialCategory.model.js'
 import { PaymentMethod } from './models/paymentMethod.model.js'
+import { Shippiment } from './models/shippiment.model.js'
+import { Cte } from './models/cte.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -50,6 +52,8 @@ export class AppContext extends Sequelize {
 
   CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
 
+  Cte = this.define('cte', new Cte(), { tableName: 'Ctes' })
+
   FinancialCategory = this.define('financialCategory', new FinancialCategory(), { tableName: 'PlanoContasContabil' })
 
   FinancialMovement = this.define('financialMovement', new FinancialMovement(), { tableName: 'movimentos' })
@@ -61,6 +65,8 @@ export class AppContext extends Sequelize {
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
   PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'paymentMethod' })
+  
+  Shippiment = this.define('shippiment', new Shippiment(), { tableName: 'carga' })
 
   Statement = this.define('statement', new Statement(), { tableName: 'statement' })
 
@@ -82,7 +88,7 @@ export class AppContext extends Sequelize {
       password: process.env.DB_PASSWORD,
       dialect: 'mssql',
       dialectModule: tedious,
-      //databaseVersion: '12.0.2000',
+      databaseVersion: '10.50.1600',
       timezone: "America/Sao_Paulo",
       dialectOptions: { options: { requestTimeout: 300000, encrypt: false }}, define: { timestamps: false },
       logging: (query, options) => {
@@ -120,6 +126,10 @@ export class AppContext extends Sequelize {
 
     this.StatementDataConciled.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa' })
     this.StatementDataConciled.belongsTo(this.FinancialCategory, { as: 'category', foreignKey: 'categoryId', targetKey: 'id' })
+
+    
+    this.Shippiment.belongsTo(this.Partner, { as: 'sender', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa' })
+    this.Shippiment.hasMany(this.Cte, {as: 'ctes', foreignKey: 'shippimentId'})
     
 
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })

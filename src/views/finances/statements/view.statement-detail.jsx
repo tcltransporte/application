@@ -11,16 +11,20 @@ import {
 import { format } from 'date-fns'
 import { Fragment, useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-toastify'
-import { Formik } from 'formik'
+import { Field, Formik } from 'formik'
 import * as Yup from 'yup'
 
 // --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
 // Certifique-se de que estes caminhos correspondem à estrutura do seu projeto.
 import { AutoComplete } from '@/components/AutoComplete' // Caminho para o seu componente AutoComplete
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search' // Caminho para suas funções de busca
+
 import { ItemDetailDrawer } from './view.vincule-payment' // Caminho para o seu ItemDetailDrawer (pode ser necessário ajustar)
+import { ViewVinculeReceivement } from './view.vincule-receivement' // Caminho para o seu ItemDetailDrawer (pode ser necessário ajustar)
+
 import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller' // Caminho para suas funções de controle de servidor
 import { styles } from '@/components/styles' // Caminho para seus estilos globais ou objeto de estilo
+import { CurrencyField } from '@/components/field'
 
 // --- Funções Utilitárias ---
 const entryTypeAlias = {
@@ -75,8 +79,12 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [entryTypeFilters, setEntryTypeFilters] = useState([])
   const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isDrawerReceivement, setIsDrawerReceivement] = useState(false)
+
   const [selectedItemId, setSelectedItemId] = useState(null)
+  const [receivementId, setReceivementId] = useState(null)
 
   const fetchStatement = useCallback(async () => {
     if (statementId) {
@@ -127,13 +135,23 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     setShowFilterDialog(false)
   }
 
-  const handleOpenDrawer = (id) => {
+  const handleOpenPayments = (id) => {
     setSelectedItemId(id)
     setIsDrawerOpen(true)
   }
 
-  const handleCloseDrawer = () => {
+  const handleClosePayments = () => {
     setIsDrawerOpen(false)
+    setSelectedItemId(null)
+  }
+
+  const handleOpenReceivements = (id) => {
+    setSelectedItemId(id)
+    setIsDrawerReceivement(true)
+  }
+
+  const handleCloseReceivements = () => {
+    setIsDrawerReceivement(false)
     setSelectedItemId(null)
   }
 
@@ -141,7 +159,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     try {
       await vinculePayment({ statementDataConciledId, codigo_movimento_detalhe: id })
       await fetchStatement()
-      handleCloseDrawer()
+      handleClosePayments()
       toast.success('Pagamento vinculado com sucesso!')
     } catch (error) {
       toast.error(error.message)
@@ -197,9 +215,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Data</TableCell>
-                <TableCell>Descrição</TableCell>
+                <TableCell sx={{ width: 150 }}>ID</TableCell>
+                <TableCell sx={{ width: 150 }}>Data</TableCell>
+                <TableCell sx={{ width: 260 }}>Descrição</TableCell>
                 <TableCell>Valor</TableCell>
                 <TableCell>Taxa</TableCell>
                 <TableCell>Crédito</TableCell>
@@ -242,7 +260,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     <ConciledDetailRowsGroup
                       data={data}
                       onDesvincule={handleDesvinculePayment}
-                      onViewDetails={handleOpenDrawer}
+                      onViewDetails={handleOpenPayments}
                       onStatementUpdate={fetchStatement}
                     />
                   )}
@@ -277,7 +295,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
       <ItemDetailDrawer
         open={isDrawerOpen}
-        onClose={handleCloseDrawer}
+        onClose={handleClosePayments}
         itemId={selectedItemId}
         container={document.body}
         ModalProps={{
@@ -287,6 +305,20 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         }}
         onSelected={handleVinculePayment}
       />
+
+      <ViewVinculeReceivement
+        open={isDrawerReceivement}
+        onClose={handleCloseReceivements}
+        itemId={receivementId}
+        container={document.body}
+        ModalProps={{
+          sx: {
+            zIndex: 99999,
+          },
+        }}
+        onSelected={handleVinculePayment}
+      />
+
     </>
   )
 }
@@ -354,7 +386,6 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
             initialValues={editingConciledData}
             onFormSubmitted={handleConciliationSubmitSuccess}
             onCancel={handleCancelForm}
-            mainTableColSpan={mainTableColSpan} // Passa o colspan para o formulário
           />
         ) : (
           <ConciledItemRow
@@ -364,7 +395,6 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
             onDelete={handleDeleteConciled}
             onDesvincule={onDesvincule}
             onViewDetails={onViewDetails}
-            mainTableColSpan={mainTableColSpan} // Passa o colspan para o item
           />
         )
       )}
@@ -375,11 +405,10 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
           initialValues={{ type: '', partner: null, category: null, amount: '', fee: '', discount: '' }}
           onFormSubmitted={handleConciliationSubmitSuccess}
           onCancel={handleCancelForm}
-          mainTableColSpan={mainTableColSpan} // Passa o colspan para o formulário
         />
       ) : (
         <TableRow>
-          <TableCell colSpan={mainTableColSpan} sx={{ borderBottom: 'none', textAlign: 'left', pl: 2 }}>
+          <TableCell sx={{ borderBottom: 'none', textAlign: 'left', pl: 2 }}>
             <Button
               variant="text"
               startIcon={<i className="ri-add-circle-line" />}
@@ -394,7 +423,8 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
   )
 }
 
-function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDetails, mainTableColSpan }) {
+function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDetails }) {
+
   const [infoAnchorEl, setInfoAnchorEl] = useState(null)
 
   const handleInfoClick = (event) => {
@@ -406,15 +436,13 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
   }
 
   return (
-    <TableRow sx={{ backgroundColor: '#f5f5f5' }}> {/* Cor de fundo para diferenciar */}
-      {/* Células vazias para alinhar com as colunas iniciais da tabela principal */}
+    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
       <TableCell>{typeDescription(item.type)}</TableCell>
       <TableCell colSpan={2}>{item.partner?.surname}<br />{item.category?.description}</TableCell>
       <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
       <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
       <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
-      {/* A última célula agrupa as ações e usa colSpan para completar a linha */}
-      <TableCell colSpan={3}> {/* 9 (total) - 2 (vazias) - 5 (dados) = 2. Ajuste conforme sua contagem final */}
+      <TableCell colSpan={2}>
         <Tooltip title='Editar'>
           <IconButton onClick={onStartEdit}>
             <i className="ri-pencil-line" />
@@ -425,8 +453,10 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
             <i className="ri-delete-bin-line" />
           </IconButton>
         </Tooltip>
-
-        {(!item.paymentId && !item.receivementId) && (
+      </TableCell>
+      <TableCell>
+        
+        {(!item.paymentId && !item.receivementId && !item.receivementId) && (
           <Tooltip title='Vincular'>
             <IconButton onClick={() => onViewDetails(item.id)}>
               <i className="ri-search-line" />
@@ -434,7 +464,9 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
           </Tooltip>
         )}
 
-        {item.paymentId && (
+        
+        
+        {item.paymentId || item.receivementId && (
           <>
             <Tooltip title='Informações'>
               <IconButton onClick={handleInfoClick}>
@@ -469,8 +501,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
   )
 }
 
-function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onCancel, mainTableColSpan }) {
-
+function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onCancel }) {
   const validationSchema = Yup.object({
     type: Yup.string().required('Tipo é obrigatório'),
     partner: Yup.object().nullable().when('type', {
@@ -500,7 +531,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
       toast.success('Conciliação salva com sucesso!');
       onFormSubmitted();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Erro ao salvar a conciliação.');
     } finally {
       setSubmitting(false);
     }
@@ -524,23 +555,22 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
         values,
         errors,
         touched,
-        handleChange,
+        handleChange, // Keep handleChange for the Select due to custom logic
         handleBlur,
         handleSubmit,
         isSubmitting,
         setFieldValue,
         setFieldTouched,
       }) => (
-        <TableRow sx={{ backgroundColor: '#e0e0e0' }}> {/* Cor de fundo para o formulário */}
-
-          <TableCell>
+        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+          <TableCell sx={{ p: 1 }}>
             <Select
               fullWidth
               size="small"
               name="type"
               value={values.type}
               onChange={(e) => {
-                handleChange(e);
+                handleChange(e); // Use handleChange here
                 if (e.target.value !== 'payment' && e.target.value !== 'receivement') {
                   setFieldValue('partner', null);
                   setFieldTouched('partner', false);
@@ -559,8 +589,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
               <Typography variant="caption" color="error">{errors.type}</Typography>
             )}
           </TableCell>
-
-          <TableCell colSpan={2} sx={{p: 2}}>
+          <TableCell sx={{ p: 1 }} colSpan={2}>
             {(values.type === 'payment' || values.type === 'receivement') && (
               <AutoComplete
                 size="small"
@@ -573,7 +602,6 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
                 onBlur={() => setFieldTouched('partner', true)}
                 error={touched.partner && Boolean(errors.partner)}
                 helperText={touched.partner && errors.partner}
-                sx={{ mb: 1 }}
               >
                 {(item) => <span>{item.surname}</span>}
               </AutoComplete>
@@ -593,53 +621,43 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
               {(item) => <span>{item.description}</span>}
             </AutoComplete>
           </TableCell>
-
-          <TableCell align="right">
-            <TextField
-              fullWidth
+          <TableCell sx={{ p: 1 }} align="right">
+            <Field
+              component={CurrencyField}
               size="small"
+              variant="outlined"
               placeholder="Valor"
-              variant='outlined'
               name="amount"
-              value={values.amount}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.amount && Boolean(errors.amount)}
-              helperText={touched.amount && errors.amount}
+              type="text"
+              //error={touched.amount && Boolean(errors.amount)}
+              //helperText={touched.amount && errors.amount}
             />
           </TableCell>
-          <TableCell align="right">
-            <TextField
-              fullWidth
+          <TableCell sx={{ p: 1 }} align="right">
+            <Field
+              component={CurrencyField}
               size="small"
+              variant="outlined"
               placeholder="Taxa"
-              variant='outlined'
               name="fee"
-              value={values.fee}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.fee && Boolean(errors.fee)}
-              helperText={touched.fee && errors.fee}
+              type="text"
+              //error={touched.fee && Boolean(errors.fee)}
+              //helperText={touched.fee && errors.fee}
             />
           </TableCell>
-          <TableCell align="right">
-            <TextField
-              fullWidth
+          <TableCell sx={{ p: 1 }} align="right">
+            <Field
+              component={CurrencyField}
               size="small"
-              type="number"
+              variant="outlined"
               placeholder="Desconto"
-              variant='outlined'
               name="discount"
-              value={values.discount}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.discount && Boolean(errors.discount)}
-              helperText={touched.discount && errors.discount}
+              type="text"
+              //error={touched.discount && Boolean(errors.discount)}
+              //helperText={touched.discount && errors.discount}
             />
           </TableCell>
-
-          {/* A última célula para os botões de ação, usando colSpan para preencher o restante da linha */}
-          <TableCell>
+          <TableCell sx={{ p: 1 }} colSpan={3}>
             <Tooltip title='Confirmar'>
               <IconButton
                 color="success"
@@ -664,7 +682,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
         </TableRow>
       )}
     </Formik>
-  )
+  );
 }
 
 function EntryTypeFilterDialog({ open, onClose, allEntryTypes, selectedFilters, onFilterChange, onApplyFilter }) {
