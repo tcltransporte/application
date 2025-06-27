@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: process.env.BASEPATH,
-  redirects: async () => {
+  /*redirects: async () => {
     return [
       {
         source: '/',
@@ -22,7 +22,7 @@ const nextConfig = {
         locale: false
       }
     ]
-  }
+  }*/
 }
 
 export default nextConfig
