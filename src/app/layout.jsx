@@ -29,19 +29,16 @@ export const metadata = {
   description: 'Materialize - Material Next.js Admin Template'
 }
 
-const RootLayout = async props => {
-
-  const params = await props.params
-  const { children } = props
+const RootLayout = async ({ children }) => {
 
   // Vars
   const headersList = await headers()
   const systemMode = await getSystemMode()
-  const direction = i18n.langDirection[params.lang]
+  const direction = i18n.langDirection[i18n.defaultLocale]
 
   return (
-    <TranslationWrapper headersList={headersList} lang={params.lang}>
-      <html id='__next' lang={params.lang} dir={direction} suppressHydrationWarning>
+    <TranslationWrapper headersList={headersList} lang={i18n.defaultLocale}>
+      <html id='__next' lang={i18n.defaultLocale} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
           {children}

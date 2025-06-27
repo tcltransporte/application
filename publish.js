@@ -34,8 +34,10 @@ async function prepareBuildFolder() {
   await fse.copy('.next', path.join(publishDir, '.next'))
   await fse.copy('public', path.join(publishDir, 'public'))
   await fse.copy('package.json', path.join(publishDir, 'package.json'))
+  await fse.copy('.env.production', path.join(publishDir, '.env'))
 
   console.log('✔️  Publish folder is ready')
+
 }
 
 async function publish() {
@@ -73,9 +75,7 @@ async function publish() {
     console.log('✅ Deployment completed successfully!')
 
   } catch (err) {
-
     console.error('❌ Deployment failed:', err.message)
-
   }
 }
 

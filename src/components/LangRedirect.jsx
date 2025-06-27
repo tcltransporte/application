@@ -9,7 +9,7 @@ import { i18n } from '@configs/i18n'
 const LangRedirect = () => {
 
   const pathname = usePathname()
-  const redirectUrl = `/${i18n.defaultLocale}`
+  const redirectUrl = `/dashboard/crm`
 
   redirect(redirectUrl)
 

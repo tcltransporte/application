@@ -52,7 +52,7 @@ const Login = ({ mode }) => {
   const { settings } = useSettings()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { lang: locale } = useParams()
+  //const { lang: locale } = useParams()
 
   const darkImg = '/images/pages/auth-v2-mask-1-dark.png'
   const lightImg = '/images/pages/auth-v2-mask-1-light.png'
@@ -125,7 +125,7 @@ const Login = ({ mode }) => {
         }
 
         const redirectURL = searchParams.get('redirectTo') ?? '/'
-        router.replace(getLocalizedUrl(redirectURL, locale))
+        router.replace(redirectURL)
       }
 
       setSubmitting(false)
@@ -242,7 +242,7 @@ const Login = ({ mode }) => {
                         }
                         label='Lembrar'
                       />
-                      <Typography component={Link} href={getLocalizedUrl('/forgot-password', locale)} color='primary.main'>
+                      <Typography component={Link} href={'/forgot-password'} color='primary.main'>
                         Esqueceu sua senha ?
                       </Typography>
                     </div>
@@ -253,7 +253,7 @@ const Login = ({ mode }) => {
 
                     <div className='flex justify-center items-center flex-wrap gap-2'>
                       <Typography>Ainda não possui uma conta ?</Typography>
-                      <Typography component={Link} href={getLocalizedUrl('/register', locale)} color='primary.main'>
+                      <Typography component={Link} href={'/register'} color='primary.main'>
                         Cadastre-se
                       </Typography>
                     </div>

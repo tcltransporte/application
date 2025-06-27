@@ -46,7 +46,7 @@ export default function AuthGuard({ children, locale }) {
 
       // Primeiro faz signOut, depois redireciona
       signOut({ redirect: false }).then(() => {
-        router.replace(`/${locale}/login`)
+        router.replace(`/login`)
       })
 
       return
@@ -55,7 +55,7 @@ export default function AuthGuard({ children, locale }) {
     // Usuário não autenticado
     if (status === 'unauthenticated') {
       hasRedirected.current = true
-      router.replace(`/${locale}/login`)
+      router.replace(`/login`)
     }
 
   }, [session, status, locale, router])

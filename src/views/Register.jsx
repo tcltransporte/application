@@ -40,7 +40,7 @@ const Register = ({ mode }) => {
 
   const router = useRouter()
   const { settings } = useSettings()
-  const { lang: locale } = useParams()
+  //const { lang: locale } = useParams()
 
   const [errorState, setErrorState] = useState(null)
   const [isPasswordShown, setIsPasswordShown] = useState(false)
@@ -199,7 +199,7 @@ const Register = ({ mode }) => {
 
       <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
         <Link
-          href={getLocalizedUrl('/', locale)}
+          href={'/'}
           className='absolute block-start-5 sm:block-start-[38px] inline-start-6 sm:inline-start-[38px]'
         >
           <Logo />
@@ -399,7 +399,7 @@ const Register = ({ mode }) => {
           <Typography variant='body2' className='mt-4'>
             Já tem uma conta?{' '}
             <Link
-              href={getLocalizedUrl('/login', locale)}
+              href={'/login'}
               className='text-primary hover:underline'
             >
               Fazer login

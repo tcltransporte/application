@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "dotenv -e .env.production -- next build",
+    "build:tcl": "dotenv -e .env.tcl -- next build",
     "start": "next start",
     "lint": "next lint",
-    "publish": "node publish.js"
+    "publish": "node publish.js",
+    "publish:tcl": "node publish-tcl.js"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -73,6 +75,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.10",
     "dotenv": "^16.5.0",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "fs-extra": "^11.3.0",
