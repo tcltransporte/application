@@ -8,7 +8,7 @@ import themeConfig from '@configs/themeConfig'
 import { commonLayoutClasses } from '@layouts/utils/layoutClasses'
 
 const StyledMain = styled.main`
-  padding: ${themeConfig.layoutPadding}px;
+  padding: ${themeConfig.layoutPadding}px ${themeConfig.layoutPadding}px 0px ${themeConfig.layoutPadding}px;
   ${({ isContentCompact }) =>
     isContentCompact &&
     `

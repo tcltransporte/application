@@ -91,3 +91,31 @@ export async function getShippiments({limit = 50, offset, dueDate}) {
     return result
 
 }
+
+export async function onServerAddCte({shippimentId, chCTe}) {
+    
+    const db = new AppContext()
+
+    const cte = await db.Cte.findOne({where: [{chaveCt: chCTe}]})
+
+    if (!cte) {
+        throw new Error('CT-e não encontrado!')
+    }
+
+    if (cte.shippimentId) {
+        throw new Error('CT-e já está adicionado em outro romaneio!')
+    }
+
+    await db.Cte.update({shippimentId: shippimentId}, {where: [{chaveCt: chCTe}]})
+
+    return cte.toJSON()
+
+}
+
+export async function onServerRemoveCte({cteId}) {
+    
+    const db = new AppContext()
+
+    await db.Cte.update({shippimentId: null}, {where: [{id: cteId}]})
+
+}

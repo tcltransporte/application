@@ -88,7 +88,7 @@ export class AppContext extends Sequelize {
       password: process.env.DB_PASSWORD,
       dialect: 'mssql',
       dialectModule: tedious,
-      databaseVersion: '10.50.1600',
+      //databaseVersion: '10.50.1600',
       timezone: "America/Sao_Paulo",
       dialectOptions: { options: { requestTimeout: 300000, encrypt: false }}, define: { timestamps: false },
       logging: (query, options) => {
@@ -111,6 +111,10 @@ export class AppContext extends Sequelize {
 
     this.CompanyUser.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
     this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+
+    this.Cte.belongsTo(this.Partner, {as: 'sender', foreignKey: 'senderId', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Shippiment, {as: 'shippiment', foreignKey: 'IDCarga', targetKey: 'codigo_carga'})
+    this.Cte.belongsTo(this.Partner, {as: 'recipient', foreignKey: 'recipientId', targetKey: 'codigo_pessoa'})
 
     this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
     this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })

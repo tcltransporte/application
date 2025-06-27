@@ -94,7 +94,7 @@ export class Cte {
     type: Sequelize.SMALLINT
   }
 
-  baseCalculo = {
+  calculationBasis = {
     field: 'baseCalculo',
     type: Sequelize.DECIMAL
   }

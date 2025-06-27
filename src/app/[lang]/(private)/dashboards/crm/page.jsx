@@ -1,13 +1,13 @@
-// MUI Imports
 import Welcome from '@/views'
-import Grid from '@mui/material/Grid'
 
-const Dashboard = async () => {
+export const metadata = {
+  title: `${process.env.TITLE} - Home`,
+}
+
+export default async function Home() {
 
   return (
     <Welcome></Welcome>
   )
 
 }
-
-export default Dashboard

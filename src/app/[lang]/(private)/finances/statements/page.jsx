@@ -1,10 +1,12 @@
-"use server"
-
 import { getStatements } from '@/app/server/finances/statements/index.controller'
 import { ViewFinancesStatements } from '@/views/finances/statements'
 //import { getStatements } from '@/views/finances/statements/index.controller'
 
-const FinancesStatements = async () => {
+export const metadata = {
+  title: `${process.env.TITLE} - Extratos`,
+}
+
+export default async function FinancesStatements() {
 
   const initialStatements = await getStatements({
     limit: 50,
@@ -14,5 +16,3 @@ const FinancesStatements = async () => {
   return <ViewFinancesStatements initialStatements={initialStatements} />
 
 }
-
-export default FinancesStatements

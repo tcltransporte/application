@@ -3,7 +3,11 @@ import { DateFormat } from '@/utils/extensions';
 import { ViewFinancesPayments } from '@/views/finances/payments';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 
-const FinancesPayments = async () => {
+export const metadata = {
+  title: `${process.env.TITLE} - Contas a pagar`,
+}
+
+export default async function FinancesPayments() {
 
   const now = new Date()
 
@@ -20,6 +24,5 @@ const FinancesPayments = async () => {
   })
 
   return <ViewFinancesPayments initialPayments={initialPayments} />
-}
 
-export default FinancesPayments
+}

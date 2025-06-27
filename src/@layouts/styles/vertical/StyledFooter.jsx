@@ -33,7 +33,6 @@ const StyledFooter = styled.footer`
 
     &.${verticalLayoutClasses.footerDetached} {
       pointer-events: none;
-      padding-inline: ${themeConfig.layoutPadding}px;
 
       & .${verticalLayoutClasses.footerContentWrapper} {
         pointer-events: auto;
@@ -61,7 +60,6 @@ const StyledFooter = styled.footer`
 
   & .${verticalLayoutClasses.footerContentWrapper} {
     padding-block: 16px;
-    padding-inline: ${themeConfig.layoutPadding}px;
   }
 
   ${({ overrideStyles }) => overrideStyles}

@@ -71,20 +71,30 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem>
         </SubMenu>
         */}
-        <SubMenu
-          label="Finanças"
-          icon={<i className="ri-money-dollar-circle-line" />}
-        >
-          <MenuItem href={`/${locale}/finances/payments`}>Contas a pagar</MenuItem>
-          <MenuItem href={`/${locale}/finances/receivements`}>Contas a receber</MenuItem>
-          <MenuItem href={`/${locale}/finances/prepare`}>Preparação</MenuItem>
-          <MenuItem href={`/${locale}/finances/shippiments`}>Remessas</MenuItem>
-          <MenuItem href={`/${locale}/finances/shippiments`}>Retornos</MenuItem>
-          <MenuItem href={`/${locale}/finances/statements`}>Extratos</MenuItem>
-        </SubMenu>
+
+        {process.env.NEXT_PUBLIC_FINANCAS === 'true' && (
+          <SubMenu label="Finanças" icon={<i className="ri-money-dollar-circle-line" />}>
+            <MenuItem href={`/${locale}/finances/payments`}>Contas a pagar</MenuItem>
+            <MenuItem href={`/${locale}/finances/receivements`}>Contas a receber</MenuItem>
+            <MenuItem href={`/${locale}/finances/prepare`}>Preparação</MenuItem>
+            <MenuItem href={`/${locale}/finances/shippiments`}>Remessas</MenuItem>
+            <MenuItem href={`/${locale}/finances/shippiments`}>Retornos</MenuItem>
+            <MenuItem href={`/${locale}/finances/statements`}>Extratos</MenuItem>
+          </SubMenu>
+        )}
+
+        {process.env.NEXT_PUBLIC_EXPEDITION === 'true' && (
+          <SubMenu label="Expedição" icon={<i className="ri-truck-line" />}>
+            <MenuItem href={`/${locale}/expedition/ctes`}>Conhecimentos</MenuItem>
+            <MenuItem href={`/${locale}/expedition/shippiments`}>Romaneios</MenuItem>
+            <MenuItem href={`/${locale}/expedition/dispatches`}>Despacho</MenuItem>
+          </SubMenu>
+        )}
+
         <MenuItem href={`/${locale}/settings`} icon={<i className='ri-settings-3-line' />}>
           {dictionary['navigation'].settings}
         </MenuItem>
+
         {/*
         <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
