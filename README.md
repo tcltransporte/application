@@ -6,6 +6,16 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
+npm install
+# or
+yarn
+# or
+pnpm install
+# or
+bun install
+```
+
+```bash
 npm run dev
 # or
 yarn dev
