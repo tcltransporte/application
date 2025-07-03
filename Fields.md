@@ -1,13 +1,10 @@
 # Fields
 
-## Imports
-```jsx
-import { Field } from 'formik'
-import { TextField, NumericField, SelectField } from '@/components/field'
-```
-
 ## TextField
 ```jsx
+import { Field } from 'formik'
+import { TextField } from '@/components/field'
+
 <Field
     as={TextField}
     label='Descrição'
@@ -19,6 +16,9 @@ import { TextField, NumericField, SelectField } from '@/components/field'
 
 ## NumericField
 ```jsx
+import { Field } from 'formik'
+import { NumericField } from '@/components/field'
+
 <Field
     as={NumericField}
     label='Valor'
@@ -30,6 +30,9 @@ import { TextField, NumericField, SelectField } from '@/components/field'
 
 ## SelectField
 ```jsx
+import { Field } from 'formik'
+import { SelectField } from '@/components/field'
+
 <Field
     as={SelectField}
     label="Tipo"
