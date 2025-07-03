@@ -1,20 +1,5 @@
 # Fields
 
-## Example
-```jsx
-import { Formik, Form } from 'formik'
-
-<Formik>
-    {({ touched, errors }) => {
-        return (
-            <Form>
-                {/*<Field />*/}
-            </Form>
-        )
-    }}
-</Formik>
-```
-
 ## TextField
 ```jsx
 import { Field } from 'formik'
@@ -59,4 +44,20 @@ import { SelectField } from '@/components/field'
     <MenuItem value="1">Entrada</MenuItem>
     <MenuItem value="2">Saída</MenuItem>
 </Field>
+```
+
+
+## Example
+```jsx
+import { Formik, Form } from 'formik'
+
+<Formik>
+    {({ touched, errors }) => {
+        return (
+            <Form>
+                {/*<Field />*/}
+            </Form>
+        )
+    }}
+</Formik>
 ```
