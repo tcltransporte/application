@@ -1,5 +1,20 @@
 # Fields
 
+## Example
+```jsx
+import { Formik, Form } from 'formik'
+
+<Formik>
+    {({ touched, errors }) => {
+        return (
+            <Form>
+                {/*<Field />*/}
+            </Form>
+        )
+    }}
+</Formik>
+```
+
 ## TextField
 ```jsx
 import { Field } from 'formik'
