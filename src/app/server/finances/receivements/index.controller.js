@@ -8,7 +8,7 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Op } from "sequelize"
 
-export async function getPayments({limit = 50, offset, dueDate}) {
+export async function getReceivements({limit = 50, offset, dueDate}) {
 
     const session = await getServerSession(authOptions)
 
@@ -30,7 +30,7 @@ export async function getPayments({limit = 50, offset, dueDate}) {
                     [Op.between]: [dueDate.start, dueDate.end]
                 }
             }),
-            '$financialMovement.financialCategory.codigo_tipo_operacao$': 2
+            '$financialMovement.financialCategory.codigo_tipo_operacao$': 1
         },
         order: [['dueDate', 'ASC']],
         limit,

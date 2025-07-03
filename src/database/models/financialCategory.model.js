@@ -9,6 +9,11 @@ export class FinancialCategory {
     type: DataTypes.BIGINT
   }
 
+  operation = {
+    field: 'codigo_tipo_operacao',
+    type: DataTypes.SMALLINT
+  }
+
   code = {
     field: 'Codigo',
     type: DataTypes.STRING(15)
@@ -24,9 +29,15 @@ export class FinancialCategory {
     type: DataTypes.STRING
   }
 
+  isActive = {
+    field: 'isAtivo',
+    type: DataTypes.BOOLEAN
+  }
+
   externalId = {
     field: 'externalId',
     type: DataTypes.STRING
   }
+  
 
 }

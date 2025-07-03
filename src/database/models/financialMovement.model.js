@@ -19,6 +19,11 @@ export class FinancialMovement {
         type: DataTypes.DECIMAL
     }
 
+    financialCategoryId = {
+        field: 'IDPlanoContasContabil',
+        type: DataTypes.BIGINT
+    }
+
     partnerId = {
         field: 'codigo_pessoa',
         type: DataTypes.BIGINT

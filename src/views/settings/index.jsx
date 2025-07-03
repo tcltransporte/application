@@ -21,6 +21,7 @@ import BillingPlans from './signature'
 import Security from './security'
 import Integrations from '@/views/settings/integrations'
 import { useTitle } from '@/contexts/TitleProvider'
+import { Categories } from './categories'
 
 //const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
 
@@ -36,6 +37,7 @@ export const ViewSettings = ({ company, integrations }) => {
   const tabContentList = {
     'company': <Company company={company} />,
     'users': <Users />,
+    'categories': <Categories />,
     'security': <Security />,
     'billing-plans': <BillingPlans />,
     //'notifications': <NotificationsTab />,
@@ -51,6 +53,7 @@ export const ViewSettings = ({ company, integrations }) => {
           <CustomTabList onChange={(event, value) => setActiveTab(value)} variant='scrollable'>
             <Tab label='Empresa' icon={<i className='ri-group-line' />} iconPosition='start' value='company' />
             <Tab label='Usuários' icon={<i className='ri-lock-2-line' />} iconPosition='start' value='users' />
+            <Tab label='Plano de contas' icon={<i className='ri-lock-2-line' />} iconPosition='start' value='categories' />
             {/*<Tab label='Certificado' icon={<i className='ri-shield-check-line' />} iconPosition='start' value='security' />*/}
             {/*<Tab label='Assinatura' icon={<i className='ri-bookmark-line' />} iconPosition='start' value='billing-plans' />*/}
             {/*<Tab label='Notifications' icon={<i className='ri-notification-4-line' />} iconPosition='start' value='notifications' />*/}

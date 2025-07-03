@@ -6,13 +6,13 @@ import fs from 'fs/promises'
 import dotenv from 'dotenv'
 import { rimraf } from 'rimraf'
 
-dotenv.config()
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const publishDir = path.join(__dirname, 'publish')
 const archivePath = path.join(__dirname, 'publish.tar.gz')
+
+dotenv.config({ path: path.resolve(__dirname, '.env.production') })
 
 async function prepareBuildFolder() {
 

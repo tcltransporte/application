@@ -119,6 +119,7 @@ export class AppContext extends Sequelize {
     this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
     this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })
     
+    this.FinancialMovement.belongsTo(this.FinancialCategory, { as: 'financialCategory', foreignKey: 'IDPlanoContasContabil', targetKey: 'id' })
     this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa' })
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta' })
 

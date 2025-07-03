@@ -8,7 +8,7 @@ import { Backdrop, CircularProgress } from "@mui/material";
 import { AutoComplete } from "@/components/AutoComplete";
 import { styles } from "@/components/styles";
 import { createMovement, getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
-import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
+import { getPartner, getPaymentMethod } from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
 import { CurrencyField, TextField } from "@/components/field";
@@ -117,7 +117,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                 <Grid container direction="row" spacing={2}>
 
-                  <Grid item size={{xs: 12, sm: 4.6}}>
+                  <Grid item size={{xs: 12, sm: 5}}>
                     <AutoComplete
                       name="receiver"
                       label="Recebedor"
@@ -130,20 +130,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     </AutoComplete>
                   </Grid>
 
-                  <Grid item size={{xs: 12, sm: 3.9}}>
-                    <AutoComplete
-                      name="category"
-                      label="Plano de conta"
-                      value={values.paymentMethod}
-                      text={(p) => p?.description}
-                      onChange={(val) => setFieldValue("category", val)}
-                      onSearch={getFinancialCategory}
-                    >
-                      {(item) => <span>{item.description}</span>}
-                    </AutoComplete>
-                  </Grid>
-
-                  <Grid item size={{xs: 12, sm: 3.5}}>
+                  <Grid item size={{xs: 12, sm: 4}}>
                     <AutoComplete
                       name="paymentMethod"
                       label="Forma de pagamento"

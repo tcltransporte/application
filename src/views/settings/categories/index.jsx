@@ -12,8 +12,9 @@ import { signOut, useSession } from 'next-auth/react'
 import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
 import { ViewUser } from './view.user'
 import { styles } from '@/components/styles'
+import { getCategories } from '@/app/server/settings/categories/index.controller'
 
-export const Users = () => {
+export const Categories = () => {
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,7 +30,7 @@ export const Users = () => {
   }, [])
 
   const fetchUsers = async () => {
-    const updatedUsers = await getUsers()
+    const updatedUsers = await getCategories()
     setUsers(updatedUsers)
   }
 
@@ -91,8 +92,8 @@ export const Users = () => {
             <Table sx={styles.tableLayout} stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Usuário</TableCell>
-                  <TableCell>Email</TableCell>
+                  <TableCell align='left'>Descrição</TableCell>
+                  <TableCell align='left'>Tipo</TableCell>
                   <TableCell align='center'>Status</TableCell>
                   <TableCell align='center'>Ações</TableCell>
                 </TableRow>
@@ -116,14 +117,18 @@ export const Users = () => {
                     <TableRow key={row.id}>
                       <TableCell>
                         <div className='flex items-center gap-3'>
-                          {getAvatar({ avatar: row.avatar, fullName: row.fullName })}
                           <div className='flex flex-col'>
-                            <Typography className='font-medium'>{row.user.userName}</Typography>
-                            <Typography variant='body2'>{row.user.userName}</Typography>
+                            <Typography className='font-medium'>{row.description}</Typography>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{row.user.userMember?.email}</TableCell>
+                      <TableCell>
+                        <div className='flex items-center gap-3'>
+                          <div className='flex flex-col'>
+                            <Typography className='font-medium'>{row.operation == 1 ? 'Entrada' : row.operation == 2 ? 'Saída' : ''}</Typography>
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell align='center'>
                         {loadingStatus[row.id] ? <CircularProgress size={20} /> : (
                           row.isActive === true ? <Chip label='Ativo' size='small' color='success' /> :
@@ -138,37 +143,6 @@ export const Users = () => {
                               <i className='ri-pencil-line' />
                             </IconButton>
                           </Tooltip>
-
-                          {row.isActive === true && (
-                            <Tooltip title='Desativar'>
-                              <IconButton size='small' onClick={() => handleDisable({ id: row.id, userId: row.user.userId })}>
-                                <i className='ri-user-unfollow-line' />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          {row.isActive === false && (
-                            <Tooltip title='Ativar'>
-                              <IconButton size='small' onClick={() => handleApprove(row.id)}>
-                                <i className='ri-user-follow-line' />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          {row.isActive !== true && row.isActive !== false && (
-                            <>
-                              <Tooltip title='Aprovar'>
-                                <IconButton size='small' color='success' onClick={() => handleApprove(row.id)}>
-                                  <i className='ri-check-line' />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title='Reprovar'>
-                                <IconButton size='small' color='error' onClick={() => handleDisapprove(row.id)}>
-                                  <i className='ri-close-line' />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
                         </Stack>
                       </TableCell>
                     </TableRow>
