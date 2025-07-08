@@ -11,7 +11,7 @@ import { createMovement, getInstallment, submitInstallment } from "@/app/server/
 import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
-import { CurrencyField, TextField } from "@/components/field";
+import { NumericField, TextField } from "@/components/field";
 
 const INTERVAL_OPTIONS = [
   { label: 'Semanal', value: 'weekly' },
@@ -78,7 +78,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
           onClose(true)
         }}
       >
-        {({ values, setFieldValue, isSubmitting }) => {
+        {({ values, setFieldValue, errors, touched, isSubmitting }) => {
           // Atualiza parcelas sempre que campos relacionados mudarem
           useEffect(() => {
             const { amountTotal, startDate, numParcelas, interval, customDays } = values;
@@ -170,10 +170,11 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: 2.3}}>
                     <Field
-                      type="text"
-                      name="amountTotal"
+                      as={NumericField}
                       label="Valor"
-                      component={CurrencyField}
+                      name="amountTotal"
+                      error={Boolean(touched.amountTotal && errors.amountTotal)}
+                      helperText={touched.amountTotal && errors.amountTotal}
                     />
                   </Grid>
 
@@ -266,9 +267,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
                         <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
                         <TableCell>
                           <Field
-                            type="text"
+                            as={NumericField}
                             name={`installments[${index}].amount`}
-                            component={CurrencyField}
+                            error={Boolean(touched.amount && errors.amount)}
+                            helperText={touched.amount && errors.amount}
                           />
                         </TableCell>
                         <TableCell>
@@ -355,6 +357,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
   return (
     <>
+    
       <Backdrop open={installmentId !== undefined && loading} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
         <CircularProgress color="inherit" />
         <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>

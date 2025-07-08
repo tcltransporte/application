@@ -18,8 +18,8 @@ export async function getCategories() {
   const categories = await db.FinancialCategory.findAll({
     attributes: ['id', 'description', 'operation'],
     order: [['description', 'asc']],
-    limit: 20,
-    offset: 0,
+    //limit: 20,
+    //offset: 0,
   })
 
   return _.map(categories, (categorie) => categorie.toJSON())

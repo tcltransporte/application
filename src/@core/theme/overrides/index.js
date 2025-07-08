@@ -35,6 +35,7 @@ import timeline from './timeline'
 import toggleButton from './toggle-button'
 import tooltip from './tooltip'
 import typography from './typography'
+import tableCell from './tableCell'
 
 const overrides = skin => {
   return Object.assign(
@@ -74,7 +75,8 @@ const overrides = skin => {
     timeline,
     toggleButton,
     tooltip,
-    typography
+    typography,
+    tableCell
   )
 }
 

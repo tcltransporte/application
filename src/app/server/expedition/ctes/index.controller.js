@@ -101,3 +101,45 @@ export async function getCtes({limit = 50, offset, cStat, dhEmi}) {
   return result
   
 }
+
+export async function onDacte({id}) {
+
+  const db = new AppContext()
+
+  const cte = await db.Cte.findOne({attributes: ['xml'], where: [{ id }]})
+
+  const url = `http://vps53636.publiccloud.com.br/sped-da/dacte.php`;
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+
+  const postData = {
+    logo: "TCL Transporte e Logistica.jpeg",
+    xml: Buffer.from(cte.xml.toString(), 'utf8').toString('base64')
+  };
+
+  try {
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(postData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const pdfBuffer = await response.arrayBuffer();
+    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+
+    console.log(pdfBase64)
+    
+    return {pdf: pdfBase64}
+
+  } catch (error) {
+    console.error('Erro na solicitação:', error);
+    throw error;
+  }
+
+}

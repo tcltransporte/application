@@ -123,7 +123,6 @@ export class AppContext extends Sequelize {
     this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa' })
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta' })
 
-
     this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria' })
     this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId' })
 
@@ -147,6 +146,7 @@ export class AppContext extends Sequelize {
     this.CompanyBusiness.addHook('afterFind', afterFind)
     this.CompanyIntegration.addHook('afterFind', afterFind)
     this.CompanyUser.addHook('afterFind', afterFind)
+    this.FinancialCategory.addHook('afterFind', afterFind)
     this.Integration.addHook('afterFind', afterFind)
     this.Statement.addHook('afterFind', afterFind)
     this.StatementData.addHook('afterFind', afterFind)

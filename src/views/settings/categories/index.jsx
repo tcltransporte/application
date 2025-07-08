@@ -10,7 +10,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import { signOut, useSession } from 'next-auth/react'
 import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
-import { ViewUser } from './view.user'
+import { ViewCategorie } from './view.categorie'
 import { styles } from '@/components/styles'
 import { getCategories } from '@/app/server/settings/categories/index.controller'
 
@@ -163,7 +163,7 @@ export const Categories = () => {
               onPageChange={(e, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={e => {
-                setRowsPerPage(parseInt(e.target.value, 10))
+                setRowsPerPage(parseInt(e.target.value, 25))
                 setPage(0)
               }}
               rowsPerPageOptions={[5, 10, 25, 50]}
@@ -173,8 +173,8 @@ export const Categories = () => {
 
       </Box>
 
-      <ViewUser
-        companyUserId={companyUserId}
+      <ViewCategorie
+        categorieId={companyUserId}
         onClose={(isUpdated) => {
           setCompanyUserId(undefined)
           if (isUpdated) {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, createRef } from 'react'
 import {
   Typography,
   Table,
@@ -23,6 +23,8 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Tooltip,
+  Backdrop,
 } from '@mui/material'
 
 import { useDropzone } from 'react-dropzone'
@@ -34,8 +36,9 @@ import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/
 import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { Form, Formik } from 'formik'
-import { getCtes } from '@/app/server/expedition/ctes/index.controller'
+import { getCtes, onDacte } from '@/app/server/expedition/ctes/index.controller'
 import { format, parseISO } from 'date-fns'
+import { ReportViewer } from '@/components/ReportViewer'
 
 
 export const ImportDrawer = ({ open, onClose }) => {
@@ -310,9 +313,13 @@ const CteDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
 
 export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
+  const reportViewer = useRef()
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
+  const [isReporting, setIsReporting] = useState(false)
+
   const [installments, setInstallments] = useState(initialPayments)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isDrawerOpen, setDrawerOpen] = useState(false)
@@ -380,174 +387,229 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
     }))
   }
 
+  const handleDacte = async ({id}) => {
+    try {
+
+      setIsReporting(true)
+
+      const response = await onDacte({ id })
+      console.log(response)
+      reportViewer.current.visualize(response.pdf)
+
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setIsReporting(false)
+    }
+  }
+
   const allIds = installments.response?.rows.map((p) => p.codigo_carga) || []
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
 
   return (
-    <Box sx={styles.container}>
-      <Box sx={styles.header}>
-        <Button
-          variant="contained"
-          startIcon={<i className="ri-upload-line" />}
-          onClick={() => setImportDrawerOpen(true)}
-        >
-          Importar
-        </Button>
+    <>
+      <Backdrop open={isReporting} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
+        <CircularProgress color="inherit" />
+        <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
+          Carregando...
+        </Typography>
+      </Backdrop>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <PeriodFilter
-            title="Emissão"
-            initialDateRange={[
-              new Date(installments.request?.dhEmi?.start),
-              new Date(installments.request?.dhEmi?.end),
-            ]}
-            onChange={handlePeriodChange}
-          />
+      <Box sx={styles.container}>
+        <Box sx={styles.header}>
           <Button
-            variant="outlined"
-            startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
-            onClick={() =>
-              fetchPayments({
-                ...installments.request,
-                offset: 0,
-              })
-            }
-            disabled={isFetching}
+            variant="contained"
+            startIcon={<i className="ri-upload-line" />}
+            onClick={() => setImportDrawerOpen(true)}
           >
-            {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            Importar
           </Button>
-        </Box>
-      </Box>
 
-      <Box sx={styles.tableWrapper}>
-        <Paper sx={styles.paperContainer}>
-          <Table sx={styles.tableLayout} stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell align="center" sx={{ width: 56 }}>
-                  <Checkbox
-                    color="primary"
-                    checked={allSelected}
-                    indeterminate={selectedIds.size > 0 && !allSelected}
-                    onChange={toggleSelectAll}
-                  />
-                </TableCell>
-                <TableCell align="left" sx={{ width: 150 }}>Emissão</TableCell>
-                <TableCell align="left" sx={{ width: 90 }}>Número</TableCell>
-                <TableCell align="left" sx={{ width: 70 }}>Serie</TableCell>
-                <TableCell sx={{ width: 360 }}>Chave de acesso</TableCell>
-                <TableCell>Remetente</TableCell>
-                <TableCell>Destinatário</TableCell>
-                <TableCell align='right'>Valor</TableCell>
-                <TableCell sx={{ width: 50 }}></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isFetching ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={styles.tableCellLoader}>
-                    <CircularProgress size={30} />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                _.map(installments.response?.rows, (payment, index) => {
-                  const id = payment.codigo_carga
-                  const isItemSelected = selectedIds.has(id)
-
-                  return (
-                    <TableRow
-                      key={index}
-                      hover
-                      onClick={() => toggleSelect(id)}
-                      selected={isItemSelected}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          color="primary"
-                          checked={isItemSelected}
-                          onChange={() => toggleSelect(id)}
-                        />
-                      </TableCell>
-                      <TableCell>{payment.dhEmi ? format(payment.dhEmi, 'dd/MM/yyyy HH:mm') : ''}</TableCell>
-                      <TableCell>{payment.nCT}</TableCell>
-                      <TableCell>{payment.serie}</TableCell>
-                      <TableCell>{payment.chCTe}</TableCell>
-                      <TableCell>{payment.shippiment?.sender?.surname}</TableCell>
-                      <TableCell>{payment.recipient?.surname}</TableCell>
-                      <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.calculationBasis)}</TableCell>
-                      <TableCell align="right">
-                        <Badge
-                          color="primary"
-                          badgeContent={_.size(payment.ctes) || '0'}
-                          sx={{ '& .MuiBadge-badge': { right: 10, fontWeight: 'bold' } }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedInstallmentId(id)
-                            setSelectedCtes((payment.ctes || []).map(cte => ({ ...cte })))
-                            setDrawerOpen(true)
-                          }}
-                          style={{ cursor: 'pointer' }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  )
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <PeriodFilter
+              title="Emissão"
+              initialDateRange={[
+                new Date(installments.request?.dhEmi?.start),
+                new Date(installments.request?.dhEmi?.end),
+              ]}
+              onChange={handlePeriodChange}
+            />
+            <Button
+              variant="outlined"
+              startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
+              onClick={() =>
+                fetchPayments({
+                  ...installments.request,
+                  offset: 0,
                 })
-              )}
-            </TableBody>
-          </Table>
-        </Paper>
+              }
+              disabled={isFetching}
+            >
+              {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            </Button>
+          </Box>
+        </Box>
+
+        <Box sx={styles.tableWrapper}>
+          <Paper sx={styles.paperContainer}>
+            <Table sx={styles.tableLayout} stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center" sx={{ width: 50 }}>
+                    <Checkbox
+                      color="primary"
+                      checked={allSelected}
+                      indeterminate={selectedIds.size > 0 && !allSelected}
+                      onChange={toggleSelectAll}
+                    />
+                  </TableCell>
+                  <TableCell align="left" sx={{ width: 135 }}>Emissão</TableCell>
+                  <TableCell align="left" sx={{ width: 85 }}>Número</TableCell>
+                  <TableCell align="left" sx={{ width: 55 }}>Serie</TableCell>
+                  <TableCell sx={{ width: 320 }}>Chave de acesso</TableCell>
+                  <TableCell>Remetente</TableCell>
+                  <TableCell>Destinatário</TableCell>
+                  <TableCell align='right' sx={{ width: 80 }}>Valor</TableCell>
+                  <TableCell align="center" sx={{ width: 90 }}></TableCell>
+                  <TableCell align="center" sx={{ width: 35 }}></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isFetching ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center" sx={styles.tableCellLoader}>
+                      <CircularProgress size={30} />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  _.map(installments.response?.rows, (payment, index) => {
+                    const id = payment.codigo_carga
+                    const isItemSelected = selectedIds.has(id)
+
+                    return (
+                      <TableRow
+                        key={index}
+                        hover
+                        onClick={() => toggleSelect(id)}
+                        selected={isItemSelected}
+                        sx={{ cursor: 'pointer' }}
+                        className="with-hover-actions"
+                      >
+                        <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            color="primary"
+                            checked={isItemSelected}
+                            onChange={() => toggleSelect(id)}
+                          />
+                        </TableCell>
+                        <TableCell>{payment.dhEmi ? format(payment.dhEmi, 'dd/MM/yyyy HH:mm') : ''}</TableCell>
+                        <TableCell>{payment.nCT}</TableCell>
+                        <TableCell>{payment.serie}</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.chCTe}</TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.shippiment?.sender?.surname}</TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.recipient?.surname}</TableCell>
+                        <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.calculationBasis)}</TableCell>
+                        <TableCell align="center">
+                          <Box className="row-actions">
+                            <Tooltip title="Visualizar PDF">
+                              <IconButton
+                                size="large"
+                                onClick={(e) => handleDacte({ id: payment.id })}
+                              >
+                                <i className="ri-file-pdf-2-line" style={{ fontSize: 20, color: '#d32f2f' }} />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Baixar XML">
+                              <IconButton
+                                size="large"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // Aqui você coloca a função de download do XML, CSV, etc.
+                                  console.log('Download de:', payment)
+                                }}
+                              >
+                                <i className="ri-download-2-line" style={{ fontSize: 20 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Badge
+                            color="primary"
+                            badgeContent={_.size(payment.ctes) || '0'}
+                            sx={{ '& .MuiBadge-badge': { right: 10, fontWeight: 'bold' } }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedInstallmentId(id)
+                              setSelectedCtes((payment.ctes || []).map(cte => ({ ...cte })))
+                              setDrawerOpen(true)
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </Paper>
+        </Box>
+
+        <Box sx={styles.pagination}>
+          <Box sx={{ minWidth: 220 }}>
+            {selectedIds.size > 0 && (
+              <Typography variant="subtitle1" sx={{ px: 2, py: 1, fontWeight: 500 }}>
+                {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado
+                {selectedIds.size > 1 ? 's' : ''}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ ml: 'auto' }}>
+            <TablePagination
+              component="div"
+              labelRowsPerPage="Registros por página"
+              count={installments.response?.count || 0}
+              page={installments.request?.offset || 0}
+              rowsPerPage={installments.request?.limit || 10}
+              onPageChange={(event, offset) =>
+                fetchPayments({ ...installments.request, offset })
+              }
+              onRowsPerPageChange={(event) =>
+                fetchPayments({
+                  ...installments.request,
+                  limit: parseInt(event.target.value),
+                  offset: 0,
+                })
+              }
+            />
+          </Box>
+        </Box>
+
+        <CteDrawer
+          shippimentId={selectedInstallmentId}
+          open={isDrawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          ctes={selectedCtes}
+          onAddCte={(newCte) => {
+            const newList = [...selectedCtes, { ...newCte }]
+            updateInstallmentCtes(newList)
+          }}
+          onRemoveCte={(cteToRemove) => {
+            const newList = selectedCtes.filter((c) => c.chCTe !== cteToRemove.chCTe)
+            updateInstallmentCtes(newList)
+          }}
+        />
+
+        <ImportDrawer
+          open={isImportDrawerOpen}
+          onClose={() => setImportDrawerOpen(false)}
+        />
+
+        <ReportViewer ref={reportViewer}></ReportViewer>
+
       </Box>
 
-      <Box sx={styles.pagination}>
-        <Box sx={{ minWidth: 220 }}>
-          {selectedIds.size > 0 && (
-            <Typography variant="subtitle1" sx={{ px: 2, py: 1, fontWeight: 500 }}>
-              {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado
-              {selectedIds.size > 1 ? 's' : ''}
-            </Typography>
-          )}
-        </Box>
-        <Box sx={{ ml: 'auto' }}>
-          <TablePagination
-            component="div"
-            labelRowsPerPage="Registros por página"
-            count={installments.response?.count || 0}
-            page={installments.request?.offset || 0}
-            rowsPerPage={installments.request?.limit || 10}
-            onPageChange={(event, offset) =>
-              fetchPayments({ ...installments.request, offset })
-            }
-            onRowsPerPageChange={(event) =>
-              fetchPayments({
-                ...installments.request,
-                limit: parseInt(event.target.value),
-                offset: 0,
-              })
-            }
-          />
-        </Box>
-      </Box>
-
-      <CteDrawer
-        shippimentId={selectedInstallmentId}
-        open={isDrawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        ctes={selectedCtes}
-        onAddCte={(newCte) => {
-          const newList = [...selectedCtes, { ...newCte }]
-          updateInstallmentCtes(newList)
-        }}
-        onRemoveCte={(cteToRemove) => {
-          const newList = selectedCtes.filter((c) => c.chCTe !== cteToRemove.chCTe)
-          updateInstallmentCtes(newList)
-        }}
-      />
-
-      <ImportDrawer
-        open={isImportDrawerOpen}
-        onClose={() => setImportDrawerOpen(false)}
-      />
-    </Box>
+    </>
   )
 }

@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+.with-hover-actions .row-actions {
+  visibility: hidden;
+}
+
+.with-hover-actions:hover .row-actions {
+  visibility: visible;
+}
+
+
 /* Fundo do calendário */
 .rdrCalendarWrapper {
   background-color: var(--mui-palette-background-default) !important;
