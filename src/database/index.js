@@ -21,6 +21,8 @@ import { FinancialCategory } from './models/financialCategory.model.js'
 import { PaymentMethod } from './models/paymentMethod.model.js'
 import { Shippiment } from './models/shippiment.model.js'
 import { Cte } from './models/cte.model.js'
+import { CteNfe } from './models/cteNfe.model.js'
+import { Nfe } from './models/Nfe.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -54,6 +56,8 @@ export class AppContext extends Sequelize {
 
   Cte = this.define('cte', new Cte(), { tableName: 'Ctes' })
 
+  CteNfe = this.define('cteNfe', new CteNfe(), { tableName: 'CteNotas' })
+
   FinancialCategory = this.define('financialCategory', new FinancialCategory(), { tableName: 'PlanoContasContabil' })
 
   FinancialMovement = this.define('financialMovement', new FinancialMovement(), { tableName: 'movimentos' })
@@ -61,6 +65,8 @@ export class AppContext extends Sequelize {
   FinancialMovementInstallment = this.define('financialMovementInstallment', new FinancialMovementIntallment(), { tableName: 'movimentos_detalhe' })
 
   Integration = this.define('integration', new Integration(), { tableName: 'integration' })
+
+  Nfe = this.define('nfe', new Nfe(), { tableName: 'nota' })
 
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
@@ -115,6 +121,11 @@ export class AppContext extends Sequelize {
     this.Cte.belongsTo(this.Partner, {as: 'sender', foreignKey: 'senderId', targetKey: 'codigo_pessoa'})
     this.Cte.belongsTo(this.Shippiment, {as: 'shippiment', foreignKey: 'IDCarga', targetKey: 'codigo_carga'})
     this.Cte.belongsTo(this.Partner, {as: 'recipient', foreignKey: 'recipientId', targetKey: 'codigo_pessoa'})
+
+    this.Cte.hasMany(this.CteNfe, {as: 'nfes', foreignKey: 'cteId'})
+
+    this.CteNfe.belongsTo(this.Cte, {as: 'cte', foreignKey: 'cteId', targetKey: 'id'})
+    this.CteNfe.belongsTo(this.Nfe, {as: 'nfe', foreignKey: 'nfeId', targetKey: 'codigo_nota'})
 
     this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
     this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })

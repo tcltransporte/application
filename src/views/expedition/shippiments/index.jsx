@@ -29,6 +29,7 @@ import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/
 import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { Form, Formik } from 'formik'
+import { ViewShippiment } from './view.shippiment'
 
 const CteDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveCte }) => {
   const [removingIds, setRemovingIds] = useState(new Set())
@@ -172,6 +173,7 @@ const CteDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
 }
 
 export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -179,6 +181,7 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
   const [selectedIds, setSelectedIds] = useState(new Set())
 
   // Estado para controle do Drawer
+  const [shippimentId, setShippimentId] = useState(undefined)
   const [isDrawerOpen, setDrawerOpen] = useState(false)
   const [selectedCtes, setSelectedCtes] = useState([])
   const [selectedInstallmentId, setSelectedInstallmentId] = useState(null)
@@ -255,7 +258,11 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
   return (
     <Box sx={styles.container}>
       <Box sx={styles.header}>
-        <div />
+        
+        <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setShippimentId(null)}>
+          Adicionar
+        </Button>
+
         <Box sx={{ display: 'flex', gap: 1 }}>
           <PeriodFilter
             title="Vencimento"
@@ -395,6 +402,9 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
           updateInstallmentCtes(newList)
         }}
       />
+
+      <ViewShippiment shippimentId={shippimentId} onClose={() => setShippimentId(undefined)} />
+
     </Box>
   )
 }

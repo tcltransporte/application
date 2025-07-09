@@ -27,7 +27,7 @@ export const styles = {
     }),
 
     tableCellLoader: () => ({
-        height: 'calc(100vh - 200px)',
+        height: '100%',
     }),
 
     pagination: () => ({

@@ -65,10 +65,10 @@ export async function getCtes({limit = 50, offset, cStat, dhEmi}) {
         {model: db.Partner, as: 'recipient', attributes: ['codigo_pessoa', 'cpfCnpj', 'surname']},
         /*{model: db.Shippiment, as: 'shippiment', attributes: ['id'], include: [
           {model: db.Partner, as: 'sender', attributes: ['id', 'surname']}
-        ]},
-        {model: db.CteNfe, as: 'cteNfes', attributes: ['id', 'nfeId'], include: [
-          {model: db.Nfe, as: 'nfe', attributes: ['id', 'chNFe']},
         ]},*/
+        {model: db.CteNfe, as: 'nfes', attributes: ['id', 'nfeId'], include: [
+          {model: db.Nfe, as: 'nfe', attributes: ['codigo_nota', 'chNFe']},
+        ]},
       ],
       limit: limit,
       offset: offset * limit,
@@ -100,6 +100,38 @@ export async function getCtes({limit = 50, offset, cStat, dhEmi}) {
 
   return result
   
+}
+
+export async function onAddNfe({cteId, chNFe}) {
+
+  const db = new AppContext()
+
+  const nfe = await db.Nfe.findOne({attributes: ['codigo_nota'], where: [{chaveNf: chNFe}]})
+
+  const cteNfe = await db.CteNfe.create({cteId, nfeId: nfe.codigo_nota})
+
+  return cteNfe.toJSON()
+
+}
+
+export async function onDeleteNfe({id}) {
+
+  const db = new AppContext()
+
+  const cteNfe = await db.CteNfe.findOne({
+    attributes: ['id'],
+    include: [
+      {model: db.Cte, as: 'cte', attributes: ['id', 'cStat']}
+    ],
+    where: [{id}]
+  })
+
+  if (cteNfe.cte.cStat == 100) {
+    throw new Error('Não é possível excluir uma nota fiscal vinculada a um conhecimento de transporte autorizado!')
+  }
+
+  await cteNfe.destroy()
+
 }
 
 export async function onDacte({id}) {
@@ -142,4 +174,23 @@ export async function onDacte({id}) {
     throw error;
   }
 
+}
+
+export async function onDownload({ id }) {
+
+  const db = new AppContext()
+
+  const cte = await db.Cte.findOne({
+    attributes: ['chCTe', 'xml'],
+    where: { id }
+  })
+
+  const xmlString = cte.xml // conteúdo XML como string
+  const base64 = Buffer.from(xmlString, 'utf-8').toString('base64')
+
+  return {
+    fileName: `CTe-${cte.chCTe}.xml`,
+    base64,
+  }
+  
 }

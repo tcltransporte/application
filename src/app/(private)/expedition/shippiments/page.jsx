@@ -1,10 +1,12 @@
-"use server"
-
 import { getShippiments } from '@/app/server/expedition/shippiments/index.controller';
 import { DateFormat } from '@/utils/extensions';
 import { ViewExpeditionShippiments } from '@/views/expedition/shippiments';
 import { Typography } from '@mui/material';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
+
+export const metadata = {
+  title: `${process.env.TITLE} - Romaneios`,
+}
 
 const ExpeditionShippiments = async () => {
   try {
@@ -22,8 +24,6 @@ const ExpeditionShippiments = async () => {
       offset: 0,
       dueDate: { start, end },
     })
-
-    console.log(initialPayments)
 
     return <ViewExpeditionShippiments initialPayments={initialPayments} />
 
