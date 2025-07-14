@@ -326,7 +326,7 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
                       selected={isItemSelected}
                       sx={{ cursor: 'pointer' }}
                     >
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableCell align="center" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           color="primary"
                           checked={isItemSelected}

@@ -74,7 +74,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
       <Dialog open={shippimentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: {position: 'fixed', top: '32px', width: '750px'}} }}>
 
         <DialogTitle sx={styles.dialogTitle}>
-          Editar conta a pagar
+          {shippimentId ? 'Editar' : 'Adicionar'} romaneio
           <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
             <i className="ri-close-line" />
           </IconButton>
@@ -98,7 +98,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: 6}}>
                       <TextField
-                        label="Recebedor"
+                        label="Doc. Transporte"
                         value={values.partner?.surname}
                         readOnly
                       />
@@ -106,12 +106,12 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: 6}}>
                       <AutoComplete
-                        name="paymentMethod"
-                        label="Forma de pagamento"
+                        name="sender"
+                        label="Remetente"
                         value={values.paymentMethod}
                         text={(p) => p?.name}
-                        onChange={(val) => setFieldValue("paymentMethod", val)}
-                        onSearch={getPaymentMethod}
+                        onChange={(val) => setFieldValue("sender", val)}
+                        onSearch={getPartner}
                       >
                         {(item) => <span>{item.name}</span>}
                       </AutoComplete>

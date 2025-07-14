@@ -1,3 +1,7 @@
+import { readFile } from 'fs/promises'
+import { join } from 'path'
+import { parseStringPromise } from 'xml2js'
+
 // MUI Imports
 import Button from '@mui/material/Button'
 
@@ -27,36 +31,44 @@ import RouteProgressBar from '@/components/RouteProgressBar'
 import { TitleProvider } from '@/contexts/TitleProvider'
 
 const Layout = async ({ children }) => {
-
-  // Vars
   const direction = i18n.langDirection[i18n.defaultLocale]
   const dictionary = await getDictionary(i18n.defaultLocale)
   const mode = await getMode()
   const systemMode = await getSystemMode()
 
+  // Lê e converte o sitemap
+  const sitemapPath = join(process.cwd(), 'sitemap.xml')
+  let sitemapJson = null
+
+  try {
+    const xml = await readFile(sitemapPath, 'utf8')
+    const xmlNormalized = xml.replace(/\$\{URL\}/g, 'https://global.tcltransporte.com.br').replace(/\\/g, '/')
+    sitemapJson = await parseStringPromise(xmlNormalized)
+  } catch (err) {
+    console.error('Erro ao carregar sitemap:', err)
+  }
+
   return (
     <Providers direction={direction}>
-
       <RouteProgressBar />
-      
+
       <AuthGuard locale={i18n.defaultLocale}>
         <TitleProvider>
           <LayoutWrapper
             systemMode={systemMode}
             verticalLayout={
-              
-                <VerticalLayout
-                  navigation={<Navigation dictionary={dictionary} mode={mode} />}
-                  navbar={<Navbar />}
-                  //footer={<VerticalFooter />}
-                >
-                  {children}
-                </VerticalLayout>
+              <VerticalLayout
+                navigation={<Navigation dictionary={dictionary} mode={mode} siteMap={sitemapJson} />}
+                navbar={<Navbar />}
+                // footer={<VerticalFooter />}
+              >
+                {children}
+              </VerticalLayout>
             }
             horizontalLayout={
               <HorizontalLayout
                 header={<Header dictionary={dictionary} />}
-                //footer={<HorizontalFooter />}
+                // footer={<HorizontalFooter />}
               >
                 {children}
               </HorizontalLayout>

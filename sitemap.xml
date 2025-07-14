@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<siteMap>
+  <siteMapNode url="${URL}\Default.aspx" title="Início" description="Página Inicial">
+
+    <siteMapNode title="Acerto" roles="Administrador, Acerto" icon="ri-check-double-line">
+      <siteMapNode title="Acertos" url="${URL}\Acerto\EditaAcertoNovo.aspx" description="Inserir, Alterar, Excluir dados de Acertos"/>
+      <siteMapNode title="Conciliar Abastecimento" url="${URL}\Acerto\ListaConciliacaoAbastecimento.aspx" description="Conciliar os cupons de abastecimento com a NF-e"/>
+      <siteMapNode title="Postos de Combustível" url="${URL}\Acerto\ListaPostoCombustivel.aspx" description=""/>
+      <siteMapNode title="Cadastro de Abastecimento" url="${URL}\Acerto\ListaAbastecimentosAvulso.aspx" description=""/>
+      <siteMapNode title="Rel. Saldo Frete" url="${URL}\Acerto\RelSaldoFreteAberto.aspx" description="Relatório de saldos de frete em aberto"/>
+      <siteMapNode title="Tipo Despesa Viagem" url="${URL}\Acerto\ListaTipoDespesaViagem.aspx" description="Inserir, Alterar, Excluir tipo de despesa viagem"/>
+      <siteMapNode title="Agregado Acertos" url="${URL}\Acerto\ListaAcertoAgregado.aspx" description="Inserir, Alterar, Excluir dados de Acertos"/>
+      <siteMapNode title="Rel. Km Rodado" url="${URL}\Acerto\RelKmRodado.aspx" description="Relatório de Km Rodado/Dia"/>
+    </siteMapNode>
+
+    <siteMapNode title="Administrativo" roles="Administrador, Administrativo" icon="ri-admin-line">
+      <siteMapNode roles="Administrativo" title="Cadastro Único" url="${URL}\Administrativo\ListaPessoa.aspx" description="Cadastro único"/>
+      <siteMapNode roles="Administrativo" title="Veículo" url="${URL}\Administrativo\ListaVeiculo.aspx" description="Inserir e Alterar Veículo"/>
+      <siteMapNode roles="Administrativo" title="Veículo Modelo" url="${URL}\Administrativo\ListaVeiculoModelo.aspx" description="Inserir e Alterar Modelo de Veículo"/>
+      <siteMapNode roles="Administrativo" title="Grupo Veículo" url="${URL}\Administrativo\ListaGrupoVeiculo.aspx" description="Inserir e Alterar Grupo Veículo"/>
+      <siteMapNode roles="Administrativo" title="Municipios" url="${URL}\Administrativo\ListaMunicipio.aspx" description="Inserir e Alterar municipios e seus detalhes"/>
+      <siteMapNode roles="Administrativo" title="Ativo Imobilizado" url="${URL}\Administrativo\ListaAtivoImobilizado.aspx" description="Inserir e Alterar Ativos Imobilizados"/>
+      <siteMapNode roles="Administrativo" title="Ativo Imobilizado Tipo" url="${URL}\Administrativo\ListaAtivoImobilizadoTipo.aspx" description="Inserir e Alterar Ativos Imobilizados Tipo"/>
+      <siteMapNode roles="Administrativo" title="Ativo Imobilizado Local" url="${URL}\Administrativo\ListaAtivoImobilizadoLocalizacao.aspx" description="Inserir e Alterar Ativos Imobilização"/>
+      <siteMapNode roles="Administrativo" title="Gestão de Licenças" url="${URL}\Administrativo\ListaLicenca.aspx" description="Inserir e Alterar Licenças"/>
+    </siteMapNode>
+
+    <siteMapNode title="Carga" roles="Administrador, Carga" icon="ri-truck-line">
+      <siteMapNode title="Cálculo de Frete" url="${URL}\Carga\ListaCalculoFrete.aspx" description="Cálculo de frete."/>
+      <siteMapNode title="Cotação de Frete" url="${URL}\Carga\ListaCotacaoFrete.aspx" description="Cotação de frete."/>
+      <siteMapNode title="Repositório DFe" url="${URL}\Compras\ListaDfe.aspx?p1=1" description="Repositório de documentos fiscal eletrônico."/>
+      <siteMapNode title="Viagem" url="${URL}\Carga\EditaViagemNovo.aspx" description="Viagens do modal rodoviário"/>
+      <siteMapNode title="Ordem de Carga" url="${URL}\Carga\ListaOrdemCarga.aspx" description="Ordens de carga"/>
+      <siteMapNode title="Gerenciador NFe" url="${URL}\Carga\ListaNota.aspx" description="Gerenciar NF-e das viagens"/>
+      <siteMapNode title="Rastreamento" url="${URL}\Carga\ListaRastreamento.aspx" description="Posição e informações sobre os veículos"/>
+      <siteMapNode title="Check ANTT" url="${URL}\Carga\CheckAntt.aspx" description="Consulta o proprietário do veículo na ANTT - via PAMCARD"/>
+      <siteMapNode title="Importar FRS" url="${URL}\Carga\AddFRS.aspx" description="Impportar as FRS da Unilever"/>
+      <siteMapNode title="Relatório Ct-e" roles="Carga" url="${URL}\Carga\RelCtePeriodo.aspx" description="Relatório de Ct-e período"/>
+      <siteMapNode title="Relatório Cargas Origem/Destino" url="${URL}\Carga\RelCargaOrigemDestino.aspx" description="Relatório de cargas por orgigem/destino"/>
+      <siteMapNode title="Exportação" url="${URL}\Carga\ExportacaoCargas.aspx" description="Gerar arquivos para integração com sistema de terceiros"/>
+      <siteMapNode title="Percurso - Antigo" url="${URL}\Carga\ListaPercurso.aspx" description="Gerenciar percursos percorridos pela carga"/>
+      <siteMapNode title="Percurso - Novo" url="${URL}\Carga\ListaPercursoNovo.aspx" description="Gerenciar percursos percorridos pela carga"/>
+      <siteMapNode title="Seguradoras" url="${URL}\Carga\ListaSeguradora.aspx" description="Gerenciar dados das seguradoras"/>
+      <siteMapNode title="MDF-e Não Encerrado" url="${URL}\Carga\ListaMdfe.aspx" description="Gerenciar MDF-es não encerrrados"/>
+      <siteMapNode title="Relatório Cargas Sem Fatura" url="${URL}\Carga\RelCargasNaoFaturada.aspx" description="Cargas"/>
+      <siteMapNode title="Rel. Carta Frete" url="${URL}\Carga\RelCargaFreteVarias.aspx" description="Relatorio de carta frete"/>
+      <siteMapNode title="Rel. Análise Viagem" url="${URL}\Carga\relViagemAnalise.aspx" description="Relatorio para análise de viagens"/>
+      <siteMapNode title="Rel. Análise Veículo" url="${URL}\Carga\relVeiculoAnalise.aspx" description="Relatorio para análise de veículo"/>
+      <siteMapNode title="Rel. Análise Motorista" url="${URL}\Carga\relMotoristaAnalise.aspx" description="Relatorio para análise de motorista"/>
+      <siteMapNode title="Rel. Viagem Sem Acerto" url="${URL}\Carga\RelViagemSemAcerto.aspx" description="Relatorio Viagem Sem Acerto"/>
+      <siteMapNode title="Rel. Rastreamento Cliente" url="${URL}\Carga\ListaRastreamentoCliente.aspx" description="Rastreamento Cliente"/>
+      <siteMapNode title="Status Ct-e" roles="Carga" url="${URL}\Carga\RelCteStatus.aspx" description="status do ct-e"/>
+      <siteMapNode title="TV" roles="Carga" url="${URL}\Carga\ListaOrdemCargaTV.aspx" description="TV"/>
+      <siteMapNode title="Mapa separação" roles="Carga" url="${URL}\Carga\MapaSeparacao.aspx" description="TV"/>
+    </siteMapNode>
+
+    <siteMapNode title="CheckList" roles="Administrador, CheckList" icon="ri-task-line">
+      <siteMapNode title="CheckList Item" url="${URL}\Administrativo\ListaCheckListItem.aspx" description="CheckList Item"/>
+      <siteMapNode title="CheckList Tipo" url="${URL}\Administrativo\ListaCheckListTipo.aspx" description="CheckList Tipo"/>
+      <siteMapNode title="CheckList Perfil" url="${URL}\Administrativo\ListaCheckListPerfil.aspx" description="CheckList Perfil"/>
+      <siteMapNode title="CheckList" url="${URL}\Administrativo\ListaCheckList.aspx" description="CheckList"/>
+    </siteMapNode>
+
+    <siteMapNode title="Financeiro" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
+      <siteMapNode title="Caixa Fechamento" url="${URL}\Financeiro\ListaCaixaFechamento.aspx" description="Fechamento do caixa. Realiza o bloqueio do caixa para evitar lançamentos indevidos."/>
+      <siteMapNode title="Conciliação" url="${URL}\Financeiro\ListaconciliacaoNovo.aspx" description="Conciliação bancária"/>
+      <siteMapNode title="Contas a Pagar" url="\finances\payments" description="Contas a pagar"/>
+      <siteMapNode title="Contas a Receber" url="\finances\receivements" description="Contas a receber"/>
+      <siteMapNode title="Movimentos Bancário" url="${URL}\Financeiro\ListaMovimentoBanco.aspx" description="Movimento bancário"/>
+      <siteMapNode title="Contas Bancárias" url="${URL}\Financeiro\ListaContaBanco.aspx" description="Contas bancárias"/>
+      <siteMapNode title="Faturas" url="${URL}\Financeiro\ListaFatura.aspx" description="Lista Faturas"/>
+      <siteMapNode title="Relatório Contas a Pagar" url="${URL}\Financeiro\RelContasPagarNovo.aspx" description="Relatório contas a pagar por periodo"/>
+      <siteMapNode title="Relatório Contas a Receber" url="${URL}\Financeiro\RelContasReceberNovo.aspx" description="Relatório contas a receber"/>
+      <siteMapNode title="Relatório Movimento Bancário" url="${URL}\Financeiro\RelMovimentoBancario.aspx" description="Relatório Movimento Bancário"/>
+      <siteMapNode title="Relatório Mov. Banco por Tipo" url="${URL}\Financeiro\RelMovimentoBancarioPorTipo.aspx" description="Relatório Movimento Bancário"/>
+      <siteMapNode title="Relatório mov. banco por plano" url="${URL}\Financeiro\RelMovimentoBancarioPlanoContas.aspx" description="Relatório Movimento Bancário"/>
+      <siteMapNode title="Relatório Fluxo de Caixa" url="${URL}\Financeiro\RelMovimentoBancarioPlanoContasPorDia.aspx" description="Relatório Movimento Bancário por plano de contas por dia"/>
+      <siteMapNode title="Relatório Plano Contas Geral" url="${URL}\Financeiro\RelPlanoContasGeral.aspx" description="Relatório plano de contas geral"/>
+      <siteMapNode title="Relatório por Tipo Pagamento" url="${URL}\Financeiro\RelPortipoPagamento.aspx" description="Relatório por tipo de pagmento"/>
+    </siteMapNode>
+
+    <siteMapNode title="Fiscal" roles="Administrador,fiscal000, fiscal010, fiscal020, fiscal030, fiscal040, fiscal050,fiscal060,fiscal070,fiscal080, fiscal090,fiscal100,fiscal110,fiscal120,fiscal130,fiscal140,fiscal150,fiscal160,fiscal170,fiscal180,fiscal190,fiscal200 " icon="ri-bar-chart-box-line">
+      <siteMapNode title="Repositório DFe" url="${URL}\Compras\ListaDfe.aspx?p1=2" description="Repositório de documentos fiscal eletrônico."/>
+      <siteMapNode title="Fechamento Mês" url="${URL}\Compras\ListaFiscalFechamento.aspx" description="Fechamento do mês contábil. Realiza o bloqueio do mês para evitar lançamentos indevidos."/>
+      <siteMapNode title="Entrada/Saída" url="${URL}\Compras\EditaFiscal.aspx" description="Notas de entrada e saída"/>
+      <siteMapNode title="Importar Xml Saída Nfs-e" url="${URL}\Compras\AddXmlNFSESaida.aspx" description="Cadastrar nota fiscal de saída usando arquivo XML."/>
+      <siteMapNode title="Exportação Contábil" url="${URL}\Compras\ExportacaoContabil.aspx" description=""/>
+      <siteMapNode title="Exportação Fiscal" url="${URL}\Compras\Exportacao.aspx" description=""/>
+      <siteMapNode title="SEF Fiscal" url="${URL}\Compras\ExportacaoSEF.aspx" description=""/>
+      <siteMapNode title="SPED Fiscal" url="${URL}\Compras\ExportacaoGov.aspx" description=""/>
+      <siteMapNode title="Plano Contábil" url="${URL}\Compras\ListaPlanoContaContabil.aspx" description=""/>
+      <siteMapNode title="Configurar Grupo Contábil" url="${URL}\Compras\ListaConfiguracaoRelatorio.aspx" description=""/>
+      <siteMapNode title="Relatório Credito Combustivel" url="${URL}\Compras\RelCteCreditoCombustivel.aspx" description=""/>
+      <siteMapNode title="Relatório Notas Fiscais" url="${URL}\Compras\RelNotasFiscais.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E." url="${URL}\Compras\RelDERGeral.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. 2019" url="${URL}\Compras\RelDERGeral2019.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. 2020" url="${URL}\Compras\RelDERGeral2020.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. 2021" url="${URL}\Compras\RelDERGeral2021.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Veículo" url="${URL}\Compras\RelDERVeiculo.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Veículo 2019" url="${URL}\Compras\RelDERVeiculo2019.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Veículo por Grupo" url="${URL}\Compras\RelDERVeiculoPorGrupo.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Autônomo" url="${URL}\Compras\RelDERVeiculoAutonomo.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Autônomo 2020" url="${URL}\Compras\RelDERVeiculoAutonomo2020.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Autônomo 2021" url="${URL}\Compras\RelDERVeiculoAutonomo2021.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Alugado" url="${URL}\Compras\RelDERVeiculoAlugado.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Alugado 2020" url="${URL}\Compras\RelDERVeiculoAlugado2020.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Alugado 2021" url="${URL}\Compras\RelDERVeiculoAlugado2021.aspx" description=""/>
+      <siteMapNode title="Relatório Fluxo Caixa" url="${URL}\Compras\RelFluxoCaixa.aspx" description=""/>
+      <siteMapNode title="Relatório Fluxo Caixa Autônomo" url="${URL}\Compras\RelFluxoCaixaAutonomo.aspx" description=""/>
+      <siteMapNode title="Movimento D.R.E." url="${URL}\Compras\ListaMovimentoContabil.aspx" description=""/>
+      <siteMapNode title="Relatório Combustivel" url="${URL}\Compras\RelCombustivel.aspx" description=""/>
+      <siteMapNode title="Relatório Projeção" url="${URL}\Compras\RelAnaliseProjecao.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Confêrencia" url="${URL}\Compras\RelDER.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Espelho" url="${URL}\Compras\RelDERGeralDetalhes.aspx" description=""/>
+      <siteMapNode title="Relatório D.R.E. Espelho 2019" url="${URL}\Compras\RelDERGeralDetalhes2019.aspx" description=""/>
+      <siteMapNode title="Relatório Grupo Confêrencia" url="${URL}\Compras\ListaGrupoPlanoMovimento.aspx" description=""/>
+    </siteMapNode>
+
+    <siteMapNode title="Gestão RH" roles="Administrador, Acerto" icon="ri-team-line">
+      <siteMapNode title="Acertos" url="${URL}\GestaoRH\ListaAcerto.aspx" description=""/>
+      <siteMapNode title="RH Folha" url="${URL}\GestaoRH\ListaRHCalculoFolha.aspx" description=""/>
+      <siteMapNode title="Relatório de Férias" url="${URL}\GestaoRH\ListaFerias.aspx" description=""/>
+      <siteMapNode title="Relatório INSS" url="${URL}\GestaoRH\RelINSS.aspx" description=""/>
+      <siteMapNode title="Importar Folha Pagamento" url="${URL}\GestaoRH\ImportarPagamentos.aspx" description="Importar Arquivo Pagamentos Santander."/>
+    </siteMapNode>
+
+    <siteMapNode title="Gestão de Serviços" roles="Administrador, GestaoServico" icon="ri-service-line" description="Gerencia todo o Processo e Etapas em Serviços de Manutenção">
+      <siteMapNode roles="Administrativo" title="Check veículo" url="${URL}\Administrativo\CheckVeiculo.aspx" description="Veículo checklist"/>
+      <siteMapNode title="Estoque" url="${URL}\GestaoServico\ListaEstoque.aspx" description="Itens do estoque"/>
+      <siteMapNode title="Estoque Categoria" url="${URL}\GestaoServico\ListaEstoqueCategoria.aspx" description="Categoria de Itens do estoque"/>
+      <siteMapNode title="Estoque SubCategoria" url="${URL}\GestaoServico\ListaEstoqueSubCategoria.aspx" description="subCategoria de Itens do estoque"/>
+      <siteMapNode title="Estoque Conciliação" url="${URL}\GestaoServico\ListaNotaConciliacao.aspx" description="Nota fiscais que necessitam de conciliação com o estoque"/>
+      <siteMapNode title="Estoque Marcas" url="${URL}\GestaoServico\ListaEstoqueMarca.aspx" description="Marca de Itens do estoque"/>
+      <siteMapNode title="Lista Perfil Serviço" url="${URL}\GestaoServico\ListaPerfilServico.aspx" description="Gerencia os perfis de serviços para os pontos de controle dos veículos"/>
+      <siteMapNode title="Solicitação Compra" url="${URL}\GestaoServico\EditaSolicitacaoCompraNovo.aspx" description="Gerencia os pedidos de compra"/>
+      <siteMapNode title="Oficina" url="${URL}\GestaoServico\ListaSolicitacaoOficina.aspx" description="Gerencia as solicitações de serviços da oficina"/>
+      <siteMapNode title="Solicitação - Montagem" url="${URL}\GestaoServico\ListaSolicitacaoMontagem.aspx" description="Gerencia as solicitações de serviços de montagem de peças"/>
+      <siteMapNode roles="Administrativo" title="Tipo Serviço" url="${URL}\Administrativo\ListaTipoServico.aspx" description="Inserir e Alterar tipo serviço e seus detalhes"/>
+      <siteMapNode roles="Administrativo" title="Tipo Categoria Serviço" url="${URL}\Administrativo\ListaTipoCategoriaServico.aspx" description="Inserir e Alterar tipo de categoria dos serviços e seus detalhes"/>
+      <siteMapNode title="Contadores" url="${URL}\GestaoServico\ListaContadores.aspx" description=""/>
+      <siteMapNode title="TV" url="${URL}\GestaoServico\ListaSolicitacaoOficinaTV.aspx" description=""/>
+      <siteMapNode title="Rel. Veículo Oficina" url="${URL}\GestaoServico\relVeiculoOficina.aspx" description="Relatorio para análise de gasto de veículo na oficina"/>
+      <siteMapNode title="Mecânico Atividades" url="${URL}\GestaoServico\MecanicoAtividades.aspx" description=""/>
+      <siteMapNode title="Lista Atividades" url="${URL}\GestaoServico\ListaAtividades.aspx" description=""/>
+      <siteMapNode title="Consulta Macros" url="${URL}\Acerto\RelConsultaMacros.aspx" description="Relatório de Consulta de Macros"/>
+    </siteMapNode>
+
+    <siteMapNode title="Logística" roles="Administrador, Entrega" icon="ri-earth-line">
+      <siteMapNode title="Consulta CT-e" url="${URL}\Entrega\ListaCteConsulta.aspx" description="Consulta de ct-e "/>
+      <siteMapNode title="Logística" url="${URL}\Entrega\ListaBaixaNota.aspx" description="Baixa nota"/>
+      <siteMapNode title="Ocorrência" url="${URL}\Entrega\EditaOcorrencia.aspx" description="Ocorrência"/>
+      <siteMapNode title="Conciliação" url="${URL}\Entrega\ListaNotaConciliacao.aspx" description="Conciliação de ocorrência "/>
+      <siteMapNode title="Mercadorias" url="${URL}\Entrega\ListaMercadorias.aspx" description="Mercadorias "/>
+      <siteMapNode title="Lista Nota por Produto" url="${URL}\Entrega\ListaNotaPorProduto.aspx" description="Lista as notas com determinados produtos"/>
+      <siteMapNode title="Lista Produtos Avariados" url="${URL}\Entrega\ListaProdutoAvariado.aspx" description="Lista os produtos avariados"/>
+      <siteMapNode title="Protocolo Canhoto" url="${URL}\Entrega\ListaProtocoloCanhoto.aspx" description="Lista os protocolos de canhotos de entrega das notas"/>
+      <siteMapNode title="Relatório Status Produtos" url="${URL}\Entrega\RelStatusProduto.aspx" description="Relatório do status dos produtos das notas"/>
+      <siteMapNode title="Relatório Status Notas" url="${URL}\Entrega\RelStatusNota.aspx" description="Relatório do status das notas"/>
+      <siteMapNode title="Relatório Status Nota por Carga" url="${URL}\Entrega\RelStatusNotaPorCarga.aspx" description="Relatório status nota por carga"/>
+    </siteMapNode>
+
+    <siteMapNode title="Processo" roles="Administrador, Processo" icon="ri-flow-chart">
+      <siteMapNode title="Atividades" url="${URL}\Processo\AddProcessoAtividadeTipo.aspx" description=""/>
+      <siteMapNode title="Processos" url="${URL}\Processo\ListaProcesso.aspx" description=""/>
+      <siteMapNode title="Abastecimento" url="${URL}\Processo\AddAbastecimento.aspx" description=""/>
+      <siteMapNode title="Dar Andamento" url="${URL}\Processo\AddProcessoAtividade.aspx" description=""/>
+      <siteMapNode title="Apresentação Motorista" url="${URL}\Processo\AddMotoristaApresentacao.aspx" description=""/>
+      <siteMapNode title="TV" url="${URL}\Processo\ListaProcessoTV.aspx" description=""/>
+      <siteMapNode title="TV Oficina" url="${URL}\Processo\ListaProcessoTVOficina.aspx" description=""/>
+    </siteMapNode>
+
+    <siteMapNode title="Tabela de Frete" roles="Administrador, CartaFrete" icon="ri-table-line">
+      <siteMapNode title="Tabelas" url="${URL}\TabelaFrete\ListaTabelaFrete.aspx" description="Sistema automatização de tabelas de frete"/>
+      <siteMapNode title="Teste" url="${URL}\TabelaFrete\CheckTabelaFrete.aspx" description="realizar testes para o sistema de tabelas de frete"/>
+      <siteMapNode title="Regiões" url="${URL}\TabelaFrete\ListaRegiao.aspx" description="Controle de regiões"/>
+      <siteMapNode title="Grupo Pessoa" url="${URL}\TabelaFrete\ListaGrupoPessoa.aspx" description="Controle de grupo de pessoas"/>
+    </siteMapNode>
+
+    <siteMapNode title="Relatórios" roles="Administrador, Carga, GestaoServico" icon="ri-printer-line">
+      <siteMapNode title="Rel. Analise Diversos" url="${URL}\Carga\RelBasicaGenerico.aspx" description=""/>
+      <siteMapNode title="Rel. Analise Diversos 02" url="${URL}\Carga\RelBasicaGenerico02.aspx" description=""/>
+    </siteMapNode>
+
+    <siteMapNode title="Configurações" roles="Administrador, Carga" icon="ri-settings-line">
+      <siteMapNode title="Cadastrar Usurário" url="${URL}\Configuracao\AddUsuario.aspx" description="Adicionar novos usuários ao sistema."/>
+      <siteMapNode title="Controle de Acesso" url="${URL}\Configuracao\AddAcesso.aspx" description="Define os acessos do usuário ao sistema"/>
+      <siteMapNode title="Dados da Empresa" url="${URL}\Configuracao\ListaEmpresaFilial.aspx" description="Dados da empresa no sistema"/>
+      <siteMapNode title="Log do Sistema" url="${URL}\Configuracao\ListaLogGeral.aspx" description="Registra os acessos do usuário no sistema"/>
+      <siteMapNode title="Reset Senha Usuário" url="${URL}\Configuracao\EditaSenhaUsuarios.aspx" description="Altera a senha dos usuários"/>
+      <siteMapNode title="Mdf-e Encerrar" url="${URL}\Configuracao\AddMdfeEncerramento.aspx" description="Encerrar mdf-e antigo"/>
+      <siteMapNode title="Juntar Viagem" url="${URL}\Configuracao\AddViagemEmOutra.aspx" description="Juntar duas viagens"/>
+      <siteMapNode title="Gerar Novo PDF Viagem" url="${URL}\Configuracao\AddPDFFileNullViagem.aspx" description="Gerar novos PDF para a Viagem"/>
+      <siteMapNode title="Ct-e Status Empresa" url="${URL}\Configuracao\AddCteStatusEmpresa.aspx" description=""/>
+      <siteMapNode title="Ct-e Update" url="${URL}\Configuracao\AddCte103.aspx" description=""/>
+    </siteMapNode>
+
+  </siteMapNode>
+</siteMap>
