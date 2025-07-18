@@ -20,6 +20,7 @@ export default async function FinancesPayments() {
   const initialPayments = await getPayments({
     limit: 50,
     offset: 0,
+    status: [0],
     dueDate: { start, end },
   })
 

@@ -8,11 +8,11 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Op } from "sequelize"
 
-export async function getPayments({limit = 50, offset, dueDate}) {
+export async function getPayments({limit = 50, offset, dueDate, status}) {
 
     const session = await getServerSession(authOptions)
 
-    await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+    //await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
 
     const db = new AppContext()
 
@@ -39,7 +39,7 @@ export async function getPayments({limit = 50, offset, dueDate}) {
 
     return {
         request: {
-            limit, offset, dueDate
+            limit, offset, dueDate, status
         },
         response: {
             count: payments.count,

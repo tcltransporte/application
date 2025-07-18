@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, TextField, Checkbox } from '@mui/material'
+import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, TextField, Checkbox, FormGroup, FormControlLabel, FormControl, InputLabel, Select, OutlinedInput, MenuItem, ListItemText, FilledInput } from '@mui/material'
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
@@ -13,15 +13,59 @@ import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { format, parseISO } from 'date-fns'
 
-const Filter = () => {
+const statusOptions = [
+  { label: 'Em aberto', value: 0 },
+  { label: 'Quitados', value: 1 },
+]
+
+const Filter = ({ request: initialRequest, onApply }) => {
   const [open, setOpen] = useState(false)
+
+  const [request, setRequest] = useState({
+    beneficiary: '',
+    documentNumber: '',
+    status: [],
+  })
+
+  const openDrawer = () => {
+    setRequest({
+      beneficiary: initialRequest?.beneficiary || '',
+      documentNumber: initialRequest?.documentNumber || '',
+      status:
+        (initialRequest?.status || [])
+          .map((s) => statusOptions.find((o) => o.value === s)?.label)
+          .filter(Boolean) || [],
+    })
+
+    setOpen(true)
+  }
+
+  const handleChange = (key) => (event) => {
+    setRequest((prev) => ({
+      ...prev,
+      [key]: event.target.value,
+    }))
+  }
+
+  const handleApply = () => {
+    const mappedStatus = (request.status || [])
+      .map((label) => statusOptions.find((o) => o.label === label)?.value)
+      .filter((v) => v !== undefined)
+
+    onApply?.({
+      ...request,
+      status: mappedStatus,
+    })
+
+    setOpen(false)
+  }
 
   return (
     <>
       <Button
         variant="text"
         startIcon={<i className="ri-equalizer-line" />}
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
       >
         Filtros
       </Button>
@@ -43,16 +87,49 @@ const Filter = () => {
         <Divider />
 
         <Box sx={{ p: 4 }}>
-          <TextField fullWidth label="Beneficiário" />
+          <TextField
+            fullWidth
+            label="Beneficiário"
+            variant="filled"
+            size="small"
+            value={request.beneficiary}
+            onChange={handleChange('beneficiary')}
+          />
 
-          <TextField fullWidth label="Número documento" sx={{ mt: 2 }} />
+          <TextField
+            fullWidth
+            label="Número documento"
+            variant="filled"
+            size="small"
+            sx={{ mt: 2 }}
+            value={request.documentNumber}
+            onChange={handleChange('documentNumber')}
+          />
+
+          <FormControl fullWidth variant="filled" size="small" sx={{ mt: 4 }}>
+            <InputLabel shrink>Status</InputLabel>
+            <Select
+              multiple
+              value={request.status}
+              onChange={handleChange('status')}
+              input={<FilledInput />}
+              renderValue={(selected) => selected.join(', ')}
+            >
+              {statusOptions.map((option) => (
+                <MenuItem key={option.value} value={option.label} dense>
+                  <Checkbox checked={request.status.includes(option.label)} />
+                  <ListItemText primary={option.label} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Box display="flex" justifyContent="flex-end" mt={4}>
             <Button
               variant="contained"
               color="success"
               startIcon={<i className="ri-check-line" />}
-              onClick={() => setOpen(false)}
+              onClick={handleApply}
             >
               Aplicar
             </Button>
@@ -180,7 +257,10 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
               onChange={handlePeriodChange}
             />
 
-            <Filter />
+            <Filter request={installments.request} onApply={(request) => fetchPayments({
+                  ...request,
+                  offset: 0,
+                })} />
 
             <Button
               variant="outlined"

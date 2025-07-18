@@ -36,7 +36,7 @@ export class FinancialCategory {
 
   externalId = {
     field: 'externalId',
-    type: DataTypes.STRING
+    type: DataTypes.STRING(15)
   }
   
 
