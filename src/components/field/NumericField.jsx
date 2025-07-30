@@ -32,11 +32,7 @@ const NumericField = ({ name, decimalPlaces = 2, ...props }) => {
       onChange={handleChange}
       error={Boolean(meta.touched && meta.error)}
       helperText={meta.touched && meta.error}
-      inputProps={{
-        inputMode: 'numeric',
-        pattern: '[0-9]*',
-        ...props.inputProps,
-      }}
+      slotProps={{input: { inputMode: 'decimal' }}}
     />
   )
 }

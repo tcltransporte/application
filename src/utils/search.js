@@ -7,6 +7,30 @@ import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
 import { getTinyCategories, getTinyPartner } from "./integrations/tiny"
 
+
+export async function getCompany(search) {
+
+  const session = await getServerSession(authOptions);
+
+  const db = new AppContext();
+
+  const companies = await db.Company.findAll({
+    attributes: ['codigo_empresa_filial', 'surname'],
+    order: [['codigo_empresa_filial', 'asc']],
+    where: {
+        codigo_empresa: session.company.companyBusiness.codigo_empresa,
+        surname: {
+            [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%`
+        }
+    },
+    limit: 20,
+    offset: 0,
+  });
+
+  return companies.map((item) => item.toJSON());
+
+}
+
 export async function getUser (search) {
     
     const session = await getServerSession(authOptions)
@@ -78,9 +102,8 @@ export async function getPartner(search) {
 
 }
 
+export async function getFinancialCategory (search, operation) {
 
-export async function getFinancialCategory (search) {
-    
     const session = await getServerSession(authOptions)
 
     await getTinyCategories()
@@ -91,10 +114,13 @@ export async function getFinancialCategory (search) {
 
     //where.push({'$companyUsers.company.codigo_empresa$': session.company.companyBusinessId})
 
-    where.push({'$description$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
+    where.push({'$descricao$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
+
+    where.push({'$codigo_tipo_operacao$': operation})
 
     const financialCategories = await db.FinancialCategory.findAll({
         attributes: ['id', 'description'],
+        where,
         order: [['description', 'asc']],
         limit: 20,
         offset: 0,

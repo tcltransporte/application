@@ -38,6 +38,7 @@ export async function createMovement(formData) {
 
         const movement = await db.FinancialMovement.create({
             ...formData,
+            companyId: 1,
             partnerId: formData.receiver.codigo_pessoa,
             description: formData.description
         }, {transaction})

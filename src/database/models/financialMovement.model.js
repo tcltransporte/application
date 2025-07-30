@@ -9,6 +9,11 @@ export class FinancialMovement {
         type: DataTypes.INTEGER
     }
 
+    companyId = {
+        field: 'CodigoEmpresaFilial',
+        type: DataTypes.INTEGER
+    }
+
     documentNumber = {
         field: 'numero_documento',
         type: DataTypes.STRING

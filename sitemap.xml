@@ -64,8 +64,8 @@
     <siteMapNode title="Financeiro" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
       <siteMapNode title="Caixa Fechamento" url="${URL}\Financeiro\ListaCaixaFechamento.aspx" description="Fechamento do caixa. Realiza o bloqueio do caixa para evitar lançamentos indevidos."/>
       <siteMapNode title="Conciliação" url="${URL}\Financeiro\ListaconciliacaoNovo.aspx" description="Conciliação bancária"/>
-      <siteMapNode title="Contas a Pagar" url="\finances\payments" description="Contas a pagar"/>
-      <siteMapNode title="Contas a Receber" url="\finances\receivements" description="Contas a receber"/>
+      <siteMapNode title="Contas a pagar" url="\finances\payments" description="Contas a pagar"/>
+      <siteMapNode title="Contas a receber" url="\finances\receivements" description="Contas a receber"/>
       <siteMapNode title="Movimentos Bancário" url="${URL}\Financeiro\ListaMovimentoBanco.aspx" description="Movimento bancário"/>
       <siteMapNode title="Contas Bancárias" url="${URL}\Financeiro\ListaContaBanco.aspx" description="Contas bancárias"/>
       <siteMapNode title="Faturas" url="${URL}\Financeiro\ListaFatura.aspx" description="Lista Faturas"/>

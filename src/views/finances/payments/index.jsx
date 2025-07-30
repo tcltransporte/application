@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, TextField, Checkbox, FormGroup, FormControlLabel, FormControl, InputLabel, Select, OutlinedInput, MenuItem, ListItemText, FilledInput } from '@mui/material'
+import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Drawer, Divider, Checkbox, FormGroup, FormControlLabel, FormControl, InputLabel, Select, OutlinedInput, MenuItem, ListItemText, FilledInput } from '@mui/material'
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
@@ -12,6 +12,10 @@ import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { format, parseISO } from 'date-fns'
+import { AutoComplete } from '@/components/AutoComplete'
+import { getCompany, getPaymentMethod } from '@/utils/search'
+import { Field, Formik } from 'formik'
+import { SelectField, TextField } from '@/components/field'
 
 const statusOptions = [
   { label: 'Em aberto', value: 0 },
@@ -21,44 +25,8 @@ const statusOptions = [
 const Filter = ({ request: initialRequest, onApply }) => {
   const [open, setOpen] = useState(false)
 
-  const [request, setRequest] = useState({
-    beneficiary: '',
-    documentNumber: '',
-    status: [],
-  })
-
-  const openDrawer = () => {
-    setRequest({
-      beneficiary: initialRequest?.beneficiary || '',
-      documentNumber: initialRequest?.documentNumber || '',
-      status:
-        (initialRequest?.status || [])
-          .map((s) => statusOptions.find((o) => o.value === s)?.label)
-          .filter(Boolean) || [],
-    })
-
-    setOpen(true)
-  }
-
-  const handleChange = (key) => (event) => {
-    setRequest((prev) => ({
-      ...prev,
-      [key]: event.target.value,
-    }))
-  }
-
-  const handleApply = () => {
-    const mappedStatus = (request.status || [])
-      .map((label) => statusOptions.find((o) => o.label === label)?.value)
-      .filter((v) => v !== undefined)
-
-    onApply?.({
-      ...request,
-      status: mappedStatus,
-    })
-
-    setOpen(false)
-  }
+  const openDrawer = () => setOpen(true)
+  const closeDrawer = () => setOpen(false)
 
   return (
     <>
@@ -76,65 +44,96 @@ const Filter = ({ request: initialRequest, onApply }) => {
         variant="temporary"
         ModalProps={{ keepMounted: true }}
         sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
+        onClose={closeDrawer}
       >
         <div className="flex items-center justify-between pli-5 plb-4">
           <Typography variant="h5">Filtros</Typography>
-          <IconButton size="small" onClick={() => setOpen(false)}>
+          <IconButton size="small" onClick={closeDrawer}>
             <i className="ri-close-line text-2xl" />
           </IconButton>
         </div>
 
         <Divider />
 
-        <Box sx={{ p: 4 }}>
-          <TextField
-            fullWidth
-            label="Beneficiário"
-            variant="filled"
-            size="small"
-            value={request.beneficiary}
-            onChange={handleChange('beneficiary')}
-          />
+        <Formik
+          initialValues={{
+            company: initialRequest?.company || null,
+            documentNumber: initialRequest?.documentNumber || '',
+            beneficiary: initialRequest?.beneficiary || '',
+            status: initialRequest?.status || [],
+          }}
+          onSubmit={(values) => {
+            onApply(values)
+            closeDrawer()
+          }}
+        >
+          {({ values, setFieldValue, handleChange, handleSubmit, touched, errors }) => (
+            <Box component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
 
-          <TextField
-            fullWidth
-            label="Número documento"
-            variant="filled"
-            size="small"
-            sx={{ mt: 2 }}
-            value={request.documentNumber}
-            onChange={handleChange('documentNumber')}
-          />
+              <AutoComplete
+                name="company"
+                label="Filial"
+                value={values.company}
+                text={(p) => p?.surname}
+                onChange={(value) => setFieldValue('company', value)}
+                onSearch={getCompany}
+              >
+                {(item) => <span>{item.surname}</span>}
+              </AutoComplete>
 
-          <FormControl fullWidth variant="filled" size="small" sx={{ mt: 4 }}>
-            <InputLabel shrink>Status</InputLabel>
-            <Select
-              multiple
-              value={request.status}
-              onChange={handleChange('status')}
-              input={<FilledInput />}
-              renderValue={(selected) => selected.join(', ')}
-            >
-              {statusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.label} dense>
-                  <Checkbox checked={request.status.includes(option.label)} />
-                  <ListItemText primary={option.label} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <Field
+                as={TextField}
+                label='Nº Documento'
+                name='documentNumber'
+                error={Boolean(touched.description && errors.description)}
+                helperText={touched.description && errors.description}
+              />
 
-          <Box display="flex" justifyContent="flex-end" mt={4}>
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<i className="ri-check-line" />}
-              onClick={handleApply}
-            >
-              Aplicar
-            </Button>
-          </Box>
-        </Box>
+              <Field
+                as={TextField}
+                label='Beneficiário'
+                name='beneficiary'
+                error={Boolean(touched.description && errors.description)}
+                helperText={touched.description && errors.description}
+              />
+
+              <FormControl fullWidth variant="filled" size="small" sx={{ mt: 4 }}>
+                <InputLabel shrink>Status</InputLabel>
+                <Select
+                  multiple
+                  name="status"
+                  value={values.status}
+                  onChange={(e) => setFieldValue('status', e.target.value)}
+                  input={<FilledInput />}
+                  renderValue={(selected) =>
+                    selected
+                      .map((val) => statusOptions.find((o) => o.value === val)?.label)
+                      .filter(Boolean)
+                      .join(', ')
+                  }
+                >
+                  {statusOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value} dense>
+                      <Checkbox checked={values.status.includes(option.value)} />
+                      <ListItemText primary={option.label} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Box display="flex" justifyContent="flex-end" mt={4}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="success"
+                  startIcon={<i className="ri-check-line" />}
+                >
+                  Aplicar
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Formik>
       </Drawer>
     </>
   )
@@ -258,6 +257,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
             />
 
             <Filter request={installments.request} onApply={(request) => fetchPayments({
+                  ...installments.request,
                   ...request,
                   offset: 0,
                 })} />
