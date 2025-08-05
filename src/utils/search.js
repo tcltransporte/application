@@ -162,6 +162,29 @@ export async function getBankAccounts (search) {
     
 }
 
+
+export async function getCenterCost (search) {
+
+    const session = await getServerSession(authOptions)
+
+    const db = new AppContext()
+
+    const where = []
+
+    where.push({'$descricao$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
+
+    const centerCosts = await db.CenterCost.findAll({
+        attributes: ['id', 'description'],
+        where,
+        order: [['description', 'asc']],
+        limit: 20,
+        offset: 0,
+    })
+
+    return _.map(centerCosts, (item) => item.get({ plain: true }))
+    
+}
+
 export async function getPaymentMethod (search) {
     
     const session = await getServerSession(authOptions)

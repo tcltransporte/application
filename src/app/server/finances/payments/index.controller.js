@@ -56,16 +56,9 @@ export async function getPayments({ limit = 50, offset, company, dueDate, status
 
   const payments = await db.FinancialMovementInstallment.findAndCountAll({
     include: [
-      {
-        model: db.FinancialMovement,
-        as: 'financialMovement',
-        include: [
-          { model: db.FinancialCategory, as: 'financialCategory' },
-          {
-            model: db.Partner,
-            as: 'partner',
-            attributes: ['codigo_pessoa', 'surname']
-          }
+      { model: db.FinancialMovement, as: 'financialMovement', include: [
+          { model: db.FinancialCategory, as: 'financialCategory', attributes: ['description'] },
+          { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname'] }
         ]
       },
       { model: db.PaymentMethod, as: 'paymentMethod' }

@@ -19,7 +19,7 @@ import { SelectField, TextField } from '@/components/field'
 
 const statusOptions = [
   { label: 'Em aberto', value: 0 },
-  { label: 'Quitados', value: 1 },
+  { label: 'Pago', value: 1 },
 ]
 
 const Filter = ({ request: initialRequest, onApply }) => {
@@ -168,12 +168,15 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
   }
 
   const handlePeriodChange = (dateRange) => {
+    
+    console.log(dateRange)
+
     fetchPayments({
       ...installments.request,
       offset: 0,
       dueDate: {
-        start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
-        end: DateFormat(new Date(dateRange[1]), 'yyyy-MM-dd 23:59'),
+        start: dateRange[0],
+        end: dateRange[1],
       },
     })
   }
@@ -247,11 +250,14 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
             Adicionar
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
+
+            {installments.request?.dueDate?.start}/{installments.request?.dueDate?.end}
+
             <PeriodFilter
               title="Vencimento"
               initialDateRange={[
-                new Date(installments.request?.dueDate?.start),
-                new Date(installments.request?.dueDate?.end),
+                installments.request?.dueDate?.start,
+                installments.request?.dueDate?.end,
               ]}
               onChange={handlePeriodChange}
             />
@@ -291,7 +297,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                       onChange={toggleSelectAll}
                     />
                   </TableCell>
-                  <TableCell align="left" sx={{ width: 120 }}>
+                  <TableCell align="left" sx={{ width: 90 }}>
                     Nº Doc.
                   </TableCell>
                   <TableCell
@@ -306,19 +312,22 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                   >
                     Beneficiário
                   </TableCell>
-                  <TableCell align="left" sx={{ width: 180 }}>
-                    Forma de pagamento
+                  <TableCell align="left" sx={{ width: 240 }}>
+                    Plano de conta
                   </TableCell>
-                  <TableCell align="center" sx={{ width: 120 }}>
+                  <TableCell align="left" sx={{ width: 100 }}>
+                    Tipo
+                  </TableCell>
+                  <TableCell align="center" sx={{ width: 100 }}>
                     Vencimento
                   </TableCell>
-                  <TableCell align="center" sx={{ width: 120 }}>
+                  <TableCell align="center" sx={{ width: 100 }}>
                     Agendamento
                   </TableCell>
-                  <TableCell align="right" sx={{ width: 100 }}>
+                  <TableCell align="right" sx={{ width: 80 }}>
                     Valor
                   </TableCell>
-                  <TableCell align="left" sx={{ width: 220 }}>
+                  <TableCell align="left" sx={{ width: 180 }}>
                     Agência/Conta
                   </TableCell>
                   <TableCell align="center" sx={{ width: 120 }}>
@@ -362,6 +371,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                         >
                           {payment.financialMovement?.partner?.surname}
                         </TableCell>
+                        <TableCell align="left">{payment.financialMovement?.financialCategory?.description}</TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>

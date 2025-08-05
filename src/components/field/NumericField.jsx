@@ -6,22 +6,20 @@ const NumericField = ({ name, decimalPlaces = 2, ...props }) => {
   const [field, meta] = useField(name)
   const { setFieldValue } = useFormikContext()
 
-  const formatValue = (raw) => {
-    if (!raw) return ''
-    const digits = String(raw).replace(/\D/g, '')
-    const num = BigInt(digits || '0')
-    const divisor = BigInt(10 ** decimalPlaces)
-    const intPart = num / divisor
-    const decPart = num % divisor
-    const integerStr = intPart
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-    return `${integerStr},${decPart.toString().padStart(decimalPlaces, '0')}`
+  const formatValue = (value) => {
+    if (value === '' || value === null || isNaN(value)) return ''
+    const fixed = Number(value).toFixed(decimalPlaces)
+    const [intPart, decPart] = fixed.split('.')
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return `${formattedInt},${decPart}`
   }
 
   const handleChange = (e) => {
     const raw = e.target.value.replace(/\D/g, '')
-    setFieldValue(name, raw)
+    const num = BigInt(raw || '0')
+    const divisor = BigInt(10 ** decimalPlaces)
+    const decimalValue = Number(num) / Number(divisor)
+    setFieldValue(name, decimalValue)
   }
 
   return (
@@ -32,7 +30,7 @@ const NumericField = ({ name, decimalPlaces = 2, ...props }) => {
       onChange={handleChange}
       error={Boolean(meta.touched && meta.error)}
       helperText={meta.touched && meta.error}
-      slotProps={{input: { inputMode: 'decimal' }}}
+      slotProps={{ input: { inputMode: 'decimal' } }}
     />
   )
 }

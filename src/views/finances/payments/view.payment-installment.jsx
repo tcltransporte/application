@@ -8,10 +8,30 @@ import { Backdrop, CircularProgress } from "@mui/material";
 import { AutoComplete } from "@/components/AutoComplete";
 import { styles } from "@/components/styles";
 import { createMovement, getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
-import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
+import { getCompany, getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
 import { NumericField, TextField } from "@/components/field";
+import { useSession } from "next-auth/react";
+
+const FIELD_SIZE = {
+
+	documentNumber: 2.5,
+	issueDate: 2.3,
+  dueDate: 2.3,
+	amountTotal: 2.5,
+	installments: 2.4,
+
+  receiver: 7.1,
+  method: 4.9,
+
+  company: 3.5,
+  centerCost: 3.6,
+  category: 4.9,
+
+  description: 12
+
+}
 
 const INTERVAL_OPTIONS = [
   { label: 'Semanal', value: 'weekly' },
@@ -29,8 +49,11 @@ export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
 }
 
 const NewInstallment = ({ installmentId, onClose }) => {
-  
+
+  const session = useSession()
+
   const initialValues = {
+    company: session.data.company,
     documentNumber: '',
     amountTotal: '',
     numParcelas: 1,
@@ -65,7 +88,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
   return (
     <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth="md">
       <DialogTitle>
-        Adicionar conta a pagar
+        Adicionar pagamento
         <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
           <i className="ri-close-line" />
         </IconButton>
@@ -117,49 +140,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                 <Grid container direction="row" spacing={2}>
 
-                  <Grid item size={{xs: 12, sm: 4.6}}>
-                    <AutoComplete
-                      name="receiver"
-                      label="Recebedor"
-                      value={values.receiver}
-                      text={(p) => p?.surname}
-                      onChange={(val) => setFieldValue("receiver", val)}
-                      onSearch={getPartner}
-                    >
-                      {(item) => <span>{item.surname}</span>}
-                    </AutoComplete>
-                  </Grid>
-
-                  <Grid item size={{xs: 12, sm: 3.9}}>
-                    <AutoComplete
-                      name="category"
-                      label="Plano de conta"
-                      value={values.category}
-                      text={(p) => p?.description}
-                      onChange={(val) => setFieldValue("category", val)}
-                      onSearch={(search) => getFinancialCategory(search, 2)}
-                    >
-                      {(item) => <span>{item.description}</span>}
-                    </AutoComplete>
-                  </Grid>
-
-                  <Grid item size={{xs: 12, sm: 3.5}}>
-                    <AutoComplete
-                      name="paymentMethod"
-                      label="Forma de pagamento"
-                      value={values.paymentMethod}
-                      text={(p) => p?.name}
-                      onChange={(val) => setFieldValue("paymentMethod", val)}
-                      onSearch={getPaymentMethod}
-                    >
-                      {(item) => <span>{item.name}</span>}
-                    </AutoComplete>
-                  </Grid>
-                </Grid>
-
-                <Grid container direction="row" spacing={2}>
-
-                  <Grid item size={{xs: 12, sm: 2.7}}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
                     <Field
                       as={TextField}
                       type="text"
@@ -168,7 +149,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     />
                   </Grid>
 
-                  <Grid item size={{xs: 12, sm: 2.4}}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
                     <Field
                       as={TextField}
                       type="date"
@@ -177,7 +158,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     />
                   </Grid>
 
-                  <Grid item size={{xs: 12, sm: 2.4}}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.dueDate}}>
                     <Field
                       as={TextField}
                       type="date"
@@ -186,7 +167,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     />
                   </Grid>
 
-                  <Grid item size={{xs: 12, sm: 2.3}}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
                     <Field
                       as={NumericField}
                       label="Valor"
@@ -196,11 +177,11 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     />
                   </Grid>
 
-                  <Grid item size={{xs: 12, sm: 2.2}}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.installments}}>
                     <Field
                       as={TextField}
                       name="numParcelas"
-                      label="Nº de parcelas"
+                      label="Parcelas"
                       select
                     >
                       {[...Array(12)].map((_, i) => (
@@ -216,10 +197,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
                 {values.numParcelas > 1 && (
                   <Grid container direction="row" spacing={2}>
 
-                    <Grid item size={{xs: 12, sm: 2.3}}>
+                    <Grid item size={{xs: 12, sm: 2}}>
                       <Field name="interval">
                         {({ field }) => (
-                          <TextField fullWidth label="Intervalo" size="small" variant="filled" select {...field}>
+                          <TextField fullWidth label="Período" size="small" variant="filled" select {...field}>
                             {INTERVAL_OPTIONS.map((opt) => (
                               <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                             ))}
@@ -242,50 +223,128 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   </Grid>
                 )}
 
+
                 <Grid container direction="row" spacing={2}>
-                  <Grid item size={{xs: 12, sm: 12}}>
+
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
+                    <AutoComplete
+                      name="receiver"
+                      label="Recebedor"
+                      value={values.receiver}
+                      text={(p) => p?.surname}
+                      onChange={(val) => setFieldValue("receiver", val)}
+                      onSearch={getPartner}
+                    >
+                      {(item) => <span>{item.surname}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
+                    <AutoComplete
+                      name="paymentMethod"
+                      label="Forma de pagamento"
+                      value={values.paymentMethod}
+                      text={(p) => p?.name}
+                      onChange={(val) => setFieldValue("paymentMethod", val)}
+                      onSearch={getPaymentMethod}
+                    >
+                      {(item) => <span>{item.name}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                </Grid>
+
+                <Grid container direction="row" spacing={2}>
+
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.company}}>
+                    <AutoComplete
+                      name="company"
+                      label="Empresa"
+                      value={values.company}
+                      text={(p) => p?.surname}
+                      onChange={(val) => setFieldValue("company", val)}
+                      onSearch={getCompany}
+                    >
+                      {(item) => <span>{item.surname}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.centerCost}}>
+                    <AutoComplete
+                      name="paymentMethod"
+                      label="Centro de custo"
+                      value={values.paymentMethod}
+                      text={(p) => p?.name}
+                      onChange={(val) => setFieldValue("paymentMethod", val)}
+                      onSearch={getPaymentMethod}
+                    >
+                      {(item) => <span>{item.name}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.category}}>
+                    <AutoComplete
+                      name="financialCategory"
+                      label="Plano de conta"
+                      value={values.financialCategory}
+                      text={(p) => p?.description}
+                      onChange={(val) => setFieldValue("financialCategory", val)}
+                      onSearch={(search) => getFinancialCategory(search, 2)}
+                    >
+                      {(item) => <span>{item.description}</span>}
+                    </AutoComplete>
+                  </Grid>
+
+                </Grid>
+
+                <Grid container direction="row" spacing={2}>
+                  <Grid item size={{xs: 12, sm: FIELD_SIZE.description}}>
                     <Field
                       as={TextField}
                       type="text"
                       name="description"
                       label="Descrição"
+                      multiline
+                      rows={2}
                     />
                   </Grid>
                 </Grid>
 
-                <Table size="small" sx={{ mt: 5 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Nº Documento</TableCell>
-                      <TableCell>Valor</TableCell>
-                      <TableCell>Vencimento</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {values.installments.map((inst, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
-                        <TableCell>
-                          <Field
-                            as={NumericField}
-                            name={`installments[${index}].amount`}
-                            error={Boolean(touched.amount && errors.amount)}
-                            helperText={touched.amount && errors.amount}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Field
-                            as={TextField}
-                            type="date"
-                            name={`installments[${index}].dueDate`}
-                          />
-                        </TableCell>
+                {values.numParcelas > 1 && (
+                  <Table size="small" sx={{ mt: 5 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nº Documento</TableCell>
+                        <TableCell>Valor</TableCell>
+                        <TableCell>Vencimento</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
+                    </TableHead>
+                    <TableBody>
+                      {values.installments.map((inst, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
+                          <TableCell>
+                            <Field
+                              as={NumericField}
+                              name={`installments[${index}].amount`}
+                              error={Boolean(touched.amount && errors.amount)}
+                              helperText={touched.amount && errors.amount}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Field
+                              as={TextField}
+                              type="date"
+                              name={`installments[${index}].dueDate`}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
 
-                </Table>
-
+                  </Table>
+                )}
+                
               </DialogContent>
 
               <DialogActions>
@@ -333,15 +392,21 @@ const EditInstallment = ({ installmentId, onClose }) => {
   }, [installmentId]);
 
   const initialValues = {
+    installment: installment?.installment || "",
     partner: installment?.financialMovement?.partner || null,
     paymentMethod: installment?.paymentMethod || null,
     documentNumber: installment?.financialMovement?.documentNumber || "",
+    company: installment?.financialMovement?.company || null,
+    financialCategory: installment?.financialMovement?.financialCategory || null,
     amount: installment?.amount || 0,
     digitableLine: installment?.boleto?.digitableLine || "",
+    issueDate: installment?.financialMovement?.issueDate || "",
     dueDate: installment?.dueDate || "",
     boletoNumber: installment?.boleto?.number || "",
     description: installment?.description || "",
   };
+
+  console.log(initialValues)
 
   const handleSubmit = async (values, actions) => {
     try {
@@ -365,7 +430,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
         </Typography>
       </Backdrop>
 
-      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: {position: 'fixed', top: '32px', width: '900px'}} }}>
+      <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={'md'}>
 
         <DialogTitle sx={styles.dialogTitle}>
           Editar pagamento
@@ -390,7 +455,61 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                   <Grid container direction="row" spacing={2}>
 
-                    <Grid item size={{xs: 12, sm: 6}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
+                      <TextField
+                        label="Nº Documento"
+                        value={values.documentNumber}
+                        readOnly
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
+                      {/*<Field
+                        as={TextField}
+                        type="date"
+                        name="issueDate"
+                        label="Emissão"
+                      />*/}
+                      <TextField
+                        label="Emissão"
+                        value={format(values.issueDate, "dd/MM/yyyy")}
+                        readOnly
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.dueDate}}>
+                      <Field
+                        as={TextField}
+                        type="date"
+                        name="dueDate"
+                        label="Vencimento"
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
+                      <Field
+                        as={NumericField}
+                        type="text"
+                        name="amount"
+                        label="Valor"
+                      />
+                    </Grid>
+
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.installments}}>
+                      <Field
+                        as={TextField}
+                        type="text"
+                        name="installment"
+                        label="Parcela"
+                      />
+                    </Grid>
+
+                  </Grid>
+
+
+                  <Grid container direction="row" spacing={2}>
+
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
                       <AutoComplete
                         name="partner"
                         label="Recebedor"
@@ -401,15 +520,9 @@ const EditInstallment = ({ installmentId, onClose }) => {
                       >
                         {(item) => <span>{item.surname}</span>}
                       </AutoComplete>
-                      {/*
-                      <TextField
-                        label="Recebedor"
-                        value={values.partner?.surname}
-                        readOnly
-                      />*/}
                     </Grid>
 
-                    <Grid item size={{xs: 12, sm: 6}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
                       <AutoComplete
                         name="paymentMethod"
                         label="Forma de pagamento"
@@ -421,50 +534,25 @@ const EditInstallment = ({ installmentId, onClose }) => {
                         {(item) => <span>{item.name}</span>}
                       </AutoComplete>
                     </Grid>
+
                   </Grid>
 
                   <Grid container direction="row" spacing={2}>
 
-                    <Grid item size={{xs: 12, sm: 3}}>
-                      <TextField
-                        label="Nº Documento"
-                        value={values.documentNumber}
-                        readOnly
-                      />
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.company}}>
+                      <AutoComplete
+                        name="company"
+                        label="Empresa"
+                        value={values.company}
+                        text={(p) => p?.surname}
+                        onChange={(val) => setFieldValue("company", val)}
+                        onSearch={getCompany}
+                      >
+                        {(item) => <span>{item.surname}</span>}
+                      </AutoComplete>
                     </Grid>
 
-                    <Grid item size={{xs: 12, sm: 3}}>
-                      <Field
-                        as={TextField}
-                        type="date"
-                        name="issueDate"
-                        label="Emissão"
-                      />
-                    </Grid>
-
-                    <Grid item size={{xs: 12, sm: 3}}>
-                      <Field
-                        as={TextField}
-                        type="date"
-                        name="dueDate"
-                        label="Vencimento"
-                      />
-                    </Grid>
-
-                    <Grid item size={{xs: 12, sm: 3}}>
-                      <Field
-                        as={NumericField}
-                        type="text"
-                        name="amount"
-                        label="Valor"
-                      />
-                    </Grid>
-                   
-                  </Grid>
-
-                  <Grid container direction="row" spacing={2}>
-
-                    <Grid item size={{xs: 12, sm: 6}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.centerCost}}>
                       <AutoComplete
                         name="paymentMethod"
                         label="Centro de custo"
@@ -477,14 +565,14 @@ const EditInstallment = ({ installmentId, onClose }) => {
                       </AutoComplete>
                     </Grid>
 
-                    <Grid item size={{xs: 12, sm: 6}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.category}}>
                       <AutoComplete
-                        name="category"
+                        name="financialCategory"
                         label="Plano de conta"
-                        value={values.category}
+                        value={values.financialCategory}
                         text={(p) => p?.description}
-                        onChange={(val) => setFieldValue("category", val)}
-                        onSearch={getFinancialCategory}
+                        onChange={(val) => setFieldValue("financialCategory", val)}
+                        onSearch={(search) => getFinancialCategory(search, 2)}
                       >
                         {(item) => <span>{item.description}</span>}
                       </AutoComplete>
@@ -493,14 +581,14 @@ const EditInstallment = ({ installmentId, onClose }) => {
                   </Grid>
 
                   <Grid container direction="row" spacing={2}>
-                    <Grid item size={{xs: 12, sm: 12}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.description}}>
                       <Field
                         as={TextField}
                         type="text"
                         name="description"
                         label="Descrição"
                         multiline
-                        rows={3}
+                        rows={2}
                       />
                     </Grid>
                   </Grid>

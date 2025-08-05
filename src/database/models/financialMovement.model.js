@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { Sequelize, DataTypes } from 'sequelize';
 
 export class FinancialMovement {
@@ -24,7 +25,7 @@ export class FinancialMovement {
         type: DataTypes.DECIMAL
     }
 
-    financialCategoryId = {
+    categoryId = {
         field: 'IDPlanoContasContabil',
         type: DataTypes.BIGINT
     }
@@ -35,10 +36,19 @@ export class FinancialMovement {
     }
     
     issueDate = {
-        field: 'data_movimento',
+        field: 'dataEmissao',
         type: DataTypes.STRING,
         get() {
-            return this.getDataValue('issueDate').formatUTC()
+            return this.getDataValue('issueDate')?.formatUTC()
+        }
+    }
+
+    createdAt = {
+        field: 'data_movimento',
+        type: DataTypes.STRING,
+        defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+        get() {
+            return this.getDataValue('createdAt')?.formatUTC()
         }
     }
 

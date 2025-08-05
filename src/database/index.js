@@ -23,6 +23,7 @@ import { Shippiment } from './models/shippiment.model.js'
 import { Cte } from './models/cte.model.js'
 import { CteNfe } from './models/cteNfe.model.js'
 import { Nfe } from './models/Nfe.model.js'
+import { CenterCost } from './models/centerCost.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -45,6 +46,8 @@ export class AppContext extends Sequelize {
   Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
 
   BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
+
+  CenterCost = this.define('centerCost', new CenterCost(), { tableName: 'CentroCusto' })
 
   Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
 
@@ -130,6 +133,7 @@ export class AppContext extends Sequelize {
     this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
     this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })
     
+    this.FinancialMovement.belongsTo(this.Company, { as: 'company', foreignKey: 'CodigoEmpresaFilial', targetKey: 'codigo_empresa_filial' })
     this.FinancialMovement.belongsTo(this.FinancialCategory, { as: 'financialCategory', foreignKey: 'IDPlanoContasContabil', targetKey: 'id' })
     this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa' })
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta' })
