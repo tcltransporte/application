@@ -33,8 +33,8 @@ export class StatementData {
     type: DataTypes.STRING(20),
   }
 
-  orderId = {
-    field: 'orderId',
+  reference = {
+    field: 'reference',
     type: DataTypes.STRING(20),
   }
   

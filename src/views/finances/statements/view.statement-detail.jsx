@@ -55,7 +55,11 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [entryTypeFilters, setEntryTypeFilters] = useState([])
   const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
+  
+  // --- ALTERADO: Adicionado novo estado para as linhas principais ---
   const [selectedConcileds, setSelectedConcileds] = useState(new Set());
+  const [selectedStatements, setSelectedStatements] = useState(new Set()); // --- NOVO ---
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isDrawerReceivement, setIsDrawerReceivement] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(null)
@@ -91,7 +95,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
   useEffect(() => {
     if (!statementId) {
+      // --- ALTERADO: Limpa ambos os estados ao fechar/trocar o dialog ---
       setSelectedConcileds(new Set());
+      setSelectedStatements(new Set()); // --- NOVO ---
     }
   }, [statementId]);
 
@@ -106,6 +112,19 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         }
       });
       return newSelection;
+    });
+  }, []);
+
+  // --- NOVO: Handler para a seleção das linhas principais (statementData) ---
+  const handleStatementSelectionChange = useCallback((statementId, select) => {
+    setSelectedStatements(prevSelected => {
+        const newSelection = new Set(prevSelected);
+        if (select) {
+            newSelection.add(statementId);
+        } else {
+            newSelection.delete(statementId);
+        }
+        return newSelection;
     });
   }, []);
 
@@ -129,7 +148,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
       {loading && ( <Backdrop open sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff' }}> <CircularProgress color="inherit" /> <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>&nbsp;Carregando...</Typography> </Backdrop> )}
 
       <Dialog open={statementId !== undefined && !loading} onClose={onClose} fullWidth maxWidth="lg" scroll="paper" slotProps={{ paper: { sx: { position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', margin: 0, maxHeight: 'calc(100vh - 64px)' } } }} >
-        <DialogTitle sx={styles.dialogTitle}> Extrato detalhado <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large"> <i className="ri-close-line" /> </IconButton> </DialogTitle>
+        <DialogTitle sx={styles.dialogTitle}>Conciliação <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large"> <i className="ri-close-line" /> </IconButton> </DialogTitle>
         <DialogContent>
           <Table size="small">
             <TableHead>
@@ -142,20 +161,34 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                 <TableCell sx={{ width: 110 }} align="right">Taxa</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Crédito</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Débito</TableCell>
-                <TableCell sx={{ width: 90  }} align="right">Saldo</TableCell>
+                <TableCell sx={{ width: 110 }} align="right">Saldo</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
             <TableBody>
               {(statement?.statementData || []).map((data, index) => {
                 
+                // --- LÓGICA DO CHECKBOX TOTALMENTE REFEITA ---
                 const allConciledIdsInGroup = (data.concileds || []).map(c => c.id);
                 const selectedInGroupCount = allConciledIdsInGroup.filter(id => selectedConcileds.has(id)).length;
-                const isAllSelected = allConciledIdsInGroup.length > 0 && selectedInGroupCount === allConciledIdsInGroup.length;
-                const isSomeSelected = selectedInGroupCount > 0 && !isAllSelected;
+                const hasChildren = allConciledIdsInGroup.length > 0;
+                const isAllChildrenSelected = hasChildren && selectedInGroupCount === allConciledIdsInGroup.length;
+                
+                // O checkbox principal é considerado marcado se estiver no seu próprio estado OU se todos os filhos estiverem marcados.
+                const isStatementSelected = selectedStatements.has(data.id) || isAllChildrenSelected;
+                
+                // Fica em estado indeterminado se NÃO estiver marcado, mas tiver ALGUNS filhos marcados.
+                const isIndeterminate = !isStatementSelected && hasChildren && selectedInGroupCount > 0;
 
+                // Handler para o clique no checkbox principal
                 const handleRowSelectAllClick = () => {
-                    handleSelectionChange(allConciledIdsInGroup, !isAllSelected);
+                  const newSelectState = !isStatementSelected;
+                  // 1. Atualiza o estado da linha principal
+                  handleStatementSelectionChange(data.id, newSelectState);
+                  // 2. Propaga a seleção para todas as linhas filhas
+                  if (hasChildren) {
+                    handleSelectionChange(allConciledIdsInGroup, newSelectState);
+                  }
                 };
 
                 return (
@@ -164,22 +197,22 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                       <TableCell padding="checkbox">
                         <Checkbox
                           color="primary"
-                          indeterminate={isSomeSelected}
-                          checked={isAllSelected}
+                          indeterminate={isIndeterminate}
+                          checked={isStatementSelected}
                           onChange={handleRowSelectAllClick}
-                          disabled={allConciledIdsInGroup.length === 0}
+                          // A propriedade "disabled" foi removida para permitir a seleção
                         />
                       </TableCell>
                       <TableCell style={{ width: '140px' }}>{data.sourceId}</TableCell>
                       <TableCell>{data.entryDate != null ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                      <TableCell>{data.orderId ? `#${data.orderId}` : ''}</TableCell>
+                      <TableCell>{data.reference}</TableCell>
                       <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.credit)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.debit)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
-                      <TableCell align='right' style={{ width: '100px' }}>
-                        <Badge color="primary" badgeContent={_.size(data.concileds) || "0"} sx={{ '& .MuiBadge-badge': { right: 10, fontWeight: 'bold' } }} />
+                      <TableCell align="left">
+                        <IconButton><Badge color="primary" badgeContent={_.size(data.concileds) || "0"} /></IconButton>
                         <IconButton size='small' onClick={() => toggleExpand(index)} className="row-actions">
                           {expandedRow === index
                             ? <i className="ri-arrow-up-circle-line" style={{ fontSize: 30 }} />
@@ -189,7 +222,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                       </TableCell>
                     </TableRow>
                     
-                    {/* --- AQUI ESTÁ A CORREÇÃO --- */}
                     {expandedRow === index ? (
                       <ConciledDetailRowsGroup
                         data={data}
@@ -206,9 +238,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             </TableBody>
           </Table>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'space-between' }}>
-            <IconButton onClick={handleOpenFilterDialog} size="small" > <i className="ri-filter-line" /> </IconButton>
-            <div> <Button variant="text" onClick={onClose}>Desconciliar</Button> <Button variant="contained" color="success" onClick={onClose} sx={{ ml: 1 }}>Conciliar</Button> </div>
+        <DialogActions sx={{ justifyContent: 'space-between', mt: 4 }}>
+          <IconButton onClick={handleOpenFilterDialog} size="small" > <i className="ri-filter-line" /> </IconButton>
+          <div> <Button variant="text" onClick={onClose}>Desconciliar</Button> <Button variant="contained" color="success" onClick={onClose} sx={{ ml: 1 }}>Conciliar</Button> </div>
         </DialogActions>
       </Dialog>
       
@@ -241,6 +273,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   )
 }
 
+// --- CORREÇÃO DE HIDRATAÇÃO APLICADA AQUI ---
+// Este componente foi reescrito para construir um array de linhas,
+// evitando que espaços em branco no JSX quebrem a renderização da tabela.
 function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatementUpdate, selectedConcileds, onSelectionChange }) {
   const [newConciledInputActive, setNewConciledInputActive] = useState(false)
   const [editingConciledIndex, setEditingConciledIndex] = useState(null)
@@ -251,12 +286,10 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
   const handleAddConciled = () => { setNewConciledInputActive(true); setEditingConciledIndex(null); setEditingConciledData(null); }
   const handleStartEdit = (i, item) => { setEditingConciledIndex(i); setEditingConciledData(item); setNewConciledInputActive(false); }
   const handleDeleteConciled = async (item) => { try { await deleteStatementConciled({ id: item.id }); toast.success('Registro excluído com sucesso'); handleConciliationSubmitSuccess(); } catch (error) { toast.error(error.message); } }
-
-  // --- Start of Correction ---
-  // We will build an array of rows to avoid whitespace issues.
+  
   const rows = [];
 
-  // 1. Add the header row for the details section
+  // 1. Adiciona a linha de cabeçalho da seção de detalhes
   rows.push(
     <TableRow key="conciled-header" sx={{ backgroundColor: '#f5f5f5' }}>
       <TableCell></TableCell>
@@ -269,7 +302,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
     </TableRow>
   );
 
-  // 2. Add the existing conciliation items or their edit forms
+  // 2. Adiciona os itens de conciliação existentes ou seus formulários de edição
   (data.concileds || []).forEach((item, i) => {
     if (editingConciledIndex === i) {
       rows.push(
@@ -297,7 +330,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
     }
   });
 
-  // 3. Add the "new conciliation" form or the "Add" button
+  // 3. Adiciona o formulário "nova conciliação" ou o botão "Adicionar"
   if (newConciledInputActive) {
     rows.push(
       <ConciliationForm
@@ -318,10 +351,10 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
     );
   }
 
-  // Return the array of rows. React will render this correctly.
+  // Retorna o array de linhas. O React renderizará isso corretamente.
   return rows;
-  // --- End of Correction ---
 }
+
 
 function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDetails, isSelected, onToggleSelection }) {
   const [infoAnchorEl, setInfoAnchorEl] = useState(null);
@@ -349,11 +382,11 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
           <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
         </Box>
       </TableCell>
-      <TableCell align='right'>
-        {(!item.paymentId && !item.receivementId) && ( <Tooltip title='Vincular' className="row-actions"><IconButton onClick={() => onViewDetails(item.id)}><i className="ri-search-line" /></IconButton></Tooltip> )}
+      <TableCell align='left'>
+        {(!item.paymentId && !item.receivementId) && ( <Tooltip title='Vincular' className="row-actions"><IconButton onClick={() => onViewDetails(item.id)}><Badge color="default" badgeContent={<i className="ri-search-line" style={{fontSize: 26, color: '#666CFF'}} />} onClick={handleInfoClick} /></IconButton></Tooltip> )}
         {(item.paymentId || item.receivementId) && (
           <>
-            <Tooltip title='Informações'><IconButton onClick={handleInfoClick}><i className="ri-edit-box-line" style={{ color: '#2e7d32' }} /></IconButton></Tooltip>
+            <Tooltip title='Informações'><IconButton><Badge color="primary" badgeContent={"i"} onClick={handleInfoClick} /></IconButton></Tooltip>
             <Menu anchorEl={infoAnchorEl} open={Boolean(infoAnchorEl)} onClose={handleInfoClose} >
               <MenuItem onClick={() => { handleInfoClose(); onStartEdit(); }}><i className="ri-pencil-line" style={{ marginRight: 8 }} /> Editar </MenuItem>
               <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular </MenuItem>
@@ -408,15 +441,15 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
                     {touched.type && errors.type && ( <Typography variant="caption" color="error">{errors.type}</Typography> )}
                 </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={2}>
-                  <AutoComplete variant="outlined" placeholder="Categoria" value={values.category} text={(category) => category.description} onChange={(category) => setFieldValue('category', category)} onSearch={getFinancialCategory} onBlur={() => setFieldTouched('category', true)} error={touched.category && Boolean(errors.category)} helperText={touched.category && errors.category} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.description}</span>} </AutoComplete>
-                  {(values.type === 'payment' || values.type === 'receivement') && ( <AutoComplete size="small" variant="outlined" placeholder="Cliente" value={values.partner} text={(partner) => partner.surname} onChange={(partner) => setFieldValue('partner', partner)} onSearch={getPartner} onBlur={() => setFieldTouched('partner', true)} error={touched.partner && Boolean(errors.partner)} helperText={touched.partner && errors.partner} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.surname}</span>} </AutoComplete> )}
+                    <AutoComplete variant="outlined" placeholder="Categoria" value={values.category} text={(category) => category.description} onChange={(category) => setFieldValue('category', category)} onSearch={getFinancialCategory} onBlur={() => setFieldTouched('category', true)} error={touched.category && Boolean(errors.category)} helperText={touched.category && errors.category} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.description}</span>} </AutoComplete>
+                    {(values.type === 'payment' || values.type === 'receivement') && ( <AutoComplete size="small" variant="outlined" placeholder="Cliente" value={values.partner} text={(partner) => partner.surname} onChange={(partner) => setFieldValue('partner', partner)} onSearch={getPartner} onBlur={() => setFieldTouched('partner', true)} error={touched.partner && Boolean(errors.partner)} helperText={touched.partner && errors.partner} sx={{backgroundColor: '#fff', mt: 1}}> {(item) => <span>{item.surname}</span>} </AutoComplete> )}
                 </TableCell>
                 <TableCell sx={{ p: 1 }} align="right"> <Field as={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
                 <TableCell sx={{ p: 1 }} align="right"> <Field as={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
                 <TableCell sx={{ p: 1 }} align="right"> <Field as={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={3}>
-                  <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
-                  <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
+                    <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
+                    <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
                 </TableCell>
             </TableRow>
         )}
