@@ -87,7 +87,7 @@ export const Statement = ({ data, onChange }) => {
       ) : (
         <>
           <Paper variant="outlined" sx={{ maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
-            <Table size="small" stickyHeader>
+            <Table stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell />

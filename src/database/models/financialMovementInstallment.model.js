@@ -31,7 +31,7 @@ export class FinancialMovementIntallment {
     type: DataTypes.STRING
   }
 
-  description = {
+  observation = {
     field: 'Descricao',
     type: DataTypes.STRING
   }

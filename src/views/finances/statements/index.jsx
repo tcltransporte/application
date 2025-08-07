@@ -8,7 +8,7 @@ import { ViewStatementDetail } from './view.statement-detail'
 import { getStatements } from '@/app/server/finances/statements/index.controller'
 import { useTitle } from '@/contexts/TitleProvider'
 import { styles } from '@/components/styles'
-import { PeriodFilter } from '@/components/PeriodFilter'
+import { RangeFilter } from '@/components/RangeFilter'
 import _ from 'lodash'
 
 export const ViewFinancesStatements = ({ initialStatements }) => {
@@ -60,7 +60,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
 
-            <PeriodFilter
+            <RangeFilter
               title="Vencimento"
               initialDateRange={[
                 //new Date(installments.request?.dueDate?.start),

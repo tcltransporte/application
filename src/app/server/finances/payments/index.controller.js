@@ -8,10 +8,12 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Op } from "sequelize"
 
-export async function getPayments({ limit = 50, offset, company, dueDate, status }) {
+export async function getPayments({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
     
   const session = await getServerSession(authOptions)
 
+  await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+  
   const db = new AppContext()
 
   const whereClauses = []
@@ -23,11 +25,40 @@ export async function getPayments({ limit = 50, offset, company, dueDate, status
     })
   }
 
+  if (!_.isEmpty(documentNumber)) {
+    whereClauses.push({
+      '$financialMovement.numero_documento$': {
+        [Op.like]: `%${documentNumber.replace(/ /g, "%").toUpperCase()}%`
+      }
+    })
+  }
+
+  if (receiver?.codigo_pessoa) {
+    whereClauses.push({
+      '$financialMovement.codigo_pessoa$': receiver.codigo_pessoa
+    })
+  }
+
+  if (category?.id) {
+    whereClauses.push({
+      '$financialMovement.IDPlanoContasContabil$': category.id
+    })
+  }
+
   // Filtro por data de vencimento
   if (dueDate?.start && dueDate?.end) {
     whereClauses.push({
       dueDate: {
         [Op.between]: [dueDate.start, dueDate.end]
+      }
+    })
+  }
+
+  
+  if (!_.isEmpty(observation)) {
+    whereClauses.push({
+      '$financialMovement.descricao$': {
+        [Op.like]: `%${observation.replace(/ /g, "%").toUpperCase()}%`
       }
     })
   }
@@ -55,13 +86,18 @@ export async function getPayments({ limit = 50, offset, company, dueDate, status
   })
 
   const payments = await db.FinancialMovementInstallment.findAndCountAll({
+    attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate'],
     include: [
       { model: db.FinancialMovement, as: 'financialMovement', include: [
+          { model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname'] },
           { model: db.FinancialCategory, as: 'financialCategory', attributes: ['description'] },
           { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname'] }
         ]
       },
-      { model: db.PaymentMethod, as: 'paymentMethod' }
+      { model: db.PaymentMethod, as: 'paymentMethod' },
+      { model: db.BankAccount, as: 'bankAccount', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
+        { model: db.Bank, as: 'bank', attributes: ['id', 'name'] }
+      ]},
     ],
     where: {
       [Op.and]: whereClauses

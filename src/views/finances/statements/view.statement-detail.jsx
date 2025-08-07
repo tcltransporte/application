@@ -24,7 +24,8 @@ import { ViewVinculeReceivement } from './view.vincule-receivement' // Caminho p
 
 import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller' // Caminho para suas funções de controle de servidor
 import { styles } from '@/components/styles' // Caminho para seus estilos globais ou objeto de estilo
-import { CurrencyField } from '@/components/field'
+import { NumericField } from '@/components/field'
+import _ from 'lodash'
 
 // --- Funções Utilitárias ---
 const entryTypeAlias = {
@@ -205,7 +206,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         }}
       >
         <DialogTitle sx={styles.dialogTitle}>
-          Extrato Detalhado
+          Extrato detalhado
           <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large">
             <i className="ri-close-line" />
           </IconButton>
@@ -239,14 +240,14 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     <TableCell align="right">{formatCurrency(data.debit)}</TableCell>
                     <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
                     <TableCell align='right' style={{ width: '100px' }}>
-                      <Tooltip title={entryTypeAlias[data.entryType]?.title || data.entryType}>
+                      {/*<Tooltip title={entryTypeAlias[data.entryType]?.title || data.entryType}>*/}
                         <Badge
                           color="primary"
-                          badgeContent={entryTypeAlias[data.entryType]?.content || '?'}
+                          badgeContent={_.size(data.concileds) || "0"}
                           sx={{ '& .MuiBadge-badge': { right: 10, fontWeight: 'bold' } }}
                         >
                         </Badge>
-                      </Tooltip>
+                      {/*</Tooltip>*/}
                       <IconButton size='large' onClick={() => toggleExpand(index)}>
                         {expandedRow === index
                           ? <i className="ri-arrow-up-circle-line" />
@@ -623,7 +624,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
           </TableCell>
           <TableCell sx={{ p: 1 }} align="right">
             <Field
-              component={CurrencyField}
+              as={NumericField}
               size="small"
               variant="outlined"
               placeholder="Valor"
@@ -635,7 +636,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
           </TableCell>
           <TableCell sx={{ p: 1 }} align="right">
             <Field
-              component={CurrencyField}
+              as={NumericField}
               size="small"
               variant="outlined"
               placeholder="Taxa"
@@ -647,7 +648,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
           </TableCell>
           <TableCell sx={{ p: 1 }} align="right">
             <Field
-              component={CurrencyField}
+              as={NumericField}
               size="small"
               variant="outlined"
               placeholder="Desconto"

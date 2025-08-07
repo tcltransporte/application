@@ -31,12 +31,13 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
 import 'react-date-range/dist/styles.css'
 import 'react-date-range/dist/theme/default.css'
+import { styles } from './styles'
 
-export const PeriodFilter = ({
+export const RangeFilter = ({
   title = '',
   initialDateRange = [null, null],
   onChange,
-  type = 'datetime-local', // 'date' ou 'datetime-local'
+  type = 'date', // 'date' ou 'datetime-local'
 }) => {
   const today = new Date()
 
@@ -318,12 +319,12 @@ export const PeriodFilter = ({
       </Button>
 
       <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="md">
-        <DialogTitle sx={{ position: 'relative' }}>
+        <DialogTitle>
           {title}
           <IconButton
             aria-label="close"
             onClick={handleCancel}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+            sx={styles.dialogClose}
             size="large"
           >
             <i className="ri-close-line" />
@@ -334,7 +335,7 @@ export const PeriodFilter = ({
           <Box sx={{ pt: 4, display: 'flex', gap: 2 }}>
             {/* Botões de períodos predefinidos */}
             <Box
-              sx={{ width: 220, display: 'flex', flexDirection: 'column', gap: 1 }}
+              sx={{ width: 220, display: 'flex', flexDirection: 'column', gap: 2 }}
             >
               {predefinedRanges.map(({ label, action }) => {
                 const isSelected =

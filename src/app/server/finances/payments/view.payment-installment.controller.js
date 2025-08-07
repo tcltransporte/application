@@ -12,16 +12,20 @@ export async function getInstallment({installmentId}) {
     const db = new AppContext()
 
     const payment = await db.FinancialMovementInstallment.findOne({
-        attributes: ['installment', 'amount', 'dueDate', 'description'],
+        attributes: ['installment', 'amount', 'dueDate', 'observation'],
         include: [
             {model: db.FinancialMovement, as: 'financialMovement', attributes: ['documentNumber', 'issueDate'],
                 include: [
                     {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']},
                     {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname']},
-                    {model: db.FinancialCategory, as: 'financialCategory', attributes: ['id', 'description']}
+                    {model: db.CenterCost, as: 'centerCost', attributes: ['id', 'description']},
+                    {model: db.FinancialCategory, as: 'financialCategory', attributes: ['id', 'description']},
                 ]
             },
-            {model: db.PaymentMethod, as: 'paymentMethod'},
+            {model: db.PaymentMethod, as: 'paymentMethod', attributes: ['id', 'name']},
+            {model: db.BankAccount, as: 'bankAccount', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
+                {model: db.Bank, as: 'bank', attributes: ['id', 'name']}
+            ]},
         ],
         where: [
             {codigo_movimento_detalhe: installmentId}
@@ -40,25 +44,27 @@ export async function createMovement(formData) {
 
         const movement = await db.FinancialMovement.create({
             ...formData,
-            companyId: formData.company.codigo_empresa_filial,
-            categoryId: formData.financialCategory.id,
-            partnerId: formData.receiver.codigo_pessoa,
-            description: formData.description
+            companyId: formData.company?.codigo_empresa_filial,
+            centerCostId: formData.centerCost?.id,
+            categoryId: formData.financialCategory?.id,
+            partnerId: formData.receiver?.codigo_pessoa,
+            observation: formData.observation
         }, {transaction})
 
         let installment = 1
-        let description = formData.description
+        let observation = formData.observation
         for (const item of formData.installments) {
 
             if (_.size(formData.installments > 1)) {
-                description += ` - Parcela ${installment}`
+                observation += ` - Parcela ${installment}`
             }
 
             await db.FinancialMovementInstallment.create({
                 ...item,
                 financialMovementId: movement.codigo_movimento,
                 paymentMethodId: formData.paymentMethod.id,
-                description
+                bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
+                observation
             }, {transaction})
 
             installment++
@@ -104,7 +110,7 @@ export async function submitInstallment(formData) {
     if (formData.codigo_movimento_detalhe) {
         // Atualiza o registro existente
         await db.FinancialMovementInstallment.update(
-        { ...formData },
+        { ...formData, centerCostId: formData.centerCost?.id },
         { where: { codigo_movimento_detalhe: formData.codigo_movimento_detalhe }, transaction }
         );
 

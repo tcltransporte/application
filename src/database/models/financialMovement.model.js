@@ -25,6 +25,11 @@ export class FinancialMovement {
         type: DataTypes.DECIMAL
     }
 
+    centerCostId = {
+        field: 'IDCentroCusto',
+        type: DataTypes.BIGINT
+    }
+
     categoryId = {
         field: 'IDPlanoContasContabil',
         type: DataTypes.BIGINT
@@ -41,6 +46,11 @@ export class FinancialMovement {
         get() {
             return this.getDataValue('issueDate')?.formatUTC()
         }
+    }
+
+    observation = {
+        field: 'descricao',
+        type: DataTypes.STRING
     }
 
     createdAt = {

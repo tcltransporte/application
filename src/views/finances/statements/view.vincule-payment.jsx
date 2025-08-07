@@ -23,6 +23,7 @@ import { getPayments } from '@/app/server/finances/payments/index.controller'
 import _ from 'lodash'
 
 export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
+  
   const [historico, setHistorico] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
@@ -91,32 +92,23 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
             <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
               <TextField
                 label="Histórico"
-                variant="filled"
                 value={historico}
                 onChange={(e) => setHistorico(e.target.value)}
-                fullWidth
-                size="small"
                 InputLabelProps={{ shrink: true }}
               />
               <TextField
                 label="Início"
-                variant="filled"
                 type="date"
                 value={dataInicial}
                 onChange={(e) => setDataInicial(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: 120 }}
               />
               <TextField
                 label="Fim"
-                variant="filled"
                 type="date"
                 value={dataFinal}
                 onChange={(e) => setDataFinal(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ minWidth: 180 }}
+                sx={{ minWidth: 120 }}
               />
               <Button
                 size="small"
@@ -165,7 +157,7 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
                           />
                         </TableCell>
                         <TableCell>{item.financialMovement?.partner?.surname}</TableCell>
-                        <TableCell>{item.description}</TableCell>
+                        <TableCell>{item.observation}</TableCell>
                         <TableCell align="right">
                           {new Intl.NumberFormat('pt-BR', {
                             style: 'decimal',

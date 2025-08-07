@@ -2,12 +2,25 @@ import React from 'react'
 import MuiTextField from '@mui/material/TextField'
 
 const TextField = (props) => {
-  
-  const { field, form, transform = 'none', ...rest } = props
+  const {
+    field,
+    form,
+    transform = 'none',
+    InputProps,
+    readOnly = false,
+    ...rest
+  } = props
 
-  // Se não vier field, renderiza MuiTextField normal
   if (!field) {
-    return <MuiTextField {...props} />
+    return (
+      <MuiTextField
+        {...props}
+        InputProps={{
+          ...InputProps,
+          readOnly,
+        }}
+      />
+    )
   }
 
   const { name, value } = field
@@ -23,7 +36,6 @@ const TextField = (props) => {
       return
     }
 
-    // Aplica transformação conforme prop transform
     if (transform === 'uppercase') {
       val = val.toUpperCase()
     } else if (transform === 'lowercase') {
@@ -41,6 +53,10 @@ const TextField = (props) => {
       onChange={handleChange}
       error={error}
       helperText={helperText}
+      InputProps={{
+        ...InputProps,
+        readOnly,
+      }}
     />
   )
 }

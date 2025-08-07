@@ -5,7 +5,7 @@ import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Bo
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
-import { PeriodFilter } from '@/components/PeriodFilter'
+import { RangeFilter } from '@/components/RangeFilter'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 
 import { styles } from '@/components/styles'
@@ -13,7 +13,7 @@ import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { format, parseISO } from 'date-fns'
 import { AutoComplete } from '@/components/AutoComplete'
-import { getCompany, getPaymentMethod } from '@/utils/search'
+import { getCompany, getFinancialCategory, getPartner, getPaymentMethod } from '@/utils/search'
 import { Field, Formik } from 'formik'
 import { SelectField, TextField } from '@/components/field'
 
@@ -23,6 +23,7 @@ const statusOptions = [
 ]
 
 const Filter = ({ request: initialRequest, onApply }) => {
+
   const [open, setOpen] = useState(false)
 
   const openDrawer = () => setOpen(true)
@@ -59,7 +60,9 @@ const Filter = ({ request: initialRequest, onApply }) => {
           initialValues={{
             company: initialRequest?.company || null,
             documentNumber: initialRequest?.documentNumber || '',
-            beneficiary: initialRequest?.beneficiary || '',
+            receiver: initialRequest?.receiver || null,
+            category: initialRequest?.category || null,
+            observation: initialRequest?.observation || '',
             status: initialRequest?.status || [],
           }}
           onSubmit={(values) => {
@@ -89,15 +92,37 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 helperText={touched.description && errors.description}
               />
 
+              <AutoComplete
+                name="receiver"
+                label="Beneficiário"
+                value={values.receiver}
+                text={(p) => p?.surname}
+                onChange={(val) => setFieldValue("receiver", val)}
+                onSearch={getPartner}
+              >
+                {(item) => <span>{item.surname}</span>}
+              </AutoComplete>
+
+              <AutoComplete
+                name="category"
+                label="Plano de conta"
+                value={values.category}
+                text={(p) => p?.description}
+                onChange={(val) => setFieldValue("category", val)}
+                onSearch={(search) => getFinancialCategory(search, 2)}
+              >
+                {(item) => <span>{item.description}</span>}
+              </AutoComplete>
+
               <Field
                 as={TextField}
-                label='Beneficiário'
-                name='beneficiary'
-                error={Boolean(touched.description && errors.description)}
-                helperText={touched.description && errors.description}
+                label='Observação'
+                name='observation'
+                error={Boolean(touched.observation && errors.observation)}
+                helperText={touched.observation && errors.observation}
               />
 
-              <FormControl fullWidth variant="filled" size="small" sx={{ mt: 4 }}>
+              <FormControl fullWidth variant="filled" size="small" sx={{ mt: 2 }}>
                 <InputLabel shrink>Status</InputLabel>
                 <Select
                   multiple
@@ -251,9 +276,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
 
-            {installments.request?.dueDate?.start}/{installments.request?.dueDate?.end}
-
-            <PeriodFilter
+            <RangeFilter
               title="Vencimento"
               initialDateRange={[
                 installments.request?.dueDate?.start,
@@ -263,10 +286,10 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
             />
 
             <Filter request={installments.request} onApply={(request) => fetchPayments({
-                  ...installments.request,
-                  ...request,
-                  offset: 0,
-                })} />
+              ...installments.request,
+              ...request,
+              offset: 0,
+            })} />
 
             <Button
               variant="outlined"
@@ -288,51 +311,17 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
           <Paper sx={styles.paperContainer}>
             <Table sx={styles.tableLayout} stickyHeader size="small">
               <TableHead>
-                <TableRow>
-                  <TableCell align="center" sx={{ width: 56, minWidth: 56, px: 1 }}>
-                    <Checkbox
-                      color="primary"
-                      checked={allSelected}
-                      indeterminate={selectedIds.size > 0 && !allSelected}
-                      onChange={toggleSelectAll}
-                    />
-                  </TableCell>
-                  <TableCell align="left" sx={{ width: 90 }}>
-                    Nº Doc.
-                  </TableCell>
-                  <TableCell
-                    align="left"
-                    sx={{
-                      width: 'auto',
-                      minWidth: 180,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    Beneficiário
-                  </TableCell>
-                  <TableCell align="left" sx={{ width: 240 }}>
-                    Plano de conta
-                  </TableCell>
-                  <TableCell align="left" sx={{ width: 100 }}>
-                    Tipo
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 100 }}>
-                    Vencimento
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 100 }}>
-                    Agendamento
-                  </TableCell>
-                  <TableCell align="right" sx={{ width: 80 }}>
-                    Valor
-                  </TableCell>
-                  <TableCell align="left" sx={{ width: 180 }}>
-                    Agência/Conta
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 120 }}>
-                    Ações
-                  </TableCell>
+                <TableRow className="with-hover-actions">
+                  <TableCell sx={{ width: 56, minWidth: 56, px: 1 }} align="center"><Checkbox color="primary" checked={allSelected} indeterminate={selectedIds.size > 0 && !allSelected} onChange={toggleSelectAll}/></TableCell>
+                  <TableCell sx={{ width: 80 }} align="left">Nº Doc.</TableCell>
+                  <TableCell sx={{ width: 'auto', minWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} align="left">Filial / Beneficiário</TableCell>
+                  <TableCell sx={{ width: 240 }} align="left">Plano de conta</TableCell>
+                  <TableCell sx={{ width: 100 }} align="left">Tipo</TableCell>
+                  <TableCell sx={{ width: 100 }} align="center">Vencimento</TableCell>
+                  <TableCell sx={{ width: 100 }} align="center">Agendamento</TableCell>
+                  <TableCell sx={{ width: 80  }} align="right">Valor</TableCell>
+                  <TableCell sx={{ width: 180 }} align="left">Agência / Conta</TableCell>
+                  <TableCell sx={{ width: 120 }} align="center" />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -349,59 +338,59 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
                     return (
                       <TableRow
-                        key={id}
+                        key={index}
                         hover
                         onClick={() => toggleSelect(id)}
+                        onDoubleClick={() => handleEdit({ installmentId: id })}
                         role="checkbox"
                         aria-checked={isItemSelected}
                         selected={isItemSelected}
                         sx={{ cursor: 'pointer' }}
+                        className="with-hover-actions"
                       >
                         <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            color="primary"
-                            checked={isItemSelected}
-                            onChange={() => toggleSelect(id)}
-                          />
+                          <Checkbox color="primary" checked={isItemSelected} onChange={() => toggleSelect(id)} />
                         </TableCell>
                         <TableCell align="left">{payment.financialMovement?.documentNumber}</TableCell>
-                        <TableCell
-                          align="left"
-                          sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                        >
-                          {payment.financialMovement?.partner?.surname}
+                        <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <Typography variant="body2">{payment.financialMovement?.company?.surname}</Typography>
+                          <Typography>
+                            {payment.financialMovement?.partner?.surname}
+                          </Typography>
                         </TableCell>
                         <TableCell align="left">{payment.financialMovement?.financialCategory?.description}</TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
-                        <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell align="center"></TableCell>
                         <TableCell align="right">{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.amount)}</TableCell>
                         <TableCell>
-                          <Typography variant="body2">{payment.bankAccount?.bank?.name}</Typography>
-                          <Typography variant="caption">
-                            Ag: {payment.bankAccount?.agency} / Conta: {payment.bankAccount?.number}
-                          </Typography>
+                          {payment.bankAccount && (
+                            <>
+                              <Typography>{payment.bankAccount?.bank?.name}</Typography>
+                              <Typography variant="body2">
+                                {payment.bankAccount?.agency} / {payment.bankAccount?.number}
+                              </Typography>
+                            </>
+                          )}
                         </TableCell>
                         <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEdit({ installmentId: id })
-                            }}
-                          >
-                            <i className="ri-edit-2-line" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              alert('Deletar ainda não implementado')
-                            }}
-                            color="error"
-                          >
-                            <i className="ri-delete-bin-line" />
-                          </IconButton>
+                          <Box className="row-actions">
+                            <IconButton size="small"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEdit({ installmentId: id })
+                              }}
+                            >
+                              <i className="ri-edit-2-line" />
+                            </IconButton>
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation()
+                                alert('Deletar ainda não implementado')
+                              }}
+                              color="error"
+                            >
+                              <i className="ri-delete-bin-line" />
+                            </IconButton>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     )
