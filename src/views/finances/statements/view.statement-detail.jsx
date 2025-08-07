@@ -252,57 +252,75 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
   const handleStartEdit = (i, item) => { setEditingConciledIndex(i); setEditingConciledData(item); setNewConciledInputActive(false); }
   const handleDeleteConciled = async (item) => { try { await deleteStatementConciled({ id: item.id }); toast.success('Registro excluído com sucesso'); handleConciliationSubmitSuccess(); } catch (error) { toast.error(error.message); } }
 
-  return (
-    <>
-      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-        <TableCell></TableCell>
-        <TableCell>Tipo</TableCell>
-        <TableCell colSpan={2}>Categoria</TableCell>
-        <TableCell align="right">Valor</TableCell>
-        <TableCell align="right">Taxa</TableCell>
-        <TableCell align="right">Desconto</TableCell>
-        <TableCell colSpan={3} />
-      </TableRow>
+  // --- Start of Correction ---
+  // We will build an array of rows to avoid whitespace issues.
+  const rows = [];
 
-      {(data.concileds || []).map((item, i) =>
-        editingConciledIndex === i ? (
-          <ConciliationForm
-            key={`edit-${i}`}
-            statementDataId={data.id}
-            initialValues={editingConciledData}
-            onFormSubmitted={handleConciliationSubmitSuccess}
-            onCancel={handleCancelForm}
-          />
-        ) : (
-          <ConciledItemRow
-            key={item.id || i}
-            item={item}
-            onStartEdit={() => handleStartEdit(i, item)}
-            onDelete={handleDeleteConciled}
-            onDesvincule={onDesvincule}
-            onViewDetails={onViewDetails}
-            isSelected={selectedConcileds.has(item.id)}
-            onToggleSelection={() => onSelectionChange([item.id], !selectedConcileds.has(item.id))}
-          />
-        )
-      )}
+  // 1. Add the header row for the details section
+  rows.push(
+    <TableRow key="conciled-header" sx={{ backgroundColor: '#f5f5f5' }}>
+      <TableCell></TableCell>
+      <TableCell>Tipo</TableCell>
+      <TableCell colSpan={2}>Categoria</TableCell>
+      <TableCell align="right">Valor</TableCell>
+      <TableCell align="right">Taxa</TableCell>
+      <TableCell align="right">Desconto</TableCell>
+      <TableCell colSpan={3} />
+    </TableRow>
+  );
 
-      {newConciledInputActive ? (
+  // 2. Add the existing conciliation items or their edit forms
+  (data.concileds || []).forEach((item, i) => {
+    if (editingConciledIndex === i) {
+      rows.push(
         <ConciliationForm
+          key={`edit-${i}`}
           statementDataId={data.id}
-          initialValues={{ type: '', partner: null, category: null, amount: '', fee: '', discount: '' }}
+          initialValues={editingConciledData}
           onFormSubmitted={handleConciliationSubmitSuccess}
           onCancel={handleCancelForm}
         />
-      ) : (
-        <TableRow>
-          <TableCell colSpan={11} sx={{ borderBottom: 'none', textAlign: 'left', pl: 2 }}>
-            <Button variant="text" startIcon={<i className="ri-add-circle-line" />} onClick={handleAddConciled} > Adicionar </Button>
-          </TableCell>
-        </TableRow>
-      )}
-    </>
-  )
+      );
+    } else {
+      rows.push(
+        <ConciledItemRow
+          key={item.id || i}
+          item={item}
+          onStartEdit={() => handleStartEdit(i, item)}
+          onDelete={handleDeleteConciled}
+          onDesvincule={onDesvincule}
+          onViewDetails={onViewDetails}
+          isSelected={selectedConcileds.has(item.id)}
+          onToggleSelection={() => onSelectionChange([item.id], !selectedConcileds.has(item.id))}
+        />
+      );
+    }
+  });
+
+  // 3. Add the "new conciliation" form or the "Add" button
+  if (newConciledInputActive) {
+    rows.push(
+      <ConciliationForm
+        key="new-conciled-form"
+        statementDataId={data.id}
+        initialValues={{ type: '', partner: null, category: null, amount: '', fee: '', discount: '' }}
+        onFormSubmitted={handleConciliationSubmitSuccess}
+        onCancel={handleCancelForm}
+      />
+    );
+  } else {
+    rows.push(
+      <TableRow key="add-conciled-button">
+        <TableCell colSpan={11} sx={{ borderBottom: 'none', textAlign: 'left', pl: 2 }}>
+          <Button variant="text" startIcon={<i className="ri-add-circle-line" />} onClick={handleAddConciled} > Adicionar </Button>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // Return the array of rows. React will render this correctly.
+  return rows;
+  // --- End of Correction ---
 }
 
 function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDetails, isSelected, onToggleSelection }) {
