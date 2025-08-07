@@ -205,6 +205,7 @@ export const AutoComplete = (props) => {
               opacity: 1,
             },
           }),
+          ...props.sx
         }}
         InputProps={{
           endAdornment: (
