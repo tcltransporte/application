@@ -8,6 +8,7 @@ import {
   Tooltip,
   Menu,
   Checkbox,
+  Box,
 } from '@mui/material'
 import { format } from 'date-fns'
 import { Fragment, useEffect, useState, useCallback } from 'react'
@@ -136,7 +137,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                 <TableCell padding="checkbox" /> 
                 <TableCell sx={{ width: 150 }}>ID</TableCell>
                 <TableCell sx={{ width: 140 }}>Data</TableCell>
-                <TableCell>Descrição</TableCell>
+                <TableCell>Referência</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Valor</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Taxa</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Crédito</TableCell>
@@ -170,8 +171,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         />
                       </TableCell>
                       <TableCell style={{ width: '140px' }}>{data.sourceId}</TableCell>
-                      <TableCell>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                      <TableCell>{data.orderId ? `Ref. pedido #${data.orderId}` : ''}</TableCell>
+                      <TableCell>{data.entryDate != null ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                      <TableCell>{data.orderId ? `#${data.orderId}` : ''}</TableCell>
                       <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.credit)}</TableCell>
@@ -257,9 +258,9 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
         <TableCell></TableCell>
         <TableCell>Tipo</TableCell>
         <TableCell colSpan={2}>Categoria</TableCell>
-        <TableCell>Valor</TableCell>
-        <TableCell>Taxa</TableCell>
-        <TableCell>Desconto</TableCell>
+        <TableCell align="right">Valor</TableCell>
+        <TableCell align="right">Taxa</TableCell>
+        <TableCell align="right">Desconto</TableCell>
         <TableCell colSpan={3} />
       </TableRow>
 
@@ -310,7 +311,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
   const handleInfoClose = () => setInfoAnchorEl(null);
 
   return (
-    <TableRow sx={{ backgroundColor: '#fafafa' }}>
+    <TableRow sx={{ backgroundColor: '#fafafa' }} className="with-hover-actions">
       <TableCell padding="checkbox">
         <Checkbox
           color="primary"
@@ -320,19 +321,21 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
         />
       </TableCell>
       <TableCell id={`conciled-item-${item.id}`}>{typeDescription(item.type)}</TableCell>
-      <TableCell colSpan={2}>{item.partner?.surname}<br />{item.category?.description}</TableCell>
+      <TableCell colSpan={2}>{item.category?.description}<br />{item.partner?.surname}</TableCell>
       <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
       <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
       <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
       <TableCell colSpan={2}>
-        <Tooltip title='Editar'><IconButton onClick={onStartEdit}><i className="ri-pencil-line" /></IconButton></Tooltip>
-        <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
+        <Box className="row-actions">
+          <Tooltip title='Editar'><IconButton onClick={onStartEdit}><i className="ri-pencil-line" /></IconButton></Tooltip>
+          <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
+        </Box>
       </TableCell>
-      <TableCell>
-        {(!item.paymentId && !item.receivementId) && ( <Tooltip title='Vincular'><IconButton onClick={() => onViewDetails(item.id)}><i className="ri-search-line" /></IconButton></Tooltip> )}
-        {item.paymentId || item.receivementId && (
+      <TableCell align='right'>
+        {(!item.paymentId && !item.receivementId) && ( <Tooltip title='Vincular' className="row-actions"><IconButton onClick={() => onViewDetails(item.id)}><i className="ri-search-line" /></IconButton></Tooltip> )}
+        {(item.paymentId || item.receivementId) && (
           <>
-            <Tooltip title='Informações'><IconButton onClick={handleInfoClick}><i className="ri-information-line" style={{ color: '#1976d2' }} /></IconButton></Tooltip>
+            <Tooltip title='Informações'><IconButton onClick={handleInfoClick}><i className="ri-edit-box-line" style={{ color: '#2e7d32' }} /></IconButton></Tooltip>
             <Menu anchorEl={infoAnchorEl} open={Boolean(infoAnchorEl)} onClose={handleInfoClose} >
               <MenuItem onClick={() => { handleInfoClose(); onStartEdit(); }}><i className="ri-pencil-line" style={{ marginRight: 8 }} /> Editar </MenuItem>
               <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular </MenuItem>
@@ -387,8 +390,8 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
                     {touched.type && errors.type && ( <Typography variant="caption" color="error">{errors.type}</Typography> )}
                 </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={2}>
-                    {(values.type === 'payment' || values.type === 'receivement') && ( <AutoComplete size="small" variant="outlined" placeholder="Cliente" value={values.partner} text={(partner) => partner.surname} onChange={(partner) => setFieldValue('partner', partner)} onSearch={getPartner} onBlur={() => setFieldTouched('partner', true)} error={touched.partner && Boolean(errors.partner)} helperText={touched.partner && errors.partner} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.surname}</span>} </AutoComplete> )}
-                    <AutoComplete variant="outlined" placeholder="Categoria" value={values.category} text={(category) => category.description} onChange={(category) => setFieldValue('category', category)} onSearch={getFinancialCategory} onBlur={() => setFieldTouched('category', true)} error={touched.category && Boolean(errors.category)} helperText={touched.category && errors.category} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.description}</span>} </AutoComplete>
+                  <AutoComplete variant="outlined" placeholder="Categoria" value={values.category} text={(category) => category.description} onChange={(category) => setFieldValue('category', category)} onSearch={getFinancialCategory} onBlur={() => setFieldTouched('category', true)} error={touched.category && Boolean(errors.category)} helperText={touched.category && errors.category} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.description}</span>} </AutoComplete>
+                  {(values.type === 'payment' || values.type === 'receivement') && ( <AutoComplete size="small" variant="outlined" placeholder="Cliente" value={values.partner} text={(partner) => partner.surname} onChange={(partner) => setFieldValue('partner', partner)} onSearch={getPartner} onBlur={() => setFieldTouched('partner', true)} error={touched.partner && Boolean(errors.partner)} helperText={touched.partner && errors.partner} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.surname}</span>} </AutoComplete> )}
                 </TableCell>
                 <TableCell sx={{ p: 1 }} align="right"> <Field as={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
                 <TableCell sx={{ p: 1 }} align="right"> <Field as={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
