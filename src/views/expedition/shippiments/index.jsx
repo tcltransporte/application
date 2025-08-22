@@ -23,7 +23,7 @@ import {
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
-import { PeriodFilter } from '@/components/PeriodFilter'
+import { RangeFilter } from '@/components/RangeFilter'
 import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/expedition/shippiments/index.controller'
 
 import { styles } from '@/components/styles'
@@ -264,7 +264,7 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
         </Button>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <PeriodFilter
+          <RangeFilter
             title="Vencimento"
             initialDateRange={[
               new Date(installments.request?.dueDate?.start),

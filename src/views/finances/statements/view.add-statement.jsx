@@ -13,6 +13,7 @@ import { AutoComplete } from '@/components/AutoComplete'
 import { getBankAccounts } from '@/utils/search'
 import { PluginRenderer } from '@/views/settings/integrations/plugins'
 import { onSubmitChanges } from '@/app/server/finances/statements/view.add-statement.controller'
+import _ from 'lodash'
 //import { onSubmitChanges } from './view.add-statement.controller'
 
 export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
@@ -121,7 +122,8 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
                 text={(item) => `${item.bank?.name} - ${item.agency} / ${item.number}`}
                 onSearch={getBankAccounts}
                 onChange={(bankAccount) => {
-                  setIntegrationId(bankAccount?.companyIntegration?.integrationId || null)
+                  const companyIntegration = _.filter(bankAccount?.bankAccountIntegrations, (item) => item.typeBankAccountIntegrationId == "A4518539-3E1A-4595-B61D-8FA095B1A1A8")[0]
+                  setIntegrationId(companyIntegration?.companyIntegration?.integrationId)
                   setFieldValue('statement', null)
                   setFieldValue('bankAccount', bankAccount)
                 }}
@@ -153,7 +155,7 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
               <PluginRenderer
                 pluginId={integrationId}
                 componentName="Statement"
-                data={{ companyIntegrationId: values.bankAccount.companyIntegration.id }}
+                data={{ companyIntegrationId: _.filter(values.bankAccount?.bankAccountIntegrations, (item) => item.typeBankAccountIntegrationId == "A4518539-3E1A-4595-B61D-8FA095B1A1A8")[0]?.companyIntegration?.id }}
                 onChange={(item) => {
                   setFieldValue('statement', item)
                 }}
@@ -241,7 +243,7 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
                   (values.uploadType === 'ofx' && !values.droppedFile) ||
                   (values.uploadType === 'integration' && !values.statement)
                 }
-                startIcon={isSubmitting && <CircularProgress size={16} color="inherit" />}
+                startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <i className="ri-check-line" />}
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
               </Button>

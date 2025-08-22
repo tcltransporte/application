@@ -24,6 +24,7 @@ import { Cte } from './models/cte.model.js'
 import { CteNfe } from './models/cteNfe.model.js'
 import { Nfe } from './models/Nfe.model.js'
 import { CenterCost } from './models/centerCost.model.js'
+import { BankAccountIntegration } from './models/bankAccountIntegration.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -46,6 +47,8 @@ export class AppContext extends Sequelize {
   Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
 
   BankAccount = this.define('bankAccount', new BankAccount(), { tableName: 'conta_bancaria' })
+
+  BankAccountIntegration = this.define('bankAccountIntegration', new BankAccountIntegration(), { tableName: 'bankAccountIntegration' })
 
   CenterCost = this.define('centerCost', new CenterCost(), { tableName: 'CentroCusto' })
 
@@ -109,8 +112,9 @@ export class AppContext extends Sequelize {
     })
 
     this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId' })
+    this.BankAccount.hasMany(this.BankAccountIntegration, { as: 'bankAccountIntegrations', foreignKey: 'bankAccountId' })
 
-    this.BankAccount.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId' })
+    this.BankAccountIntegration.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId' })
 
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
 

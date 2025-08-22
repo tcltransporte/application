@@ -1,8 +1,7 @@
 const Logo = (props) => {
   return (
     <img
-      src="https://cdn.tcltransporte.com.br/wp-content/uploads/2023/02/logo-em-branco.png?strip=all&lossy=1&sharp=1&w=160&ssl=1"
-      alt="TCL Transporte Logo"
+      src={process.env.NEXT_PUBLIC_LOGO}
       width={40}
       {...props}
     />

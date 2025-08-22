@@ -138,15 +138,17 @@ export async function getBankAccounts (search) {
 
     const where = []
 
-    //where.push({'$companyUsers.company.codigo_empresa$': session.company.companyBusinessId})
+    where.push({'$CodigoEmpresaFilial$': session.company.codigo_empresa_filial})
 
-    //where.push({'$userName$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
+    where.push({ agencia: { [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
 
     const bankAccounts = await db.BankAccount.findAll({
         attributes: ['codigo_conta_bancaria', 'agency', 'number'],
         include: [
-            {model: db.Bank, as: 'bank'},
-            {model: db.CompanyIntegration, as: 'companyIntegration'}
+            {model: db.Bank, as: 'bank', attributes: ['id', 'name']},
+            {model: db.BankAccountIntegration, as: 'bankAccountIntegrations', attributes: ['id', 'typeBankAccountIntegrationId'], include: [
+                {model: db.CompanyIntegration, as: 'companyIntegration', attributes: ['id', 'integrationId']}
+            ]}
         ],
         where: {
             agencia: {

@@ -5,7 +5,7 @@ import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Bo
 
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
-import { PeriodFilter } from '@/components/PeriodFilter'
+import { RangeFilter } from '@/components/RangeFilter'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 
 import { styles } from '@/components/styles'
@@ -171,7 +171,7 @@ export const ViewFinancesReceivements = ({ initialPayments = [] }) => {
             Adicionar
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <PeriodFilter
+            <RangeFilter
               title="Vencimento"
               initialDateRange={[
                 new Date(installments.request?.dueDate?.start),

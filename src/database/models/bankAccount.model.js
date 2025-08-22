@@ -9,6 +9,11 @@ export class BankAccount {
     type: DataTypes.BIGINT
   }
 
+  companyId = {
+    field: 'CodigoEmpresaFilial',
+    type: DataTypes.TINYINT
+  }
+
   agency = {
     field: 'agencia',
     type: DataTypes.STRING
@@ -17,16 +22,6 @@ export class BankAccount {
   number = {
     field: 'numero_conta_bancaria',
     type: DataTypes.STRING
-  }
-
-  companyId = {
-    field: 'CodigoEmpresaFilial',
-    type: DataTypes.TINYINT
-  }
-
-  companyIntegrationId = {
-    field: 'companyIntegrationId',
-    type: DataTypes.UUIDV4
   }
 
 }

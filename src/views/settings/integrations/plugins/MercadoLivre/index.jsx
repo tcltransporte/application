@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useEffect, useState } from 'react'
 import {
   Paper,
@@ -22,10 +23,31 @@ import {
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
 import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
+import { Successfully } from '../..'
 
-export const ID = 'A4B0DD1D-74E7-4B22-BFAA-0A911A419B88'
+export const ID = '420E434C-CF7D-4834-B8A6-43F5D04E462A'
+
+export const Connect = () => {
+
+  const handleConnect = () => {
+    window.location.href = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=1928835050355270&redirect_uri=https://vps53636.publiccloud.com.br:8081/settings/integration/mercado-livre`
+  }
+
+  return (
+    <Box display="flex" justifyContent="flex-end" gap={2}>
+      <Button variant="outlined">
+        Cancelar
+      </Button>
+      <Button variant="contained" onClick={handleConnect}>
+        Conectar
+      </Button>
+    </Box>
+  )
+
+}
 
 export const Statement = ({ data, onChange }) => {
+
   const [statements, setStatements] = useState([])
   const [selectedStatement, setSelectedStatement] = useState(null)
   const [loading, setLoading] = useState(false)

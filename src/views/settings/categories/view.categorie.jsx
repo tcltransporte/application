@@ -162,8 +162,8 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
                     disabled={isSubmitting}
                   >
                     <MenuItem value="">[Selecione]</MenuItem>
-                    <MenuItem value="1">Entrada</MenuItem>
-                    <MenuItem value="2">Saída</MenuItem>
+                    <MenuItem value="1">Receita</MenuItem>
+                    <MenuItem value="2">Despesa</MenuItem>
                   </Field>
 
                   <Field

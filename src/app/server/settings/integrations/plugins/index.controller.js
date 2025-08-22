@@ -21,6 +21,8 @@ export async function authorization({companyIntegrationId}) {
     params.append('client_secret', 'HS4Bo6e3KHgQF8jpRZvGg7zXjWFv7ybi')
     params.append('refresh_token', options.refresh_token)
 
+    console.log(options.refresh_token)
+
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
         method: 'POST',
         headers: {
@@ -30,13 +32,15 @@ export async function authorization({companyIntegrationId}) {
         body: params.toString(),
     })
 
+    const token = await response.json()
+
+    console.log(token)
+
     if (!response.ok) {
         throw new Error(`Erro na requisição: ${response.status}`)
     }
 
-    const token = await response.json()
-
-    await db.CompanyIntegration.update({options: JSON.stringify(token)}, {where: [{id: companyIntegration.dataValues.id}]})
+    await db.CompanyIntegration.update({options: JSON.stringify({refresh_token: token.refresh_token})}, {where: [{id: companyIntegration.dataValues.id}]})
 
     return token
 
@@ -110,7 +114,7 @@ export async function getStatement({companyIntegrationId, fileName}) {
         statementData.entryDate = item.DATE ? format(new Date(item.DATE), 'yyyy-MM-dd HH:mm:ss') : null
         statementData.entryType = item.DESCRIPTION
         statementData.sourceId = item.SOURCE_ID?.toString()
-        statementData.orderId = item.ORDER_ID?.toString()
+        statementData.reference = item.ORDER_ID?.toString()
         statementData.amount = parseFloat(item.GROSS_AMOUNT)
         statementData.fee = parseFloat(item.MP_FEE_AMOUNT)
         //statementData.coupon = parseFloat(item.COUPON_AMOUNT);

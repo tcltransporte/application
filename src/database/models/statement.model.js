@@ -11,6 +11,11 @@ export class Statement {
     type: DataTypes.UUIDV4
   }
 
+  companyId = {
+    field: 'companyId',
+    type: DataTypes.SMALLINT,
+  }
+
   bankAccountId = {
     field: 'bankAccountId',
     type: DataTypes.BIGINT,

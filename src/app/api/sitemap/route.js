@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 
 export async function GET() {
-  const filePath = join(process.cwd(), 'web.sitemap.xml')
+  const filePath = join(process.cwd(), 'sitemap.xml')
   let xml = readFileSync(filePath, 'utf8')
 
   const baseURL = 'https://global.tcltransporte.com.br'

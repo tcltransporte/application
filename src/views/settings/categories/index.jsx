@@ -109,7 +109,7 @@ export const Categories = () => {
                 ) : users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} align="center">
-                      Nenhum usuário encontrado
+                      Nenhum plano de conta encontrado
                     </TableCell>
                   </TableRow>
                 ) : (

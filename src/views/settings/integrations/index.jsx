@@ -358,17 +358,10 @@ const Integrations = ({ integrations }) => {
 
 export const Successfully = () => {
 
-  const searchParams = useSearchParams()
-  const code = searchParams.get('code')
-
   const {setTitle} = useTitle()
-
+  
   useEffect(() => {
-
     setTitle(['Configurações', 'Integração'])
-
-    setCompanyIntegration({code})
-
   }, [])
 
   return (
@@ -444,13 +437,14 @@ export const Successfully = () => {
       </Box>
 
       <Typography variant="h6" fontWeight={600} gutterBottom>
-        Integration Successful
+        Integração bem-sucedida
       </Typography>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Your integration with Tiny has been completed successfully.
+        Sua integração foi concluída com sucesso.
       </Typography>
 
+      {/*
       <Button
         variant="outlined"
         color="success"
@@ -458,6 +452,7 @@ export const Successfully = () => {
       >
         Minhas integrações
       </Button>
+      */}
     </Paper>
   )
 }

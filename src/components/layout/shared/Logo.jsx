@@ -70,7 +70,7 @@ const Logo = ({ color }) => {
         transitionDuration={transitionDuration}
         isBreakpointReached={isBreakpointReached}
       >
-        {themeConfig.templateName}
+        {process.env.NEXT_PUBLIC_MENU_TITLE}
       </LogoText>
     </div>
   )

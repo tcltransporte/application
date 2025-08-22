@@ -1,9 +1,11 @@
 // plugins/index.jsx
-import * as MercadoLivre from './MercadoPago'
+import * as MercadoPago from './MercadoPago'
+import * as MercadoLivre from './MercadoLivre'
 import * as Tiny from './Tiny'
 //import * as Itau from './Itau'
 
 const plugins = [
+  MercadoPago,
   MercadoLivre,
   Tiny,
   //Itau,
