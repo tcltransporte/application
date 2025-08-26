@@ -18,7 +18,7 @@ import {
 } from "@mui/material"
 import React, { useState, useEffect, useRef } from "react"
 //import { updateInstallment } from "./index.controller"
-import { AutoComplete } from "@/components/AutoComplete";
+import { AutoComplete } from "@/components/field/AutoComplete";
 import { getPaymentMethod } from "@/utils/search";
 import { updateInstallment } from "@/app/server/finances/prepare/index.controller";
 

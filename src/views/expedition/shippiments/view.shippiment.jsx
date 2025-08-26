@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { Backdrop, CircularProgress } from "@mui/material";
-import { AutoComplete } from "@/components/AutoComplete";
+import { AutoComplete } from "@/components/field/AutoComplete";
 import { styles } from "@/components/styles";
 import { createMovement, getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
 import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";

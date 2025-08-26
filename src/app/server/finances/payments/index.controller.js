@@ -9,10 +9,12 @@ import { getServerSession } from "next-auth"
 import { Op } from "sequelize"
 
 export async function getPayments({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
-    
+
   const session = await getServerSession(authOptions)
 
   await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+    
+  console.log(dueDate)
   
   const db = new AppContext()
 
@@ -57,7 +59,7 @@ export async function getPayments({ limit = 50, offset, company, documentNumber,
   
   if (!_.isEmpty(observation)) {
     whereClauses.push({
-      '$financialMovement.descricao$': {
+      '$FinancialMovementInstallment.Descricao$': {
         [Op.like]: `%${observation.replace(/ /g, "%").toUpperCase()}%`
       }
     })
@@ -86,7 +88,7 @@ export async function getPayments({ limit = 50, offset, company, documentNumber,
   })
 
   const payments = await db.FinancialMovementInstallment.findAndCountAll({
-    attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate'],
+    attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate', 'observation'],
     include: [
       { model: db.FinancialMovement, as: 'financialMovement', include: [
           { model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname'] },

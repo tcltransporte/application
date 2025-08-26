@@ -42,8 +42,8 @@ const formatCurrency = (value) => {
 const typeDescription = (raw) => {
   switch (raw) {
     case 'transfer': return 'Transferência';
-    case 'payment': return 'Pagamento';
-    case 'receivement': return 'Recebimento';
+    case '2': return 'Pagamento';
+    case '1': return 'Recebimento';
     default: return raw;
   }
 };
@@ -64,10 +64,10 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [selectedItemId, setSelectedItemId] = useState(null)
   const [receivementId, setReceivementId] = useState(null)
 
-  const fetchStatement = useCallback(async () => {
+  const fetchStatement = useCallback(async (loading = true) => {
     if (statementId) {
         try {
-            setLoading(true);
+            setLoading(loading);
             const statementData = await getStatement({ statementId });
             setOriginalData(statementData.statementData);
             const filteredData = statementData.statementData.filter((data) =>
@@ -261,7 +261,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         data={data}
                         onDesvincule={handleDesvinculePayment}
                         onViewDetails={handleOpenPayments}
-                        onStatementUpdate={fetchStatement}
+                        onStatementUpdate={() => fetchStatement(false)}
                         selectedConcileds={selectedConcileds}
                         onSelectionChange={handleSelectionChange}
                       />
@@ -345,6 +345,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
           key={`edit-${item.id}`}
           statementDataId={data.id}
           initialValues={editingConciledData}
+          isSelected={selectedConcileds.has(item.id)}
           onFormSubmitted={handleConciliationSubmitSuccess}
           onCancel={handleCancelForm}
         />
@@ -434,7 +435,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
 }
 
 
-function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onCancel }) {
+function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSubmitted, onCancel }) {
     const validationSchema = Yup.object({
         type: Yup.string().required('Tipo é obrigatório'),
         partner: Yup.object().nullable().when('type', {
@@ -452,7 +453,7 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
         setSubmitting(true);
         try {
             await saveStatementConciled(statementDataId, values);
-            toast.success('Conciliação salva com sucesso!');
+            //toast.success('Conciliação salva com sucesso!');
             onFormSubmitted();
         } catch (error) {
             toast.error(error.message || 'Erro ao salvar a conciliação.');
@@ -465,26 +466,66 @@ function ConciliationForm({ statementDataId, initialValues, onFormSubmitted, onC
         <Formik initialValues={initialValues || { type: '', partner: null, category: null, amount: '', fee: '', discount: '' }} validationSchema={validationSchema} enableReinitialize={true} onSubmit={handleSubmitInternal} >
         {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue, setFieldTouched }) => (
             <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell /> {/* Alinha com o checkbox da linha principal */}
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    color="primary"
+                    checked={isSelected}
+                    disabled
+                  />
+                </TableCell>
                 <TableCell sx={{ p: 1 }}>
                     <Select fullWidth size="small" name="type" value={values.type} onChange={(e) => { handleChange(e); if (e.target.value !== 'payment' && e.target.value !== 'receivement') { setFieldValue('partner', null); setFieldTouched('partner', false); } }} onBlur={handleBlur} displayEmpty error={touched.type && Boolean(errors.type)} sx={{backgroundColor: '#fff'}}>
                         <MenuItem value="">[Selecione]</MenuItem>
-                        <MenuItem value="payment">Pagamento</MenuItem>
-                        <MenuItem value="receivement">Recebimento</MenuItem>
+                        <MenuItem value="2">Pagamento</MenuItem>
+                        <MenuItem value="1">Recebimento</MenuItem>
                         <MenuItem value="transfer">Transferência</MenuItem>
                     </Select>
                     {touched.type && errors.type && ( <Typography variant="caption" color="error">{errors.type}</Typography> )}
                 </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={2}>
-                    <AutoComplete variant="outlined" placeholder="Categoria" value={values.category} text={(category) => category.description} onChange={(category) => setFieldValue('category', category)} onSearch={getFinancialCategory} onBlur={() => setFieldTouched('category', true)} error={touched.category && Boolean(errors.category)} helperText={touched.category && errors.category} sx={{backgroundColor: '#fff'}}> {(item) => <span>{item.description}</span>} </AutoComplete>
-                    {(values.type === 'payment' || values.type === 'receivement') && (<AutoComplete size="small" variant="outlined" placeholder="Cliente" value={values.partner} text={(partner) => partner.surname} onChange={(partner) => setFieldValue('partner', partner)} onSearch={getPartner} onBlur={() => setFieldTouched('partner', true)} error={touched.partner && Boolean(errors.partner)} helperText={touched.partner && errors.partner} sx={{backgroundColor: '#fff', mt: 1}}> {(item) => <span>{item.surname}</span>} </AutoComplete>)}
+                  
+                  {(values.type === '1' || values.type === '2') && (
+                    <>
+                      <AutoComplete 
+                        variant="outlined"
+                        placeholder="Cliente"
+                        value={values.partner}
+                        text={(partner) => partner.surname}
+                        onChange={(partner) => setFieldValue('partner', partner)}
+                        onSearch={getPartner}
+                        onBlur={() => setFieldTouched('partner', true)}
+                        error={touched.partner && Boolean(errors.partner)}
+                        helperText={touched.partner && errors.partner}
+                        sx={{backgroundColor: '#fff'}}>
+                          {(item) => <span>{item.surname}</span>}
+                      </AutoComplete>
+                          
+                      <AutoComplete 
+                        variant="outlined"
+                        placeholder="Categoria"
+                        value={values.category}
+                        text={(category) => category.description}
+                        onChange={(category) => setFieldValue('category', category)}
+                        onSearch={() => getFinancialCategory('', values.type)}
+                        onBlur={() => setFieldTouched('category', true)}
+                        error={touched.category && Boolean(errors.category)}
+                        helperText={touched.category && errors.category}
+                        sx={{backgroundColor: '#fff'}}>
+                          {(item) => <span>{item.description}</span>}
+                      </AutoComplete>
+                    </>
+                  )}
                 </TableCell>
-                <TableCell sx={{ p: 1 }} align="right"><Field as={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
-                <TableCell sx={{ p: 1 }} align="right"><Field as={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
-                <TableCell sx={{ p: 1 }} align="right"><Field as={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} /> </TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} />}</TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={3}>
-                    <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
-                    <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
+                  {values.type &&
+                    <>
+                      <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
+                      <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
+                    </>
+                  }
                 </TableCell>
             </TableRow>
         )}

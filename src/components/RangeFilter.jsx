@@ -186,7 +186,17 @@ export const RangeFilter = ({
       }
     }
 
+    // Se start e end forem o mesmo dia
+    if (
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate()
+    ) {
+      return format(start, "d MMMM, yyyy", { locale: ptBR }) // Ex: 17 Agosto, 2025
+    }
+
     return `${format(start, 'dd/MM/yyyy')} até ${format(end, 'dd/MM/yyyy')}`
+
   }
 
   const currentLabel = useMemo(

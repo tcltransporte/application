@@ -146,8 +146,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                             <div className="flex flex-col text-sm">
                               <span className="font-medium">{statement.bankAccount.bank.name}</span>
                               <span>
-                                Agência: {statement.bankAccount.agency} / Conta:{' '}
-                                {statement.bankAccount.number}
+                                {`${statement.bankAccount.agency} / ${statement.bankAccount.number}`}
                               </span>
                             </div>
                           </div>

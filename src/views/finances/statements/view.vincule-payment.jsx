@@ -16,6 +16,7 @@ import {
   Radio,
   Divider,
   CircularProgress,
+  Grid,
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { parseISO, format } from 'date-fns'
@@ -23,7 +24,6 @@ import { getPayments } from '@/app/server/finances/payments/index.controller'
 import _ from 'lodash'
 
 export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
-  
   const [historico, setHistorico] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
@@ -32,23 +32,31 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
+  // Função util para pegar data de hoje em yyyy-MM-dd (para input[type=date])
+  const getToday = () => format(new Date(), 'yyyy-MM-dd')
+
   useEffect(() => {
-    setSelectedCodigo('')
+    // Sempre que abrir o drawer com itemId, setar a data de hoje
     if (itemId) {
-      fetchData()
+      const today = getToday()
+      setDataInicial(today)
+      setDataFinal(today)
+      setSelectedCodigo('')
+      fetchData(today, today)
     }
   }, [itemId])
 
-  const fetchData = async () => {
+  const fetchData = async (start, end) => {
     setLoading(true)
     try {
       const payments = await getPayments({
         limit: 50,
         offset: 0,
         dueDate: {
-          start: '2025-06-23 00:00:00',
-          end: '2025-06-23 23:59:59',
+          start: `${start} 00:00:00`,
+          end: `${end} 23:59:59`,
         },
+        observation: historico || undefined,
       })
       setPayments(payments)
     } finally {
@@ -57,7 +65,9 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
   }
 
   const aplicarFiltro = () => {
-    // lógica de filtro a ser aplicada
+    if (dataInicial && dataFinal) {
+      fetchData(dataInicial, dataFinal)
+    }
   }
 
   const handleConfirmar = async () => {
@@ -89,36 +99,52 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
         {itemId ? (
           <>
             {/* Filtros */}
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-              <TextField
-                label="Histórico"
-                value={historico}
-                onChange={(e) => setHistorico(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Início"
-                type="date"
-                value={dataInicial}
-                onChange={(e) => setDataInicial(e.target.value)}
-                sx={{ minWidth: 120 }}
-              />
-              <TextField
-                label="Fim"
-                type="date"
-                value={dataFinal}
-                onChange={(e) => setDataFinal(e.target.value)}
-                sx={{ minWidth: 120 }}
-              />
-              <Button
-                size="small"
-                variant="contained"
-                onClick={aplicarFiltro}
-                sx={{ whiteSpace: 'nowrap', minWidth: 120, height: 50 }}
-              >
-                Buscar
-              </Button>
-            </Stack>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid item size={{xs: 12, sm: 6}}>
+                <TextField
+                  fullWidth
+                  label="Observação"
+                  value={historico}
+                  onChange={(e) => setHistorico(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+
+              <Grid item size={{xs: 12, sm: 2}}>
+                <TextField
+                  fullWidth
+                  label="Início"
+                  type="date"
+                  value={dataInicial}
+                  onChange={(e) => setDataInicial(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={{xs: 12, sm: 2}}>
+                <TextField
+                  fullWidth
+                  label="Fim"
+                  type="date"
+                  value={dataFinal}
+                  onChange={(e) => setDataFinal(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item size={{xs: 12, sm: 2}} display="flex" alignItems="center">
+                <Button
+                  fullWidth
+                  size="small"
+                  variant="contained"
+                  onClick={aplicarFiltro}
+                  startIcon={<i className="ri-search-line" />} // Remix Icon
+                  sx={{ height: 38 }}
+                  disabled={loading}
+                >
+                  {loading ? 'Buscando' : 'Buscar'}
+                </Button>
+              </Grid>
+            </Grid>
+            
 
             {/* Tabela */}
             <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
@@ -127,7 +153,7 @@ export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
                   <TableRow>
                     <TableCell />
                     <TableCell>Fornecedor</TableCell>
-                    <TableCell>Histórico</TableCell>
+                    <TableCell>Observação</TableCell>
                     <TableCell align="right">Valor</TableCell>
                     <TableCell>Vencimento</TableCell>
                   </TableRow>
