@@ -22,6 +22,7 @@ import Security from './security'
 import Integrations from '@/views/settings/integrations'
 import { useTitle } from '@/contexts/TitleProvider'
 import { Categories } from './categories'
+import { BankAccounts } from './bankAccounts'
 
 //const NotificationsTab = dynamic(() => import('@views/pages/account-settings/notifications'))
 
@@ -37,6 +38,7 @@ export const ViewSettings = ({ company, integrations }) => {
   const tabContentList = {
     'company': <Company company={company} />,
     'users': <Users />,
+    'bankAccounts': <BankAccounts />,
     'categories': <Categories />,
     'security': <Security />,
     'billing-plans': <BillingPlans />,
@@ -51,13 +53,14 @@ export const ViewSettings = ({ company, integrations }) => {
       <Grid container spacing={6}>
         <Grid size={{ xs: 12 }}>
           <CustomTabList onChange={(event, value) => setActiveTab(value)} variant='scrollable'>
-            <Tab label='Empresa' icon={<i className='ri-group-line' />} iconPosition='start' value='company' />
-            <Tab label='Usuários' icon={<i className='ri-lock-2-line' />} iconPosition='start' value='users' />
-            <Tab label='Plano de contas' icon={<i className='ri-lock-2-line' />} iconPosition='start' value='categories' />
+            <Tab label='Empresa' icon={<i className='ri-building-4-line' />} iconPosition='start' value='company' />
+            <Tab label='Usuários' icon={<i className='ri-user-settings-line' />} iconPosition='start' value='users' />
+            <Tab label='Contas' icon={<i className='ri-bank-line' />} iconPosition='start' value='bankAccounts' />
+            <Tab label='Plano de contas' icon={<i className='ri-file-list-3-line' />} iconPosition='start' value='categories' />
             {/*<Tab label='Certificado' icon={<i className='ri-shield-check-line' />} iconPosition='start' value='security' />*/}
-            {/*<Tab label='Assinatura' icon={<i className='ri-bookmark-line' />} iconPosition='start' value='billing-plans' />*/}
-            {/*<Tab label='Notifications' icon={<i className='ri-notification-4-line' />} iconPosition='start' value='notifications' />*/}
-            <Tab label='Integrações' icon={<i className='ri-link-m' />} iconPosition='start' value='connections' />
+            {/*<Tab label='Assinatura' icon={<i className='ri-vip-crown-line' />} iconPosition='start' value='billing-plans' />*/}
+            {/*<Tab label='Notifications' icon={<i className='ri-notification-3-line' />} iconPosition='start' value='notifications' />*/}
+            <Tab label='Integrações' icon={<i className='ri-links-line' />} iconPosition='start' value='connections' />
           </CustomTabList>
         </Grid>
         <Grid size={{ xs: 12 }}>

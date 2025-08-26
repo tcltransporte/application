@@ -14,6 +14,21 @@ export class BankAccount {
     type: DataTypes.TINYINT
   }
 
+  bankName = {
+    field: 'nome_banco',
+    type: DataTypes.STRING
+  }
+
+  description = {
+    field: 'descricao',
+    type: DataTypes.STRING
+  }
+
+  holder = {
+    field: 'nome_titular',
+    type: DataTypes.STRING
+  }
+
   agency = {
     field: 'agencia',
     type: DataTypes.STRING
@@ -22,6 +37,11 @@ export class BankAccount {
   number = {
     field: 'numero_conta_bancaria',
     type: DataTypes.STRING
+  }
+
+  balance = {
+    field: 'saldo_inicial',
+    type: DataTypes.DECIMAL
   }
 
 }

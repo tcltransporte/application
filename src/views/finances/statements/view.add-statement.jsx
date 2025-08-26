@@ -7,16 +7,16 @@ import {
   Radio,
   CircularProgress
 } from '@mui/material'
-import { Formik, Form } from 'formik'
+import { Formik, Form, Field } from 'formik'
 import * as yup from 'yup'
-import { AutoComplete } from '@/components/AutoComplete'
+import { AutoComplete } from '@/components/field/AutoComplete'
 import { getBankAccounts } from '@/utils/search'
 import { PluginRenderer } from '@/views/settings/integrations/plugins'
 import { onSubmitChanges } from '@/app/server/finances/statements/view.add-statement.controller'
 import _ from 'lodash'
 //import { onSubmitChanges } from './view.add-statement.controller'
 
-export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
+export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
   const [integrationId, setIntegrationId] = useState(null)
   const [isHovering, setIsHovering] = useState(false)
   const inputFileRef = useRef(null)
@@ -34,7 +34,6 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
     try {
       await onSubmitChanges(values)
       onSubmit()
-      setOpen(false)
     } catch (error) {
       console.log(error)
     }
@@ -48,7 +47,7 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
   return (
     <Drawer
       open={open}
-      onClose={() => setOpen(false)}
+      onClose={() => onClose()}
       anchor="right"
       variant="temporary"
       ModalProps={{ keepMounted: true }}
@@ -63,7 +62,7 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h5">Novo Extrato</Typography>
-        <IconButton size="small" onClick={() => setOpen(false)}>
+        <IconButton size="small" onClick={() => onClose(false)}>
           <i className="ri-close-line text-2xl" />
         </IconButton>
       </Box>
@@ -116,34 +115,34 @@ export const ViewAddStatement = ({ open, setOpen, onSubmit }) => {
             </FormControl>
 
             <Box>
-              <AutoComplete
+              <Field
+                as={AutoComplete}
+                name="bankAccount"
                 label="Conta bancária"
-                value={values.bankAccount}
-                text={(item) => `${item.bank?.name} - ${item.agency} / ${item.number}`}
+                text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
                 onSearch={getBankAccounts}
+                renderSuggestion={(bankAccount) => (
+                    <div className="flex items-start space-x-2">
+                    {bankAccount.bank?.icon && (
+                      <img
+                        src={bankAccount.bank.icon}
+                        alt={bankAccount.bank.name}
+                        className="w-[30px] h-[30px] mt-1"
+                      />
+                    )}
+                    <div className="flex flex-col text-sm">
+                      <span className="font-medium">{bankAccount.bank?.name}</span>
+                      <span>Agência: {bankAccount.agency} / Conta: {bankAccount.number}</span>
+                    </div>
+                  </div>
+                )}
                 onChange={(bankAccount) => {
                   const companyIntegration = _.filter(bankAccount?.bankAccountIntegrations, (item) => item.typeBankAccountIntegrationId == "A4518539-3E1A-4595-B61D-8FA095B1A1A8")[0]
                   setIntegrationId(companyIntegration?.companyIntegration?.integrationId)
                   setFieldValue('statement', null)
                   setFieldValue('bankAccount', bankAccount)
                 }}
-              >
-                {(item) => (
-                  <div className="flex items-start space-x-2">
-                    {item.bank?.icon && (
-                      <img
-                        src={item.bank.icon}
-                        alt={item.bank.name}
-                        className="w-[30px] h-[30px] mt-1"
-                      />
-                    )}
-                    <div className="flex flex-col text-sm">
-                      <span className="font-medium">{item.bank?.name}</span>
-                      <span>Agência: {item.agency} / Conta: {item.number}</span>
-                    </div>
-                  </div>
-                )}
-              </AutoComplete>
+              />
               {touched.bankAccount && errors.bankAccount && (
                 <Typography color="error" variant="caption">
                   {errors.bankAccount}

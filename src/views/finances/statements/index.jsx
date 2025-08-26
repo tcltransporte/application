@@ -19,7 +19,6 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
 
   const [open, setOpen] = useState(false)
   const [statements, setStatements] = useState(initialStatements)
-  const [selectedStatement, setSelectedStatement] = useState(null)
 
   const [statementId, setStatementId] = useState(undefined)
 
@@ -206,14 +205,14 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
               count={statements.response?.count || 0}
               page={statements.request?.offset || 0}
               rowsPerPage={statements.request?.limit || 10}
-              onPageChange={(event, offset) =>
-                fetchPayments({
+              onPageChange={async (event, offset) =>
+                await fetchStatements({
                   ...statements.request,
                   offset: offset
                 })
               }
-              onRowsPerPageChange={(event) =>
-                fetchPayments({
+              onRowsPerPageChange={async (event) =>
+                await fetchStatements({
                   ...statements.request,
                   limit: event.target.value,
                   offset: 0
@@ -226,7 +225,17 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
 
       </Box>
 
-      <ViewAddStatement open={open} setOpen={setOpen} onSubmit={fetch} />
+      <ViewAddStatement
+        open={open}
+        onClose={() => {
+          setOpen(false)
+        }}
+        onSubmit={async () => {
+          setOpen(false)
+          await fetchStatements({
+            ...statements.request
+          })
+      }} />
 
       <ViewStatementDetail statementId={statementId} onClose={() => setStatementId(undefined)} onError={() => setStatementId(undefined)} />
 

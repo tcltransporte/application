@@ -10,11 +10,12 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import { signOut, useSession } from 'next-auth/react'
 import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
-import { ViewCategorie } from './view.categorie'
+import { ViewBankAccount } from './view.bankAccount'
 import { styles } from '@/components/styles'
 import { getCategories } from '@/app/server/settings/categories/index.controller'
+import * as bankAccount from '@/app/server/settings/bank-accounts'
 
-export const Categories = () => {
+export const BankAccounts = () => {
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -28,7 +29,7 @@ export const Categories = () => {
   }, [])
 
   const fetchCategories = async () => {
-    const updatedUsers = await getCategories()
+    const updatedUsers = await bankAccount.findAll()
     setUsers(updatedUsers)
   }
 
@@ -43,7 +44,7 @@ export const Categories = () => {
     }
   }
 
-  const handleEdit = id => setCompanyUserId(id)
+  const handleEdit = codigo_conta_bancaria => setCompanyUserId(codigo_conta_bancaria)
 
   return (
     <>
@@ -64,8 +65,9 @@ export const Categories = () => {
             <Table sx={styles.tableLayout} stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell align='left'>Descrição</TableCell>
-                  <TableCell align='left'>Tipo</TableCell>
+                  <TableCell align='left'>Banco</TableCell>
+                  <TableCell align='left'>Agência</TableCell>
+                  <TableCell align='left'>Conta</TableCell>
                   <TableCell align='center'>Ações</TableCell>
                 </TableRow>
               </TableHead>
@@ -73,38 +75,39 @@ export const Categories = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={3} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
                       <CircularProgress size={30} />
                     </TableCell>
                   </TableRow>
                 ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} align="center">
-                      Nenhum plano de conta encontrado
+                    <TableCell colSpan={4} align="center">
+                      Nenhum conta bancária encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(row => (
-                    <TableRow key={row.id}>
+                  users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
+                    <TableRow key={index}>
                       <TableCell>
-                        <div className='flex items-center gap-3'>
-                          <div className='flex flex-col'>
-                            <Typography className='font-medium'>{row.description}</Typography>
-                          </div>
-                        </div>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          {row.bank?.icon && (
+                            <img 
+                              src={row.bank.icon} 
+                              alt={row.bank?.name} 
+                              style={{ width: 24, height: 24, borderRadius: '50%' }}
+                            />
+                          )}
+                          <span>{row.bank?.name}</span>
+                        </Stack>
                       </TableCell>
-                      <TableCell>
-                        <div className='flex items-center gap-3'>
-                          <div className='flex flex-col'>
-                            <Typography className='font-medium'>{row.operation == 1 ? 'Receita' : row.operation == 2 ? 'Despesa' : ''}</Typography>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell align='center'>
-                        <Stack direction='row' spacing={1} justifyContent='center'>
-                          <Tooltip title='Editar'>
-                            <IconButton size='small' onClick={() => handleEdit(row.id)}>
-                              <i className='ri-pencil-line' />
+                      
+                      <TableCell>{row.agency}</TableCell>
+                      <TableCell>{row.number}</TableCell>
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <Tooltip title="Editar">
+                            <IconButton size="small" onClick={() => handleEdit(row.codigo_conta_bancaria)}>
+                              <i className="ri-pencil-line" />
                             </IconButton>
                           </Tooltip>
                         </Stack>
@@ -136,7 +139,7 @@ export const Categories = () => {
 
       </Box>
 
-      <ViewCategorie
+      <ViewBankAccount
         categorieId={companyUserId}
         onClose={(isUpdated) => {
           setCompanyUserId(undefined)

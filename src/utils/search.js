@@ -130,6 +130,27 @@ export async function getFinancialCategory (search, operation) {
     
 }
 
+export async function getBanks (search) {
+    
+    const session = await getServerSession(authOptions)
+
+    const db = new AppContext()
+
+    const where = []
+
+    const bankAccounts = await db.Bank.findAll({
+        attributes: ['id', 'name'],
+        where,
+        order: [['name', 'asc']],
+        limit: 20,
+        offset: 0,
+    })
+
+    return _.map(bankAccounts, (user) => user.get({ plain: true }))
+    
+}
+
+
 export async function getBankAccounts (search) {
     
     const session = await getServerSession(authOptions)
@@ -150,11 +171,7 @@ export async function getBankAccounts (search) {
                 {model: db.CompanyIntegration, as: 'companyIntegration', attributes: ['id', 'integrationId']}
             ]}
         ],
-        where: {
-            agencia: {
-                [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%`
-            }
-        },
+        where,
         order: [['agency', 'asc']],
         limit: 20,
         offset: 0,

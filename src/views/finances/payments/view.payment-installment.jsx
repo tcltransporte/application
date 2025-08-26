@@ -5,13 +5,12 @@ import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { Backdrop, CircularProgress } from "@mui/material";
-import { AutoComplete } from "@/components/AutoComplete";
 import { styles } from "@/components/styles";
 import { createMovement, getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
 import { getBankAccounts, getCenterCost, getCompany, getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
-import { NumericField, TextField } from "@/components/field";
+import { AutoComplete, NumericField, TextField } from "@/components/field";
 import { useSession } from "next-auth/react";
 
 const FIELD_SIZE = {
@@ -240,42 +239,42 @@ const NewInstallment = ({ installmentId, onClose }) => {
                 <Grid container direction="row" spacing={2}>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="receiver"
                       label="Beneficiário"
-                      value={values.receiver}
-                      text={(p) => p?.surname}
-                      onChange={(val) => setFieldValue("receiver", val)}
+                      text={(receiver) => `${receiver.surname}`}
                       onSearch={getPartner}
-                    >
-                      {(item) => <span>{item.surname}</span>}
-                    </AutoComplete>
+                      renderSuggestion={(item) => (
+                        <span>{item?.surname}</span>
+                      )}
+                    />
                   </Grid>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="paymentMethod"
                       label="Forma de pagamento"
-                      value={values.paymentMethod}
-                      text={(p) => p?.name}
-                      onChange={(val) => setFieldValue("paymentMethod", val)}
+                      text={(paymentMethod) => `${paymentMethod.name}`}
                       onSearch={getPaymentMethod}
-                    >
-                      {(item) => <span>{item.name}</span>}
-                    </AutoComplete>
+                      renderSuggestion={(item) => (
+                        <span>{item?.name}</span>
+                      )}
+                    />
                   </Grid>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.bankAccount}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="bankAccount"
                       label="Conta bancária"
-                      value={values.bankAccount}
-                      text={(p) => `${p.bank?.name} - ${p.agency} / ${p.number}`}
-                      onChange={(val) => setFieldValue("bankAccount", val)}
+                      text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
                       onSearch={getBankAccounts}
-                    >
-                      {(item) => <span>{item?.bank?.name}</span>}
-                    </AutoComplete>
+                      renderSuggestion={(item) => (
+                        <span>{item?.bank?.name}</span>
+                      )}
+                    />
                   </Grid>
 
                 </Grid>
@@ -283,42 +282,42 @@ const NewInstallment = ({ installmentId, onClose }) => {
                 <Grid container direction="row" spacing={2}>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.company}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="company"
                       label="Filial"
-                      value={values.company}
-                      text={(p) => p?.surname}
-                      onChange={(val) => setFieldValue("company", val)}
-                      onSearch={getCompany}
-                    >
-                      {(item) => <span>{item.surname}</span>}
-                    </AutoComplete>
+                      text={(company) => company?.surname}
+                      onSearch={(search) => getCompany(search, 2)}
+                      renderSuggestion={(item) => (
+                        <span>{item.surname}</span>
+                      )}
+                    />
                   </Grid>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.centerCost}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="centerCost"
                       label="Centro de custo"
-                      value={values.centerCost}
-                      text={(p) => p?.description}
-                      onChange={(val) => setFieldValue("centerCost", val)}
-                      onSearch={getCenterCost}
-                    >
-                      {(item) => <span>{item.description}</span>}
-                    </AutoComplete>
+                      text={(centerCost) => centerCost?.description}
+                      onSearch={(search) => getCenterCost(search, 2)}
+                      renderSuggestion={(item) => (
+                        <span>{item.description}</span>
+                      )}
+                    />
                   </Grid>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.category}}>
-                    <AutoComplete
+                    <Field
+                      as={AutoComplete}
                       name="financialCategory"
                       label="Plano de conta"
-                      value={values.financialCategory}
-                      text={(p) => p?.description}
-                      onChange={(val) => setFieldValue("financialCategory", val)}
+                      text={(categorie) => categorie?.description}
                       onSearch={(search) => getFinancialCategory(search, 2)}
-                    >
-                      {(item) => <span>{item.description}</span>}
-                    </AutoComplete>
+                      renderSuggestion={(item) => (
+                        <span>{item.description}</span>
+                      )}
+                    />
                   </Grid>
 
                 </Grid>
@@ -548,29 +547,29 @@ const EditInstallment = ({ installmentId, onClose }) => {
                     </Grid>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
-                      <AutoComplete
+                      <Field
+                        as={AutoComplete}
                         name="paymentMethod"
                         label="Forma de pagamento"
-                        value={values.paymentMethod}
-                        text={(p) => p?.name}
-                        onChange={(val) => setFieldValue("paymentMethod", val)}
+                        text={(paymentMethod) => `${paymentMethod.surname}`}
                         onSearch={getPaymentMethod}
-                      >
-                        {(item) => <span>{item.name}</span>}
-                      </AutoComplete>
+                        renderSuggestion={(item) => (
+                          <span>{item?.name}</span>
+                        )}
+                      />
                     </Grid>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.bankAccount}}>
-                      <AutoComplete
+                      <Field
+                        as={AutoComplete}
                         name="bankAccount"
-                        label="Conta bancária"
-                        value={values.bankAccount}
-                        text={(p) => `${p.bank?.name} - ${p.agency} / ${p.number}`}
-                        onChange={(val) => setFieldValue("bankAccount", val)}
+                        label="Forma de pagamento"
+                        text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
                         onSearch={getBankAccounts}
-                      >
-                        {(item) => <span>{item.bank?.name}</span>}
-                      </AutoComplete>
+                        renderSuggestion={(item) => (
+                          <span>{item.bank?.name}</span>
+                        )}
+                      />
                     </Grid>
 
                   </Grid>

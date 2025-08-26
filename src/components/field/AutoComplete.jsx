@@ -15,7 +15,7 @@ const SuggestionsBox = styled.div`
   max-height: 300px;
   overflow-y: auto;
   background-color: white;
-  z-index: 1300; /* acima de modais MUI */
+  z-index: 1300;
   border: 1px solid #ccc;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   border-radius: 0 0 4px 4px;
@@ -37,12 +37,13 @@ const Nothing = styled.div`
 `
 
 export const AutoComplete = (props) => {
-  const [inputError, setInputError] = useState(false)
-  const [inputHelperText, setInputHelperText] = useState('')
+  
   const ref = useRef()
   const inputRef = useRef()
   const selectedItemRef = useRef()
 
+  const [inputError, setInputError] = useState(false)
+  const [inputHelperText, setInputHelperText] = useState('')
   const [state, setState] = useState({
     loading: false,
     nothing: false,
@@ -66,16 +67,11 @@ export const AutoComplete = (props) => {
     }
   }
 
-  const handleSearch = async () => {
-    await handleInputChange()
-    inputRef.current?.focus()
-  }
-
   const handleInputChange = async (e) => {
     try {
       setInputError(false)
       setInputHelperText('')
-      const query = e?.target?.value || ''
+      const query = e?.target?.value || state.query
       setState(prev => ({
         ...prev,
         query,
@@ -112,9 +108,13 @@ export const AutoComplete = (props) => {
         ...prev,
         selectedIndex: Math.max(prev.selectedIndex - 1, 0)
       }))
-    } else if (e.key === 'Enter' && selectedIndex !== -1) {
+    } else if (e.key === 'Enter' && selectedIndex !== -1 && data[selectedIndex]) {
       e.preventDefault()
-      handleSuggestionClick(data[selectedIndex])
+      const item = data[selectedIndex]
+      if (props.onChange) {
+        props.onChange(item)
+      }
+      setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
     } else if (e.key === 'Escape') {
       if (data.length > 0 || nothing) {
         e.preventDefault()
@@ -124,14 +124,30 @@ export const AutoComplete = (props) => {
   }
 
   const handleSuggestionClick = (item) => {
-    props.onChange(item)
+    if (props.onChange) {
+      props.onChange(item)
+    }
     setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
+    inputRef.current?.focus()
   }
 
   const handleClickOutside = (event) => {
-    if (!inputRef.current?.contains(event.target)) {
+    if (!ref.current?.contains(event.target)) {
       setState(prev => ({ ...prev, data: [], nothing: false }))
     }
+  }
+
+  const handleClear = () => {
+    if (props.onChange) {
+      props.onChange(null)
+    }
+    setState(prev => ({ ...prev, query: '' }))
+    inputRef.current?.focus()
+  }
+
+  const handleSearch = async () => {
+    await handleInputChange({ target: { value: state.query } })
+    inputRef.current?.focus()
   }
 
   useEffect(() => {
@@ -148,13 +164,7 @@ export const AutoComplete = (props) => {
     }
   }, [state.selectedIndex])
 
-  const handleClear = () => {
-    setState(prev => ({ ...prev, query: '' }))
-    props.onChange(null)
-    inputRef.current?.focus()
-  }
-
-  const { label, text, value, children, autoFocus } = props
+  const { label, text, children, value, autoFocus } = props
   const { query, data, selectedIndex, loading, nothing, boxPosition } = state
 
   const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
@@ -168,13 +178,13 @@ export const AutoComplete = (props) => {
           key={index}
           ref={index === selectedIndex ? selectedItemRef : null}
           className={index === selectedIndex ? 'selected' : ''}
-          onMouseDown={() => handleSuggestionClick(item)}
+          onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(item) }}
         >
-          {typeof children === 'function' ? children(item) : null}
+          {typeof children === 'function' ? children(item) : props.renderSuggestion(item)}
         </Suggestion>
       ))}
       {nothing && (
-        <Nothing onMouseDown={() => setState(prev => ({ ...prev, data: [], nothing: false }))}>
+        <Nothing onMouseDown={(e) => { e.preventDefault(); setState(prev => ({ ...prev, data: [], nothing: false })) }}>
           Nenhum resultado encontrado!
         </Nothing>
       )}
@@ -182,9 +192,8 @@ export const AutoComplete = (props) => {
   )
 
   return (
-    <AutocompleteContainer>
+    <AutocompleteContainer ref={ref}>
       <TextField
-        ref={ref}
         autoComplete="off"
         size={props.size ?? 'small'}
         inputRef={inputRef}
@@ -193,20 +202,11 @@ export const AutoComplete = (props) => {
         variant={props.variant ?? 'filled'}
         slotProps={{ inputLabel: { shrink: true } }}
         placeholder={!value ? props.placeholder : text(value)}
-        value={query}
+        value={value ? text(value) : query}
         fullWidth
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         autoFocus={autoFocus}
-        sx={{
-          ...(value && {
-            '& input::placeholder': {
-              color: 'currentColor',
-              opacity: 1,
-            },
-          }),
-          ...props.sx
-        }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -226,8 +226,8 @@ export const AutoComplete = (props) => {
             </InputAdornment>
           )
         }}
-        error={inputError || props.error}
-        helperText={inputHelperText || props.helperText}
+        error={props.error}
+        helperText={props.helperText}
         disabled={props.disabled}
       />
 
@@ -235,3 +235,6 @@ export const AutoComplete = (props) => {
     </AutocompleteContainer>
   )
 }
+
+
+export default AutoComplete

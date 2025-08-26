@@ -17,6 +17,8 @@ import {
 import { format, fromZonedTime } from 'date-fns-tz'
 import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
 import { IntegrationSuccess } from '../..'
+import { Field, Form, Formik } from 'formik'
+import { TextField } from '@/components/field'
 
 export const ID = 'E6F39F15-5446-42A7-9AC4-A9A99E604F07'
 
@@ -144,20 +146,54 @@ export const Statement = ({ data, onChange }) => {
 }
 
 export const Connect = () => {
+  
+  const handleConnect = (values) => {
+    console.log('Form values:', values)
 
-  const handleConnect = () => {
-    window.location.href = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${process.env.NEXT_PUBLIC_TINY_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_TINY_REDIRECT_URL}&scope=openid&response_type=code`
+    // aqui você decide o que fazer com os dados
+    // ex: salvar no backend, autenticar, etc.
+    //window.location.href = `https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=${process.env.NEXT_PUBLIC_TINY_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_TINY_REDIRECT_URL}&scope=openid&response_type=code`
   }
 
   return (
-    <Box display="flex" justifyContent="flex-end" gap={2}>
-      <Button variant="outlined">
-        Cancelar
-      </Button>
-      <Button variant="contained" onClick={handleConnect}>
-        Conectar
-      </Button>
-    </Box>
-  )
+    <Formik
+      initialValues={{ token: '', session: '', csrf: '' }}
+      onSubmit={handleConnect}
+    >
+      {({ isSubmitting }) => (
+        <Form style={{ width: '100%' }}>
+          <Box display="flex" flexDirection="column" gap={2} mb={2}>
+            <Field
+              as={TextField}
+              name="token"
+              label="Token"
+            />
+            <Field
+              as={TextField}
+              name="session"
+              label="Session"
+            />
+            <Field
+              as={TextField}
+              name="csrf"
+              label="CSRF"
+            />
+          </Box>
 
+          <Box display="flex" justifyContent="flex-end" gap={2}>
+            <Button variant="outlined" type="reset" disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Conectando...' : 'Conectar'}
+            </Button>
+          </Box>
+        </Form>
+      )}
+    </Formik>
+  )
 }

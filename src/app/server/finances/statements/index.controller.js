@@ -20,6 +20,7 @@ export async function getStatements({limit, offset}) {
         where: [
             {'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial}
         ],
+        order: [['createdAt', 'DESC']],
         limit,
         offset
     })

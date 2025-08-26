@@ -12,10 +12,9 @@ import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { format, parseISO } from 'date-fns'
-import { AutoComplete } from '@/components/AutoComplete'
 import { getCompany, getFinancialCategory, getPartner, getPaymentMethod } from '@/utils/search'
 import { Field, Formik } from 'formik'
-import { SelectField, TextField } from '@/components/field'
+import { AutoComplete, SelectField, TextField } from '@/components/field'
 
 const statusOptions = [
   { label: 'Em aberto', value: 0 },
@@ -73,16 +72,16 @@ const Filter = ({ request: initialRequest, onApply }) => {
           {({ values, setFieldValue, handleChange, handleSubmit, touched, errors }) => (
             <Box component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
 
-              <AutoComplete
+              <Field
+                as={AutoComplete}
                 name="company"
                 label="Filial"
-                value={values.company}
-                text={(p) => p?.surname}
-                onChange={(value) => setFieldValue('company', value)}
+                text={(company) => company?.surname || ''}
                 onSearch={getCompany}
-              >
-                {(item) => <span>{item.surname}</span>}
-              </AutoComplete>
+                renderSuggestion={(item) => (
+                    <span>{item.surname}</span>
+                )}
+              />
 
               <Field
                 as={TextField}

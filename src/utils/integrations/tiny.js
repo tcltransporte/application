@@ -54,8 +54,16 @@ export async function getTinyCategories(search) {
   const session = await getServerSession(authOptions)
   
   const db = new AppContext()
-
-  const companyIntegration = await db.CompanyIntegration.findOne({attributes: ['options'], where: [{integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07', companyId: session.company.companyBusiness.codigo_empresa}]})
+  
+  const companyIntegration = await db.CompanyIntegration.findOne({
+    attributes: ['options'],
+    where: [
+      {
+        integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07',
+        companyId: session.company.codigo_empresa_filial,
+      },
+    ],
+  })
 
   if (companyIntegration) {
 
@@ -118,6 +126,7 @@ export async function getTinyCategories(search) {
 }
 
 export async function getTinyPayments({ start, end }) {
+
   await getTinyCategories()
 
   const session = await getServerSession(authOptions)
@@ -128,7 +137,7 @@ export async function getTinyPayments({ start, end }) {
     where: [
       {
         integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07',
-        companyId: session.company.companyBusiness.codigo_empresa,
+        companyId: session.company.codigo_empresa_filial,
       },
     ],
   })

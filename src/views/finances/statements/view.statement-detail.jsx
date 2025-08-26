@@ -18,7 +18,7 @@ import * as Yup from 'yup'
 import _ from 'lodash'
 
 // --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
-import { AutoComplete } from '@/components/AutoComplete'
+import { AutoComplete } from '@/components/field/AutoComplete'
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
 import { ItemDetailDrawer } from './view.vincule-payment'
 import { ViewVinculeReceivement } from './view.vincule-receivement'

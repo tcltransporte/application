@@ -46,6 +46,23 @@ import { SelectField } from '@/components/field'
 </Field>
 ```
 
+## AutoComplete
+```jsx
+import { Field } from 'formik'
+import { AutoComplete } from '@/components/field'
+
+<Field
+    as={AutoComplete}
+    name="bank"
+    label="Banco"
+    text={(bank) => bank?.name || ''}
+    onSearch={getBanks}
+    renderSuggestion={(item) => (
+        <span>{item.id} - {item.name}</span>
+    )}
+/>
+```
+
 
 ## Example
 ```jsx
