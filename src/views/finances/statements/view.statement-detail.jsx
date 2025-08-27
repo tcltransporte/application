@@ -229,7 +229,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
                 return (
                   <Fragment key={data.id || index}>
-                    <TableRow className="with-hover-actions">
+                    <TableRow className="with-hover-actions" hover style={{cursor: 'pointer'}}>
                       <TableCell padding="checkbox">
                         <Checkbox
                           color="primary"

@@ -14,6 +14,7 @@ const TextField = (props) => {
   if (!field) {
     return (
       <MuiTextField
+        autoComplete='off'
         {...props}
         InputProps={{
           ...InputProps,
@@ -54,9 +55,11 @@ const TextField = (props) => {
 
   return (
     <MuiTextField
+        autoComplete='off'
       {...field}
       {...rest}
-      value={value || ''}
+      {...props}
+      value={(props.field ? props.field.value : value) || ''}
       onChange={handleChange}
       error={error}
       helperText={helperText}

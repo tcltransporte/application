@@ -42,8 +42,6 @@ export const AutoComplete = (props) => {
   const inputRef = useRef()
   const selectedItemRef = useRef()
 
-  const [inputError, setInputError] = useState(false)
-  const [inputHelperText, setInputHelperText] = useState('')
   const [state, setState] = useState({
     loading: false,
     nothing: false,
@@ -69,9 +67,15 @@ export const AutoComplete = (props) => {
 
   const handleInputChange = async (e) => {
     try {
+    
+      if (props.value || props.field.value) {
+        return
+      }
+
       const query = e?.target?.value
-      setInputError(false)
-      setInputHelperText('')
+    
+      updateBoxPosition()
+      
       setState(prev => ({
         ...prev,
         query,
@@ -80,7 +84,6 @@ export const AutoComplete = (props) => {
         nothing: false
       }))
       const data = await props.onSearch(query)
-      updateBoxPosition()
       setState(prev => ({
         ...prev,
         data,
@@ -92,8 +95,7 @@ export const AutoComplete = (props) => {
         props.form.setFieldValue(props.field.name, null) // reset temporário enquanto digita
       }
     } catch (error) {
-      setInputError(true)
-      setInputHelperText(error.message || 'Erro desconhecido')
+      
     } finally {
       setState(prev => ({ ...prev, loading: false }))
     }
@@ -117,10 +119,7 @@ export const AutoComplete = (props) => {
     } else if (e.key === 'Enter' && selectedIndex !== -1 && data[selectedIndex]) {
       e.preventDefault()
       const item = data[selectedIndex]
-      if (props.onChange) {
-        props.onChange(item)
-      }
-      setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
+      handleSuggestionClick(item)
     } else if (e.key === 'Escape') {
       if (data.length > 0 || nothing) {
         e.preventDefault()
@@ -142,13 +141,17 @@ export const AutoComplete = (props) => {
     }
 
     setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
+
     inputRef.current?.focus()
+
   }
 
   const handleClickOutside = (event) => {
+    
     if (!ref.current?.contains(event.target)) {
       setState(prev => ({ ...prev, data: [], nothing: false }))
     }
+
   }
 
   const handleClear = () => {
@@ -186,7 +189,6 @@ export const AutoComplete = (props) => {
     }
   }, [state.selectedIndex])
 
-  const { label, text, children, value, autoFocus } = props
   const { query, data, selectedIndex, loading, nothing, boxPosition } = state
 
   const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
@@ -202,7 +204,7 @@ export const AutoComplete = (props) => {
           className={index === selectedIndex ? 'selected' : ''}
           onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(item) }}
         >
-          {typeof children === 'function' ? children(item) : props.renderSuggestion(item)}
+          {typeof props.children === 'function' ? props.children(item) : props.renderSuggestion(item)}
         </Suggestion>
       ))}
       {nothing && (
@@ -220,51 +222,55 @@ export const AutoComplete = (props) => {
         size={props.size ?? 'small'}
         inputRef={inputRef}
         name={props.name}
-        label={label}
+        label={props.label}
         variant={props.variant ?? 'filled'}
-        slotProps={{ inputLabel: { shrink: true } }}
+        slotProps={
+          { 
+            inputLabel: { shrink: true },
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  {loading ? (
+                    <IconButton size="small" edge="end" disabled>
+                      <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
+                    </IconButton>
+                  ) : (props.field ? props.field.value : props.value) ? (
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      onClick={handleClear}
+                      disabled={props.disabled}
+                    >
+                      <i className="ri-close-line" style={{ fontSize: 20 }} />
+                    </IconButton>
+                  ) : (
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      onClick={handleSearch}
+                    >
+                      <i className="ri-search-line" style={{ fontSize: 20 }} />
+                    </IconButton>
+                  )}
+                </InputAdornment>
+              )
+            }
+          }
+        }
         placeholder={props.placeholder}
         value={
           props.field
-            ? (props.field.value ? text(props.field.value) : query) // quando for Formik
-            : (value ? text(value) : query)                         // quando for standalone
+            ? (props.field.value ? props.text(props.field.value) : query) // quando for Formik
+            : (props.value ? props.text(props.value) : query)                         // quando for standalone
         }
         fullWidth
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        autoFocus={autoFocus}
+        autoFocus={props.autoFocus}
         onBlur={() => {
-          if (!value && query) {
+          if (!props.value && query) {
             setState(prev => ({ ...prev, query: '' }))
           }
-        }}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              {loading ? (
-                <IconButton size="small" edge="end" disabled>
-                  <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
-                </IconButton>
-              ) : (props.field ? props.field.value : value) ? (
-                <IconButton
-                  size="small"
-                  edge="end"
-                  onClick={handleClear}
-                  disabled={props.disabled}
-                >
-                  <i className="ri-close-line" style={{ fontSize: 20 }} />
-                </IconButton>
-              ) : (
-                <IconButton
-                  size="small"
-                  edge="end"
-                  onClick={handleSearch}
-                >
-                  <i className="ri-search-line" style={{ fontSize: 20 }} />
-                </IconButton>
-              )}
-            </InputAdornment>
-          )
         }}
         error={props.error}
         helperText={props.helperText}

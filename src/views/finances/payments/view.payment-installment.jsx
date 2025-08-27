@@ -156,7 +156,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       type="date"
                       name="issueDate"
                       label="Emissão"
@@ -165,7 +165,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.dueDate}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       type="date"
                       name="startDate"
                       label="Vencimento"
@@ -174,7 +174,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.scheduledDate}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       type="text"
                       name="Agendamento"
                       label="Agendamento"
@@ -185,7 +185,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
                     <Field
-                      as={NumericField}
+                      component={NumericField}
                       label="Valor"
                       name="amountTotal"
                       //error={Boolean(touched.amountTotal && errors.amountTotal)}
@@ -195,7 +195,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.installments}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       name="numParcelas"
                       label="Parcelas"
                       select
@@ -228,7 +228,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     {values.interval === 'custom' && (
                       <Grid item size={{xs: 12, sm: 2}}>
                         <Field
-                          as={TextField}
+                          component={TextField}
                           type="number"
                           name="customDays"
                           label="A cada"
@@ -244,7 +244,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="receiver"
                       label="Beneficiário"
                       text={(receiver) => `${receiver.surname}`}
@@ -270,7 +270,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.bankAccount}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="bankAccount"
                       label="Conta bancária"
                       text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
@@ -287,7 +287,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.company}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="company"
                       label="Filial"
                       text={(company) => company?.surname}
@@ -300,7 +300,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.centerCost}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="centerCost"
                       label="Centro de custo"
                       text={(centerCost) => centerCost?.description}
@@ -313,7 +313,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.category}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="financialCategory"
                       label="Plano de conta"
                       text={(categorie) => categorie?.description}
@@ -329,7 +329,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                 <Grid container direction="row" spacing={2}>
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.description}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       type="text"
                       name="observation"
                       label="Observação"
@@ -354,7 +354,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                           <TableCell>{values.documentNumber}-{inst.installment}</TableCell>
                           <TableCell>
                             <Field
-                              as={NumericField}
+                              component={NumericField}
                               name={`installments[${index}].amount`}
                               error={Boolean(touched.amount && errors.amount)}
                               helperText={touched.amount && errors.amount}
@@ -362,7 +362,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                           </TableCell>
                           <TableCell>
                             <Field
-                              as={TextField}
+                              component={TextField}
                               type="date"
                               name={`installments[${index}].dueDate`}
                             />
@@ -486,7 +486,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="text"
                         name="documentNumber"
                         label="Nº Documento"
@@ -496,18 +496,17 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
                       <Field
-                        as={TextField}
-                        type="text"
+                        component={TextField}
+                        type="date"
                         name="issueDate"
                         label="Emissão"
-                        value={format(values.issueDate, "dd/MM/yyyy")}
                         readOnly
                       />
                     </Grid>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.dueDate}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="date"
                         name="dueDate"
                         label="Vencimento"
@@ -516,7 +515,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.scheduledDate}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="date"
                         name="Agendamento"
                         label="Agendamento"
@@ -527,7 +526,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
                       <Field
-                        as={NumericField}
+                        component={NumericField}
                         type="text"
                         name="amount"
                         label="Valor"
@@ -536,7 +535,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.installments}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="text"
                         name="installment"
                         label="Parcela"
@@ -550,7 +549,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="text"
                         name="partner.surname"
                         label="Beneficiário"
@@ -560,7 +559,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
                       <Field
-                        as={AutoComplete}
+                        component={AutoComplete}
                         name="paymentMethod"
                         label="Forma de pagamento"
                         text={(paymentMethod) => `${paymentMethod.surname}`}
@@ -573,7 +572,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.bankAccount}}>
                       <Field
-                        as={AutoComplete}
+                        component={AutoComplete}
                         name="bankAccount"
                         label="Conta bancária"
                         text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
@@ -617,7 +616,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
                   <Grid container direction="row" spacing={2}>
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.observation}}>
                       <Field
-                        as={TextField}
+                        component={TextField}
                         type="text"
                         name="observation"
                         label="Observação"
