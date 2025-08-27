@@ -351,13 +351,16 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                           <Checkbox color="primary" checked={isItemSelected} onChange={() => toggleSelect(id)} />
                         </TableCell>
                         <TableCell align="left">{payment.financialMovement?.documentNumber}</TableCell>
+                        <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.financialMovement?.partner?.surname}</TableCell>
+                        {/*
                         <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           <Typography variant="body2">{payment.financialMovement?.company?.surname}</Typography>
                           <Typography>
                             {payment.financialMovement?.partner?.surname}
                           </Typography>
                         </TableCell>
-                        <TableCell align="left">{payment.financialMovement?.financialCategory?.description}</TableCell>
+                        */}
+                        <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.financialMovement?.financialCategory?.description}</TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="center"></TableCell>

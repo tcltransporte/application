@@ -146,10 +146,11 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
                     <Field
-                      as={TextField}
+                      component={TextField}
                       type="text"
                       name="documentNumber"
                       label="Nº Documento"
+                      autoFocus
                     />
                   </Grid>
 
@@ -172,7 +173,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   </Grid>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.scheduledDate}}>
-                    <TextField
+                    <Field
+                      as={TextField}
+                      type="text"
+                      name="Agendamento"
                       label="Agendamento"
                       value={values.scheduledDate ? format(values.scheduledDate, "dd/MM/yyyy") : ''}
                       readOnly
@@ -253,7 +257,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.method}}>
                     <Field
-                      as={AutoComplete}
+                      component={AutoComplete}
                       name="paymentMethod"
                       label="Forma de pagamento"
                       text={(paymentMethod) => `${paymentMethod.name}`}
@@ -472,9 +476,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
           validationSchema={Yup.object({})}
           onSubmit={handleSubmit}
         >
-          {({ values, setFieldValue, isSubmitting }) => {
-
-            console.log(values)
+          {({ values, isSubmitting }) => {
 
             return (
               <Form>
@@ -483,15 +485,20 @@ const EditInstallment = ({ installmentId, onClose }) => {
                   <Grid container direction="row" spacing={2}>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
-                      <TextField
+                      <Field
+                        as={TextField}
+                        type="text"
+                        name="documentNumber"
                         label="Nº Documento"
-                        value={values.documentNumber}
-                        readOnly
+                        autoFocus
                       />
                     </Grid>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
-                      <TextField
+                      <Field
+                        as={TextField}
+                        type="text"
+                        name="issueDate"
                         label="Emissão"
                         value={format(values.issueDate, "dd/MM/yyyy")}
                         readOnly
@@ -508,7 +515,10 @@ const EditInstallment = ({ installmentId, onClose }) => {
                     </Grid>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.scheduledDate}}>
-                      <TextField
+                      <Field
+                        as={TextField}
+                        type="date"
+                        name="Agendamento"
                         label="Agendamento"
                         value={values.scheduledDate ? format(values.scheduledDate, "dd/MM/yyyy") : ''}
                         readOnly
@@ -539,9 +549,11 @@ const EditInstallment = ({ installmentId, onClose }) => {
                   <Grid container direction="row" spacing={2}>
 
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
-                      <TextField
+                      <Field
+                        as={TextField}
+                        type="text"
+                        name="partner.surname"
                         label="Beneficiário"
-                        value={values.partner.surname}
                         readOnly
                       />
                     </Grid>
@@ -563,11 +575,11 @@ const EditInstallment = ({ installmentId, onClose }) => {
                       <Field
                         as={AutoComplete}
                         name="bankAccount"
-                        label="Forma de pagamento"
+                        label="Conta bancária"
                         text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
                         onSearch={getBankAccounts}
                         renderSuggestion={(item) => (
-                          <span>{item.bank?.name}</span>
+                          <span>{item?.bank?.name}</span>
                         )}
                       />
                     </Grid>

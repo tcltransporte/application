@@ -133,13 +133,13 @@ const Integrations = ({ integrations }) => {
           ) : (
             <Grid container spacing={4} mb={6}>
               {connectedIntegrations.length > 0 ? (
-                connectedIntegrations.map((integration) => (
+                connectedIntegrations.map((integration, index) => (
                   <Grid
                     item
                     xs={12}
                     sm={6}
                     md={4}
-                    key={`connected-${integration.integration.name}`}
+                    key={index}
                   >
                     <Card
                       variant="outlined"

@@ -23,7 +23,7 @@ import { parseISO, format } from 'date-fns'
 import { getPayments } from '@/app/server/finances/payments/index.controller'
 import _ from 'lodash'
 
-export function ItemDetailDrawer({ open, onClose, itemId, onSelected }) {
+export function ViewVinculePayment({ open, onClose, itemId, onSelected }) {
   const [historico, setHistorico] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')

@@ -24,25 +24,32 @@ const TextField = (props) => {
   }
 
   const { name, value } = field
-  const { touched, errors, setFieldValue } = form
+  const { touched, errors } = form
   const error = touched?.[name] && Boolean(errors?.[name])
   const helperText = touched?.[name] && errors?.[name]
 
   const handleChange = (e) => {
+
     let val = e.target.value
 
     if (rest.type === 'date' || rest.type === 'datetime-local' || rest.type === 'time') {
-      setFieldValue(name, val)
-      return
+      val = val
+    } else {
+      if (transform === 'uppercase') {
+        val = val.toUpperCase()
+      } else if (transform === 'lowercase') {
+        val = val.toLowerCase()
+      }
     }
 
-    if (transform === 'uppercase') {
-      val = val.toUpperCase()
-    } else if (transform === 'lowercase') {
-      val = val.toLowerCase()
+    if (props.form?.setFieldValue) {
+      props.form?.setFieldValue(props.field?.name, val)
     }
 
-    setFieldValue(name, val)
+    if (props.onChange) {
+      props.onChange(val)
+    }
+
   }
 
   return (

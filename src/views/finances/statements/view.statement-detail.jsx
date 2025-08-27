@@ -20,7 +20,7 @@ import _ from 'lodash'
 // --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
 import { AutoComplete } from '@/components/field/AutoComplete'
 import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
-import { ItemDetailDrawer } from './view.vincule-payment'
+import { ViewVinculePayment } from './view.vincule-payment'
 import { ViewVinculeReceivement } from './view.vincule-receivement'
 import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller'
 import { styles } from '@/components/styles'
@@ -135,7 +135,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const handleClosePayments = () => { setIsDrawerOpen(false); setSelectedItemId(null); };
   const handleOpenReceivements = (id) => { setSelectedItemId(id); setIsDrawerReceivement(true); };
   const handleCloseReceivements = () => { setIsDrawerReceivement(false); setSelectedItemId(null); };
-  const handleVinculePayment = async (statementDataConciledId, id) => { /* ... */ };
+  const handleVinculePayment = async (statementDataConciledId, id) => { vinculePayment({statementDataConciledId, codigo_movimento_detalhe: id}) /* ... */ };
+
   const handleDesvinculePayment = async (statementDataConciledId) => { /* ... */ };
   const handleOpenFilterDialog = () => { setEntryTypeFilters(statement?.entryTypes ?? []); setShowFilterDialog(true); };
 
@@ -242,18 +243,51 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                       <TableCell>{data.reference}</TableCell>
                       <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
-                      <TableCell align="right">{formatCurrency(data.credit)}</TableCell>
-                      <TableCell align="right">{formatCurrency(data.debit)}</TableCell>
+                      <TableCell align="right"><font color='green'>{Number(data.credit) > 0 && (`+${formatCurrency(data.credit)}`)}</font></TableCell>
+                      <TableCell align="right"><font color='red'>{Number(data.debit) < 0 && (`${formatCurrency(data.debit)}`)}</font></TableCell>
                       <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
-                      <TableCell align='right' style={{ width: '100px' }}>
-                        <Badge color="primary" badgeContent={_.size(data.concileds) || "0"} sx={{ '& .MuiBadge-badge': { right: 10, fontWeight: 'bold' } }} />
-                        <IconButton size='small' onClick={() => toggleExpand(index)} className="row-actions">
-                          {expandedRow === index
-                            ? <i className="ri-arrow-up-circle-line" style={{ fontSize: 30 }} />
-                            : <i className="ri-arrow-down-circle-line" style={{ fontSize: 30 }} />
-                          }
-                        </IconButton>
+                      <TableCell align="left" style={{width: '80px'}}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <IconButton
+                            size="small"
+                            sx={{
+                              p: 0,
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              fontSize: '0.75rem',
+                              backgroundColor: _.size(data.concileds) > 0 ? 'var(--mui-palette-primary-dark)' : '#C0C0C0',
+                              color: '#fff',
+                              '&:hover': {
+                                backgroundColor: 'primary.dark'
+                              }
+                            }}
+                          >
+                            {_.size(data.concileds) || 0}
+                          </IconButton>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => toggleExpand(index)}
+                            className={expandedRow != index ? 'row-actions' : ''}
+                            sx={{
+                              border: '2px solid #ccc',   // cor e espessura da borda
+                              borderRadius: '50%',        // borda arredondada
+                              padding: 0,                 // ajustar o padding se necessário
+                              width: 32,                  // tamanho do botão
+                              height: 32,                 // tamanho do botão
+                            }}
+                          >
+                            {expandedRow === index ? (
+                              <i className="ri-arrow-up-line" style={{ fontSize: 25, color: 'tomato' }} />
+                            ) : (
+                              <i className="ri-arrow-down-line" style={{ fontSize: 25 }} />
+                            )}
+                          </IconButton>
+                        </Box>
+
                       </TableCell>
+
                     </TableRow>
                     
                     {expandedRow === index ? (
@@ -288,7 +322,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         onFilterChange={setEntryTypeFilters}
         onApplyFilter={applyEntryTypeFilter}
       />
-      <ItemDetailDrawer
+      <ViewVinculePayment
         open={isDrawerOpen}
         onClose={handleClosePayments}
         itemId={selectedItemId}
@@ -418,17 +452,23 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
           <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
         </Box>
       </TableCell>
-      <TableCell align='right'>
-        {(!item.paymentId && !item.receivementId) && ( <Tooltip title='Vincular' className="row-actions"><IconButton onClick={() => onViewDetails(item.id)}><i className="ri-search-line" /></IconButton></Tooltip> )}
-        {(item.paymentId || item.receivementId) && (
-          <>
-            <Tooltip title='Informações'><IconButton onClick={handleInfoClick}><i className="ri-edit-box-line" style={{ color: '#2e7d32' }} /></IconButton></Tooltip>
-            <Menu anchorEl={infoAnchorEl} open={Boolean(infoAnchorEl)} onClose={handleInfoClose} >
-              <MenuItem onClick={() => { handleInfoClose(); onStartEdit(); }}><i className="ri-pencil-line" style={{ marginRight: 8 }} /> Editar </MenuItem>
-              <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular </MenuItem>
-            </Menu>
-          </>
-        )}
+      <TableCell align='left'>
+        <Box sx={{ display: 'flex' }}>
+          {(!item.paymentId && !item.receivementId) ? (
+            <>
+              {/*<Tooltip title='Vincular' className="row-actions"><IconButton onClick={() => onViewDetails(item.id)}><i className="ri-search-line" /></IconButton></Tooltip>*/}
+              <IconButton className="row-actions" size='small' onClick={() => onViewDetails(item.id)} sx={{p: 1}}><i className="ri-search-line" /></IconButton>
+            </>
+          ) : (
+            <>
+              <Tooltip title='Informações'><IconButton size='small' onClick={handleInfoClick} sx={{p: 1, backgroundColor: '#4ace4aff', '&:hover': { backgroundColor: 'success.dark'}, width: 24, height: 24}}><i className="ri-checkbox-circle-fill" style={{color: '#fff'}} /></IconButton></Tooltip>
+              <Menu anchorEl={infoAnchorEl} open={Boolean(infoAnchorEl)} onClose={handleInfoClose} >
+                {/*<MenuItem onClick={() => { handleInfoClose(); onStartEdit(); }}><i className="ri-pencil-line" style={{ marginRight: 8 }} /> Editar </MenuItem>*/}
+                <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular </MenuItem>
+              </Menu>
+            </>
+          )}
+        </Box>
       </TableCell>
     </TableRow>
   )
@@ -506,7 +546,7 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
                         value={values.category}
                         text={(category) => category.description}
                         onChange={(category) => setFieldValue('category', category)}
-                        onSearch={() => getFinancialCategory('', values.type)}
+                        onSearch={(search) => getFinancialCategory(search, values.type)}
                         onBlur={() => setFieldTouched('category', true)}
                         error={touched.category && Boolean(errors.category)}
                         helperText={touched.category && errors.category}

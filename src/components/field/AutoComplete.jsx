@@ -69,9 +69,9 @@ export const AutoComplete = (props) => {
 
   const handleInputChange = async (e) => {
     try {
+      const query = e?.target?.value
       setInputError(false)
       setInputHelperText('')
-      const query = e?.target?.value || state.query
       setState(prev => ({
         ...prev,
         query,
@@ -86,6 +86,11 @@ export const AutoComplete = (props) => {
         data,
         nothing: data.length === 0
       }))
+
+      // Se estiver em Formik, atualiza o valor do campo
+      if (props.form && props.field) {
+        props.form.setFieldValue(props.field.name, null) // reset temporário enquanto digita
+      }
     } catch (error) {
       setInputError(true)
       setInputHelperText(error.message || 'Erro desconhecido')
@@ -93,6 +98,7 @@ export const AutoComplete = (props) => {
       setState(prev => ({ ...prev, loading: false }))
     }
   }
+
 
   const handleKeyDown = (e) => {
     const { selectedIndex, data, nothing } = state
@@ -124,9 +130,17 @@ export const AutoComplete = (props) => {
   }
 
   const handleSuggestionClick = (item) => {
+
+    //Formik
+    if (props.form?.setFieldValue) {
+      props.form?.setFieldValue(props.field?.name, item)
+    }
+
+    //Pure
     if (props.onChange) {
       props.onChange(item)
     }
+
     setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
     inputRef.current?.focus()
   }
@@ -138,11 +152,19 @@ export const AutoComplete = (props) => {
   }
 
   const handleClear = () => {
+
+    if (props.form?.setFieldValue) {
+      props.form?.setFieldValue(props.field?.name, null)
+    }
+
     if (props.onChange) {
       props.onChange(null)
     }
+
     setState(prev => ({ ...prev, query: '' }))
+
     inputRef.current?.focus()
+
   }
 
   const handleSearch = async () => {
@@ -201,12 +223,21 @@ export const AutoComplete = (props) => {
         label={label}
         variant={props.variant ?? 'filled'}
         slotProps={{ inputLabel: { shrink: true } }}
-        placeholder={!value ? props.placeholder : text(value)}
-        value={value ? text(value) : query}
+        placeholder={props.placeholder}
+        value={
+          props.field
+            ? (props.field.value ? text(props.field.value) : query) // quando for Formik
+            : (value ? text(value) : query)                         // quando for standalone
+        }
         fullWidth
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         autoFocus={autoFocus}
+        onBlur={() => {
+          if (!value && query) {
+            setState(prev => ({ ...prev, query: '' }))
+          }
+        }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -214,12 +245,21 @@ export const AutoComplete = (props) => {
                 <IconButton size="small" edge="end" disabled>
                   <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
                 </IconButton>
-              ) : value ? (
-                <IconButton size="small" edge="end" onClick={handleClear} disabled={props.disabled}>
+              ) : (props.field ? props.field.value : value) ? (
+                <IconButton
+                  size="small"
+                  edge="end"
+                  onClick={handleClear}
+                  disabled={props.disabled}
+                >
                   <i className="ri-close-line" style={{ fontSize: 20 }} />
                 </IconButton>
               ) : (
-                <IconButton size="small" edge="end" onClick={handleSearch}>
+                <IconButton
+                  size="small"
+                  edge="end"
+                  onClick={handleSearch}
+                >
                   <i className="ri-search-line" style={{ fontSize: 20 }} />
                 </IconButton>
               )}
