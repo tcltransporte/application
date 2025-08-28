@@ -377,14 +377,14 @@ const NewInstallment = ({ installmentId, onClose }) => {
                 )}
                                       
               </DialogContent>
-              
+
               <DialogActions>
                 <Button
                   variant="contained"
                   type="submit"
                   disabled={isSubmitting || values.installments.length === 0}
                 >
-                  {false ? (
+                  {isSubmitting ? (
                     <>
                       <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
                       Salvando...
