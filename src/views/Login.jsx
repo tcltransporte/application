@@ -178,7 +178,7 @@ const Login = ({ mode }) => {
                 {_.size(companyBusinesses) === 0 && _.size(companies) === 0 ? (
                   <>
                     <div>
-                      <Typography variant='h4'>{`Bem-vindo ao ${themeConfig.templateName}! 👋🏻`}</Typography>
+                      <Typography variant='h4'>{`Bem-vindo! 👋🏻`}</Typography>
                       <br />
                       <Typography>Por favor, faça login na sua conta</Typography>
                     </div>

@@ -90,58 +90,61 @@ const NewInstallment = ({ installmentId, onClose }) => {
   };
 
   return (
-    <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: { position: 'fixed', top: '32px', width: '1100px'}} }}>
-      <DialogTitle>
-        Adicionar pagamento
-        <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
-          <i className="ri-close-line" />
-        </IconButton>
-      </DialogTitle>
+    <Formik
+      initialValues={initialValues}
+      onSubmit={async (values) => {
+        await createMovement(values)
+        onClose(true)
+      }}
+    >
 
-      <Formik
-        initialValues={initialValues}
-        onSubmit={async (values) => {
-          await createMovement(values)
-          onClose(true)
-        }}
-      >
-        {({ values, setFieldValue, errors, touched, isSubmitting }) => {
-          // Atualiza parcelas sempre que campos relacionados mudarem
-          useEffect(() => {
-            const { amountTotal, startDate, numParcelas, interval, customDays } = values;
-            if (!amountTotal || !startDate || !numParcelas) return;
+      {({ values, setFieldValue, errors, touched, isSubmitting }) => {
+        // Atualiza parcelas sempre que campos relacionados mudarem
+        useEffect(() => {
+          const { amountTotal, startDate, numParcelas, interval, customDays } = values;
+          if (!amountTotal || !startDate || !numParcelas) return;
 
-            const total = parseFloat(amountTotal);
-            const baseAmount = +(total / numParcelas).toFixed(2);
-            const diff = +(total - baseAmount * numParcelas).toFixed(2);
+          const total = parseFloat(amountTotal);
+          const baseAmount = +(total / numParcelas).toFixed(2);
+          const diff = +(total - baseAmount * numParcelas).toFixed(2);
 
-            const list = [];
-            for (let i = 0; i < numParcelas; i++) {
+          const list = [];
+          for (let i = 0; i < numParcelas; i++) {
 
-              console.log(startDate)
+            console.log(startDate)
 
-              const dueDate = getDueDate(startDate, i, interval, customDays);
-              const amount = i === numParcelas - 1 ? +(baseAmount + diff).toFixed(2) : baseAmount;
+            const dueDate = getDueDate(startDate, i, interval, customDays);
+            const amount = i === numParcelas - 1 ? +(baseAmount + diff).toFixed(2) : baseAmount;
 
-              console.log(amount)
+            console.log(amount)
 
-              list.push({
-                installment: i + 1,
-                amount,
-                dueDate,
-                digitableLine: '',
-                boletoNumber: '',
-              });
-            }
+            list.push({
+              installment: i + 1,
+              amount,
+              dueDate,
+              digitableLine: '',
+              boletoNumber: '',
+            });
+          }
 
-            setFieldValue('installments', list);
+          setFieldValue('installments', list);
 
-          }, [values.amountTotal, values.numParcelas, values.startDate, values.interval, values.customDays]);
+        }, [values.amountTotal, values.numParcelas, values.startDate, values.interval, values.customDays]);
 
-          return (
-            <Form>
+        return (
+          <Form>
+
+            <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth={'lg'} scroll="paper">
+
+              <DialogTitle>
+                Adicionar pagamento
+                <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
+                  <i className="ri-close-line" />
+                </IconButton>
+              </DialogTitle>
+
               <DialogContent>
-
+                
                 <Grid container direction="row" spacing={2}>
 
                   <Grid item size={{xs: 12, sm: FIELD_SIZE.documentNumber}}>
@@ -238,7 +241,6 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     )}
                   </Grid>
                 )}
-
 
                 <Grid container direction="row" spacing={2}>
 
@@ -373,12 +375,16 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   </Table>
                 )}
-                
+                                      
               </DialogContent>
-
+              
               <DialogActions>
-                <Button variant="contained" type="submit" disabled={isSubmitting || values.installments.length === 0}>
-                  {isSubmitting ? (
+                <Button
+                  variant="contained"
+                  type="submit"
+                  disabled={isSubmitting || values.installments.length === 0}
+                >
+                  {false ? (
                     <>
                       <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
                       Salvando...
@@ -388,12 +394,13 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   )}
                 </Button>
               </DialogActions>
-            </Form>
-          );
-        }}
-      </Formik>
-    </Dialog>
-  );
+          
+            </Dialog>
+          </Form>
+        )
+      }} 
+    </Formik>
+  )
 }
 
 const EditInstallment = ({ installmentId, onClose }) => {

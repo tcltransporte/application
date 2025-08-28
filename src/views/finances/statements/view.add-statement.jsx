@@ -116,7 +116,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
 
             <Box>
               <Field
-                as={AutoComplete}
+                component={AutoComplete}
                 name="bankAccount"
                 label="Conta bancária"
                 text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}

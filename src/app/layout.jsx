@@ -25,8 +25,8 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'Materialize - Material Next.js Admin Template',
-  description: 'Materialize - Material Next.js Admin Template'
+  title: 'Sistema',
+  description: 'Gestão empresarial'
 }
 
 const RootLayout = async ({ children }) => {

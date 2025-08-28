@@ -180,7 +180,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
       <Dialog open={statementId !== undefined && !loading} onClose={onClose} fullWidth maxWidth="lg" scroll="paper" slotProps={{ paper: { sx: { position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', margin: 0, maxHeight: 'calc(100vh - 64px)' } } }} >
         <DialogTitle sx={styles.dialogTitle}> Extrato detalhado <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large"> <i className="ri-close-line" /> </IconButton> </DialogTitle>
         <DialogContent>
-          <Table size="small">
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">
@@ -229,7 +229,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
                 return (
                   <Fragment key={data.id || index}>
-                    <TableRow className="with-hover-actions" hover style={{cursor: 'pointer'}}>
+                    <TableRow className="with-hover-actions" hover style={{cursor: 'pointer'}} onDoubleClick={() => toggleExpand(index)}>
                       <TableCell padding="checkbox">
                         <Checkbox
                           color="primary"
@@ -307,9 +307,38 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           </Table>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'space-between' }}>
-          <div></div>
-            {/*<IconButton onClick={handleOpenFilterDialog} size="small" > <i className="ri-filter-line" /> </IconButton>*/}
-            <div> <Button variant="text" onClick={onClose}>Desconciliar</Button> <Button variant="contained" color="success" onClick={onClose} sx={{ ml: 1 }}>Conciliar</Button> </div>
+          <div>
+            {selectedStatements.size > 0 && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<i className="ri-delete-bin-line" style={{ fontSize: 18 }} />}
+                onClick={() => alert(1)}
+              >
+                Excluir
+              </Button>
+            )}
+          </div>
+          <div>
+            <Button
+              variant="text" 
+              onClick={onClose} 
+              startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />}
+            >
+              Desconciliar
+            </Button>
+
+            <Button
+              variant="contained" 
+              color="success" 
+              onClick={onClose} 
+              sx={{ ml: 1 }}
+              startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}
+            >
+              Conciliar
+            </Button>
+          </div>
+
         </DialogActions>
       </Dialog>
       
