@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import styled from 'styled-components'
-import { IconButton, InputAdornment, TextField } from '@mui/material'
+import { IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material'
 
 const AutocompleteContainer = styled.div`
   position: relative;
@@ -42,6 +42,11 @@ export const AutoComplete = (props) => {
   const inputRef = useRef()
   const selectedItemRef = useRef()
 
+  
+  const rawError = (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0) ? props.form?.errors?.[props.field?.name] : undefined
+  const errorMessage = rawError && rawError !== `${props.field?.name} is a required field` ? rawError : undefined
+  const showError = Boolean(rawError)
+
   const [state, setState] = useState({
     loading: false,
     nothing: false,
@@ -67,15 +72,11 @@ export const AutoComplete = (props) => {
 
   const handleInputChange = async (e) => {
     try {
-    
-      if (props.value || props.field.value) {
-        return
-      }
+      if (props.value || props.field?.value) return
 
       const query = e?.target?.value
-    
       updateBoxPosition()
-      
+
       setState(prev => ({
         ...prev,
         query,
@@ -83,6 +84,7 @@ export const AutoComplete = (props) => {
         loading: true,
         nothing: false
       }))
+
       const data = await props.onSearch(query)
       setState(prev => ({
         ...prev,
@@ -90,17 +92,15 @@ export const AutoComplete = (props) => {
         nothing: data.length === 0
       }))
 
-      // Se estiver em Formik, atualiza o valor do campo
       if (props.form && props.field) {
         props.form.setFieldValue(props.field.name, null) // reset temporário enquanto digita
       }
     } catch (error) {
-      
+      console.error(error)
     } finally {
       setState(prev => ({ ...prev, loading: false }))
     }
   }
-
 
   const handleKeyDown = (e) => {
     const { selectedIndex, data, nothing } = state
@@ -118,8 +118,7 @@ export const AutoComplete = (props) => {
       }))
     } else if (e.key === 'Enter' && selectedIndex !== -1 && data[selectedIndex]) {
       e.preventDefault()
-      const item = data[selectedIndex]
-      handleSuggestionClick(item)
+      handleSuggestionClick(data[selectedIndex])
     } else if (e.key === 'Escape') {
       if (data.length > 0 || nothing) {
         e.preventDefault()
@@ -129,45 +128,33 @@ export const AutoComplete = (props) => {
   }
 
   const handleSuggestionClick = (item) => {
-
-    //Formik
     if (props.form?.setFieldValue) {
-      props.form?.setFieldValue(props.field?.name, item)
+      props.form.setFieldValue(props.field?.name, item)
     }
 
-    //Pure
     if (props.onChange) {
       props.onChange(item)
     }
 
     setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
-
     inputRef.current?.focus()
-
   }
 
   const handleClickOutside = (event) => {
-    
     if (!ref.current?.contains(event.target)) {
       setState(prev => ({ ...prev, data: [], nothing: false }))
     }
-
   }
 
   const handleClear = () => {
-
     if (props.form?.setFieldValue) {
-      props.form?.setFieldValue(props.field?.name, null)
+      props.form.setFieldValue(props.field?.name, null)
     }
-
     if (props.onChange) {
       props.onChange(null)
     }
-
     setState(prev => ({ ...prev, query: '' }))
-
     inputRef.current?.focus()
-
   }
 
   const handleSearch = async () => {
@@ -182,14 +169,21 @@ export const AutoComplete = (props) => {
 
   useEffect(() => {
     if (selectedItemRef.current) {
-      selectedItemRef.current.scrollIntoView({
-        block: 'center',
-        behavior: 'smooth',
-      })
+      selectedItemRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }, [state.selectedIndex])
 
   const { query, data, selectedIndex, loading, nothing, boxPosition } = state
+
+  const fieldName = props.field?.name
+  const form = props.form
+  
+  const helperText = rawError && rawError !== `${fieldName} is a required field` ? rawError : ''
+  const error = Boolean(rawError)
+
+  const valueText = props.field
+    ? props.field.value ? props.text(props.field.value) : query
+    : props.value ? props.text(props.value) : query
 
   const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
     <SuggestionsBox style={{
@@ -217,63 +211,43 @@ export const AutoComplete = (props) => {
 
   return (
     <AutocompleteContainer ref={ref}>
-      <TextField
+      <MuiTextField
         autoComplete="off"
         size={props.size ?? 'small'}
         inputRef={inputRef}
-        name={props.name}
+        name={fieldName ?? props.name}
         label={props.label}
         variant={props.variant ?? 'filled'}
-        slotProps={
-          { 
-            inputLabel: { shrink: true },
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  {loading ? (
-                    <IconButton size="small" edge="end" disabled>
-                      <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
-                    </IconButton>
-                  ) : (props.field ? props.field.value : props.value) ? (
-                    <IconButton
-                      size="small"
-                      edge="end"
-                      onClick={handleClear}
-                      disabled={props.disabled}
-                    >
-                      <i className="ri-close-line" style={{ fontSize: 20 }} />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      size="small"
-                      edge="end"
-                      onClick={handleSearch}
-                    >
-                      <i className="ri-search-line" style={{ fontSize: 20 }} />
-                    </IconButton>
-                  )}
-                </InputAdornment>
-              )
-            }
-          }
-        }
-        placeholder={props.placeholder}
-        value={
-          props.field
-            ? (props.field.value ? props.text(props.field.value) : query) // quando for Formik
-            : (props.value ? props.text(props.value) : query)                         // quando for standalone
-        }
-        fullWidth
+        value={valueText}
         onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        autoFocus={props.autoFocus}
-        onBlur={() => {
-          if (!props.value && query) {
-            setState(prev => ({ ...prev, query: '' }))
-          }
+        onBlur={(e) => {
+          props.field?.onBlur(e)
+          if (!props.value && query) setState(prev => ({ ...prev, query: '' }))
         }}
-        error={props.error}
-        helperText={props.helperText}
+        onKeyDown={handleKeyDown}
+        placeholder={props.placeholder}
+        fullWidth
+        error={showError}
+        helperText={errorMessage}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              {loading ? (
+                <IconButton tabIndex={-1} size="small" edge="end" disabled>
+                  <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
+                </IconButton>
+              ) : (props.field?.value ? (
+                <IconButton tabIndex={-1} size="small" edge="end" onClick={handleClear} disabled={props.disabled}>
+                  <i className="ri-close-line" style={{ fontSize: 20 }} />
+                </IconButton>
+              ) : (
+                <IconButton tabIndex={-1} size="small" edge="end" onClick={handleSearch}>
+                  <i className="ri-search-line" style={{ fontSize: 20 }} />
+                </IconButton>
+              ))}
+            </InputAdornment>
+          )
+        }}
         disabled={props.disabled}
       />
 
@@ -281,6 +255,5 @@ export const AutoComplete = (props) => {
     </AutocompleteContainer>
   )
 }
-
 
 export default AutoComplete
