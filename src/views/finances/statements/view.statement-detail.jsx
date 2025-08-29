@@ -19,7 +19,7 @@ import _ from 'lodash'
 
 // --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
 import { AutoComplete } from '@/components/field/AutoComplete'
-import { getFinancialCategory, getPartner, getUser } from '@/utils/search'
+import { getBankAccounts, getFinancialCategory, getPartner, getUser } from '@/utils/search'
 import { ViewVinculePayment } from './view.vincule-payment'
 import { ViewVinculeReceivement } from './view.vincule-receivement'
 import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller'
@@ -532,7 +532,7 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
     };
 
     return (
-        <Formik initialValues={initialValues || { type: '', partner: null, category: null, amount: '', fee: '', discount: '' }} validationSchema={validationSchema} enableReinitialize={true} onSubmit={handleSubmitInternal} >
+        <Formik initialValues={initialValues || { type: '', partner: null, category: null, bankAccount: null, amount: '', fee: '', discount: '' }} validationSchema={validationSchema} enableReinitialize={true} onSubmit={handleSubmitInternal} >
         {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue, setFieldTouched }) => (
             <TableRow sx={{ backgroundColor: '#fafafa' }}>
                 <TableCell padding="checkbox">
@@ -584,10 +584,28 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
                       </AutoComplete>
                     </>
                   )}
+
+                  {(values.type === 'transfer') && (
+                    <>
+                      <AutoComplete 
+                        variant="outlined"
+                        placeholder="Origem"
+                        value={values.bankAccount}
+                        text={(bankAccount) => bankAccount.description}
+                        onChange={(bankAccount) => setFieldValue('bankAccount', bankAccount)}
+                        onSearch={(search) => getBankAccounts(search, values.type)}
+                        onBlur={() => setFieldTouched('bankAccount', true)}
+                        error={touched.bankAccount && Boolean(errors.bankAccount)}
+                        helperText={touched.bankAccount && errors.bankAccount}
+                        sx={{backgroundColor: '#fff'}}>
+                          {(item) => <span>{item.description}</span>}
+                      </AutoComplete>
+                    </>
+                  )}
                 </TableCell>
-                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} />}</TableCell>
-                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
-                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field as={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{backgroundColor: '#fff'}} />}</TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
+                <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={3}>
                   {values.type &&
                     <>
