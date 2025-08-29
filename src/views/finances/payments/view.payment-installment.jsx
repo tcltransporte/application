@@ -105,7 +105,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
         }}
       >
         {({ values, setFieldValue, isSubmitting }) => {
-          // Atualiza parcelas sempre que campos relacionados mudarem
+          
           useEffect(() => {
             const { amountTotal, startDate, installment, interval, customDays } = values;
             if (!amountTotal || !startDate || !installment) return;
@@ -116,7 +116,6 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
             const list = [];
             for (let i = 0; i < installment; i++) {
-
               const dueDate = getDueDate(startDate, i, interval, customDays);
               const amount = i === installment - 1 ? +(baseAmount + diff).toFixed(2) : baseAmount;
 
@@ -133,7 +132,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
             setFieldValue('installments', list);
 
-          }, [values.amountTotal, values.installment, values.startDate, values.interval, values.customDays]);
+          }, [values.amountTotal, values.installment, values.startDate, values.interval, values.customDays, setFieldValue]);
 
           return (
             <Form>
@@ -199,6 +198,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       <Field
                         component={TextField}
                         name="installment"
+                        onChange={(i) => setFieldValue('installment', i)}
                         label="Parcelas"
                         select
                       >
@@ -340,7 +340,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     </Grid>
                   </Grid>
 
-                  {values.installments > 1 && (
+                  {_.size(values.installments) > 1 && (
                     <Table size="small" sx={{ mt: 5 }}>
                       <TableHead>
                         <TableRow>
