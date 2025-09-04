@@ -8,11 +8,35 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
 
-export async function findAll({limit, offset}) {
-    
+export async function findAll({limit, offset, date}) {
+
+  console.log(date)
+
     const session = await getServerSession(authOptions)
 
     const db = new AppContext()
+
+    const whereClauses = []
+
+    whereClauses.push({'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial})
+
+    // Filtro por data de vencimento
+    if (date?.begin && date?.end) {
+      whereClauses.push({
+        [Sequelize.Op.or]: [
+          {
+            begin: {
+              [Sequelize.Op.between]: [date.begin, date.end]
+            }
+          },
+          {
+            end: {
+              [Sequelize.Op.between]: [date.begin, date.end]
+            }
+          }
+        ]
+      })
+    }
 
     const statements = await db.Statement.findAndCountAll({
         include: [
@@ -20,9 +44,7 @@ export async function findAll({limit, offset}) {
                 {model: db.Bank, as: 'bank'}
             ]}
         ],
-        where: [
-            {'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial}
-        ],
+        where: whereClauses,
         order: [['createdAt', 'DESC']],
         limit,
         offset
@@ -32,7 +54,7 @@ export async function findAll({limit, offset}) {
 
     return {
         request: {
-            limit, offset
+            limit, offset, date
         },
         response: {
             count: statements.count,
@@ -96,6 +118,8 @@ export async function findOne({ statementId }) {
     allEntryTypes
   }
 
+  console.log(response)
+
   return response;
 
 }
@@ -108,11 +132,13 @@ export async function create(formData) {
 
   await db.transaction(async (transaction) => {
 
+    /*
     const archive = await db.Archive.create({
       name: "mercado-livre.csv",
       type: "text/csv",
       content: content
     })
+    */
 
     const statement = await db.Statement.create({
         companyId: session.company.codigo_empresa_filial,
@@ -120,7 +146,7 @@ export async function create(formData) {
         bankAccountId: formData.bankAccount.codigo_conta_bancaria,
         begin: format(fromZonedTime(formData.statement.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
         end: format(fromZonedTime(formData.statement.end, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
-        archiveId: archive.id,
+        //archiveId: archive.id,
         isActive: true
     }, {transaction})
 

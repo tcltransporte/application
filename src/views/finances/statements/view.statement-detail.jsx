@@ -229,10 +229,13 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                   }
                 };
 
+                console.log(data.entryDate)
+
                 return (
                   <Fragment key={data.id || index}>
                     <TableRow
                       className="with-hover-actions"
+                      style={{cursor: 'pointer'}}
                       hover
                       onDoubleClick={() => toggleExpand(index)}>
                       <TableCell padding="checkbox">
@@ -244,7 +247,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         />
                       </TableCell>
                       <TableCell style={{ width: '140px' }}>{data.sourceId}</TableCell>
-                      <TableCell>{data.entryDate != null ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                      <TableCell>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
                       <TableCell>{data.reference}</TableCell>
                       <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.fee)}</TableCell>

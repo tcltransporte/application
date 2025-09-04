@@ -13,6 +13,8 @@ import _ from 'lodash'
 
 export const ViewFinancesStatements = ({ initialStatements }) => {
 
+  console.log(initialStatements)
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -30,6 +32,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
     try {
       setIsFetching(true)
       const response = await statements2.findAll(request)
+      console.log(response)
       setStatements(response)
       //setSelectedIds(new Set()) // limpa seleção ao buscar nova página
     } catch (error) {
@@ -37,6 +40,18 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
     } finally {
       setIsFetching(false)
     }
+  }
+
+  const handlePeriodChange = (dateRange) => {
+
+    fetchStatements({
+      ...statements.request,
+      offset: 0,
+      date: {
+        begin: dateRange[0],
+        end: dateRange[1],
+      },
+    })
   }
 
   const handleEdit = ({statementId}) => {
@@ -60,12 +75,12 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
           <Box sx={{ display: 'flex', gap: 1 }}>
 
             <RangeFilter
-              title="Vencimento"
+              title="Data"
               initialDateRange={[
-                //new Date(installments.request?.dueDate?.start),
-                //new Date(installments.request?.dueDate?.end),
+                statements.request?.date?.begin,
+                statements.request?.date?.end,
               ]}
-              //onChange={handlePeriodChange}
+              onChange={handlePeriodChange}
             />
 
             {/*<Filter />*/}
@@ -125,6 +140,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                         //aria-checked={isItemSelected}
                         //selected={isItemSelected}
                         sx={{ cursor: 'pointer' }}
+                        className="with-hover-actions"
                       >
                         <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
@@ -155,9 +171,9 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                         <TableCell>{format(statement.end, 'dd/MM/yyyy HH:mm')}</TableCell>
                         <TableCell>{statement.isActive ? 'Pendente' : 'Excluído'}</TableCell>
                         <TableCell align="center">
-                          <div className="action-buttons">
-                            <Tooltip title="Editar">
-                              <IconButton onClick={() => handleEdit({statementId: statement.id})}>
+                          <Box className="row-actions">
+                              <Tooltip title="Editar">
+                                <IconButton onClick={() => handleEdit({statementId: statement.id})}>
                                 <i className="ri-edit-2-line text-lg" />
                               </IconButton>
                             </Tooltip>
@@ -166,7 +182,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                                 <i className="ri-delete-bin-line text-lg" />
                               </IconButton>
                             </Tooltip>
-                          </div>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     )

@@ -8,44 +8,62 @@ import { getServerSession } from "next-auth"
 
 export async function getTinyPartner(search) {
   
+    const session = await getServerSession(authOptions)
+
     const db = new AppContext()
 
-    await db.transaction(async (transaction) => {
-
-      const token = '23a552cec9aa74bb452efbc9f56c63d4e8dc72ec1377d41bca32f2e4b58cc871'
-      const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${token}&formato=json&pesquisa=${search}`
-
-      const response = await fetch(url, { method: 'GET' })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const r = await response.json()
-
-      const externalIdsFromApi = _.map(r.retorno.contatos, item => _.get(item, 'contato.id'))
-  
-      const existingPartners = await db.Partner.findAll({
-        where: {
-          externalId: externalIdsFromApi,
+    const companyIntegration = await db.CompanyIntegration.findOne({
+      attributes: ['options'],
+      where: [
+        {
+          integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07',
+          companyId: session.company.codigo_empresa_filial,
         },
-        transaction,
-        attributes: ['externalId'],
-      })
-  
-      const existingExternalIds = existingPartners.map((p) => p.externalId)
-  
-      const newPartners = _(r.retorno.contatos)
-        .filter(item => !_.includes(existingExternalIds, _.get(item, 'contato.id')))
-        .map(item => ({
-          externalId: _.get(item, 'contato.id'),
-          surname: _.get(item, 'contato.nome'),
-        }))
-        .value()
-  
-      if (newPartners.length > 0) {
-        await db.Partner.bulkCreate(newPartners, { transaction })
-      }
-  
+      ],
     })
+
+    if (companyIntegration) {
+
+      const options = JSON.parse(companyIntegration.options)
+
+      await db.transaction(async (transaction) => {
+
+        const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${options.token}&formato=json&pesquisa=${search}`
+
+        const response = await fetch(url, { method: 'GET' })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const r = await response.json()
+
+        const externalIdsFromApi = _.map(r.retorno.contatos, item => _.get(item, 'contato.id'))
+    
+        const existingPartners = await db.Partner.findAll({
+          where: {
+            externalId: externalIdsFromApi,
+          },
+          transaction,
+          attributes: ['externalId'],
+        })
+    
+        const existingExternalIds = existingPartners.map((p) => p.externalId)
+    
+        const newPartners = _(r.retorno.contatos)
+          .filter(item => !_.includes(existingExternalIds, _.get(item, 'contato.id')))
+          .map(item => ({
+            companyId: session.company.codigo_empresa_filial,
+            externalId: _.get(item, 'contato.id'),
+            surname: _.get(item, 'contato.nome'),
+          }))
+          .value()
+    
+        if (newPartners.length > 0) {
+          await db.Partner.bulkCreate(newPartners, { transaction })
+        }
+    
+      })
+
+    }
 
 }
 
@@ -104,13 +122,12 @@ export async function getTinyCategories(search) {
     await db.transaction(async (transaction) => {
       for (const item of retornoUnico) {
 
-        console.log(item)
-
         const externalId = String(item.id)
 
         await db.FinancialCategory.findOrCreate({
           where: { externalId },
           defaults: {
+            companyBusinessId: session.company.companyBusiness.codigo_empresa,
             code: externalId,
             account: externalId,
             description: item.desc,

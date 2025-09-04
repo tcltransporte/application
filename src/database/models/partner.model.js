@@ -20,6 +20,16 @@ export class Partner {
     type: DataTypes.STRING
   }
 
+  companyBusinessId = {
+    field: 'companyBusinessId',
+    type: DataTypes.INTEGER
+  }
+
+  companyId = {
+    field: 'companyId',
+    type: DataTypes.SMALLINT
+  }
+
   companyIntegrationId = {
     field: 'companyIntegrationId',
     type: DataTypes.UUIDV4

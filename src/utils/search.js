@@ -80,25 +80,27 @@ export async function getUser (search) {
 
 export async function getPartner(search) {
 
-  const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions);
 
-  //await getTinyPartner(search)
+    //await getTinyPartner(search)
 
-  const db = new AppContext();
+    const db = new AppContext();
 
-  const partners = await db.Partner.findAll({
-    attributes: ['codigo_pessoa', 'surname'],
-    order: [['surname', 'asc']],
-    where: {
-        surname: {
-            [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%`
-        }
-    },
-    limit: 20,
-    offset: 0,
-  });
+    const where = []
 
-  return partners.map((item) => item.get({ plain: true }));
+    where.push({ '$nome$': { [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
+
+    where.push({ '$companyId$': session.company.codigo_empresa_filial })
+
+    const partners = await db.Partner.findAll({
+        attributes: ['codigo_pessoa', 'surname'],
+        order: [['surname', 'asc']],
+        where: where,
+        limit: 20,
+        offset: 0,
+    });
+
+    return partners.map((item) => item.get({ plain: true }));
 
 }
 

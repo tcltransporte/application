@@ -19,7 +19,7 @@ export class StatementData {
     field: 'entryDate',
     type: DataTypes.STRING,
     get() {
-      return DateFormatUTC(this.getDataValue('entryDate'))
+      return this.getDataValue('entryDate') ? DateFormatUTC(this.getDataValue('entryDate')) : null
     }
   }
 

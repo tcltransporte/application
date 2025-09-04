@@ -17,7 +17,7 @@ export async function getCategories() {
 
   const where = []
 
-  where.push({'$idEmpresa$': session.company.companyBusinessId})
+  where.push({'$idEmpresa$': session.company.companyBusiness.codigo_empresa})
 
   const categories = await db.FinancialCategory.findAll({
     attributes: ['id', 'description', 'operation'],

@@ -4,6 +4,9 @@ import { AppContext } from "@/database";
 import { format, fromZonedTime } from "date-fns-tz";
 import csv from 'csvtojson';
 import { addDays } from "date-fns";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/libs/auth";
+import _ from "lodash";
 
 export async function authorization({companyIntegrationId}) {
 
@@ -49,6 +52,17 @@ export async function authorization({companyIntegrationId}) {
 
 export async function getStatements({companyIntegrationId}) {
 
+    const db = new AppContext()
+
+    
+    const session = await getServerSession(authOptions)
+    
+
+    const ids = await db.Statement.findAll({attributes: ['sourceId'], where: [{'$companyId$': session.company.codigo_empresa_filial}]})
+
+    const sourceIds = _.map(ids, (item) => Number(item.sourceId))
+    
+
     const token = await authorization({companyIntegrationId})
 
     const response = await fetch('https://api.mercadopago.com/v1/account/release_report/list', {
@@ -67,7 +81,12 @@ export async function getStatements({companyIntegrationId}) {
 
     const statement = []
 
-    for (const item of data) {
+    console.log(sourceIds)
+
+    const filteredData = data.filter((item) => !sourceIds.includes(item.id))
+
+    for (const item of filteredData) {
+        console.log(item)
         statement.push({
             sourceId: item.id,
             fileName: item.file_name,
