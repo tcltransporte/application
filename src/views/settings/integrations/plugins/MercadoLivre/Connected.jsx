@@ -2,9 +2,9 @@
 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Successfully } from "../.."
 import axios from "axios"
 import { MercadoLivreConnect } from "@/app/server/settings/integrations/mercado-livre/index.controller"
+import Successfully from "./Successfully"
 
 const ErrorComponent = ({ message }) => (
   <div style={{ color: 'red' }}>Ocorreu um erro: {message || "Erro desconhecido"}</div>
@@ -29,7 +29,7 @@ export const Connected = () => {
 
       try {
         // Chamada ao endpoint server-side que troca o code pelo token
-        MercadoLivreConnect({refresh_token: code})
+        await MercadoLivreConnect({refresh_token: code})
         setSuccess(true)
       } catch (err) {
         console.error(err)
@@ -40,7 +40,8 @@ export const Connected = () => {
     }
 
     connect()
-  }, [searchParams])
+
+  }, [])
 
   if (loading) return <LoadingComponent />
   if (error) return <ErrorComponent message={error} />

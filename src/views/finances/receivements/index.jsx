@@ -6,7 +6,7 @@ import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Bo
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { RangeFilter } from '@/components/RangeFilter'
-import { getPayments } from '@/app/server/finances/payments/index.controller'
+import * as payments from '@/app/server/finances/payments'
 
 import { styles } from '@/components/styles'
 import _ from 'lodash'
@@ -81,7 +81,7 @@ export const ViewFinancesReceivements = ({ initialPayments = [] }) => {
   const fetchPayments = async (request) => {
     try {
       setIsFetching(true)
-      const response = await getPayments(request)
+      const response = await payments.findAll(request)
       setInstallments(response)
       setSelectedIds(new Set())
     } catch (error) {

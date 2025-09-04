@@ -3,6 +3,7 @@
 import { AppContext } from "@/database";
 import { format, fromZonedTime } from "date-fns-tz";
 import csv from 'csvtojson';
+import { addDays } from "date-fns";
 
 export async function authorization({companyIntegrationId}) {
 
@@ -17,8 +18,8 @@ export async function authorization({companyIntegrationId}) {
     const params = new URLSearchParams();
 
     params.append('grant_type', 'refresh_token')
-    params.append('client_id', '1928835050355270')
-    params.append('client_secret', 'HS4Bo6e3KHgQF8jpRZvGg7zXjWFv7ybi')
+    params.append('client_id', '4404783242240588')
+    params.append('client_secret', 'XZKpfqhCIQjvnLk9DnRA4f7UHOs3OC5c')
     params.append('refresh_token', options.refresh_token)
 
     console.log(options.refresh_token)
@@ -98,7 +99,7 @@ export async function getStatement({companyIntegrationId, fileName}) {
 
     const csvText = await response.text()
 
-    const json = await csv().fromString(csvText)
+    const json = await csv({ delimiter: ";" }).fromString(csvText);
 
     //const jsonData = JSON.stringify(json, null, 2)
 
@@ -134,5 +135,46 @@ export async function getStatement({companyIntegrationId, fileName}) {
     }
 
     return statements
+
+}
+
+export async function addStatement({companyIntegrationId, date}) {
+
+    //await Auth.verify(req, res).then(async({options, companyId}) => {
+
+    //  await MercadoPago.verify(options, companyId).then(async ({id, access_token}) => {
+
+        try {
+
+            const token = await authorization({companyIntegrationId})
+
+            const data = {
+                begin_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'"),
+                end_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'")
+            }
+
+            const response = await fetch("https://api.mercadopago.com/v1/account/release_report", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token.access_token}`
+                },
+                body: JSON.stringify(data)
+            })
+
+            if (!response.ok) {
+                throw new Error(`Erro: ${response.status} - ${response.statusText}`)
+            }
+
+        } catch (error) {
+          throw new Error(error.message)
+        }
+    //  }).catch((error) => {
+    //    MercadoLivreException.unauthorized(res, error);
+    //  });
+      
+    //}).catch((error) => {
+    //  Exception.unauthorized(res, error);
+    //});
 
 }

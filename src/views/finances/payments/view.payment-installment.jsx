@@ -20,7 +20,7 @@ const FIELD_SIZE = {
 	issueDate: 2,
   dueDate: 2,
   scheduledDate: 2,
-	amountTotal: 2,
+	amount: 2,
 	installments: 1.9,
 
   receiver: 5.1,
@@ -57,7 +57,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
   const initialValues = {
     company: session.data.company,
     documentNumber: '',
-    amountTotal: '',
+    amount: '',
     installment: 1,
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     startDate: format(new Date(), 'yyyy-MM-dd'),
@@ -91,7 +91,6 @@ const NewInstallment = ({ installmentId, onClose }) => {
   };
 
   return (
-    <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth={'lg'} scroll="paper">
 
       <Formik
         initialValues={initialValues}
@@ -107,10 +106,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
         {({ values, setFieldValue, isSubmitting }) => {
           
           useEffect(() => {
-            const { amountTotal, startDate, installment, interval, customDays } = values;
-            if (!amountTotal || !startDate || !installment) return;
+            const { amount, startDate, installment, interval, customDays } = values;
+            if (!amount || !startDate || !installment) return;
 
-            const total = parseFloat(amountTotal);
+            const total = parseFloat(amount);
             const baseAmount = +(total / installment).toFixed(2);
             const diff = +(total - baseAmount * installment).toFixed(2);
 
@@ -128,15 +127,15 @@ const NewInstallment = ({ installmentId, onClose }) => {
               });
             }
 
-            console.log(list)
-
             setFieldValue('installments', list);
 
-          }, [values.amountTotal, values.installment, values.startDate, values.interval, values.customDays, setFieldValue]);
+          }, [values.amount, values.installment, values.startDate, values.interval, values.customDays, setFieldValue]);
 
           return (
-            <Form>
+            <Dialog open={installmentId == null} onClose={() => onClose(false)} maxWidth={'lg'} scroll="paper">
 
+              <Form>
+          
                 <DialogTitle>
                   Adicionar pagamento
                   <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
@@ -186,11 +185,11 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       />
                     </Grid>
 
-                    <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.amount}}>
                       <Field
                         component={NumericField}
                         label="Valor"
-                        name="amountTotal"
+                        name="amount"
                       />
                     </Grid>
 
@@ -392,12 +391,13 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   </Button>
                 </DialogActions>
             
-            </Form>
+              </Form>
+            
+            </Dialog>
           )
         }} 
       </Formik>
       
-    </Dialog>
   )
 }
 
@@ -436,8 +436,8 @@ const EditInstallment = ({ installmentId, onClose }) => {
     financialCategory: installment?.financialMovement?.financialCategory || null,
     amount: installment?.amount || 0,
     digitableLine: installment?.boleto?.digitableLine || "",
-    issueDate: installment?.financialMovement?.issueDate || "",
-    dueDate: installment?.dueDate || "",
+    issueDate: installment?.financialMovement?.issueDate ? format(new Date(installment.financialMovement.issueDate), "yyyy-MM-dd") : null,
+    dueDate: installment?.dueDate,
     boletoNumber: installment?.boleto?.number || "",
     observation: installment?.observation || "",
   };
@@ -504,7 +504,6 @@ const EditInstallment = ({ installmentId, onClose }) => {
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.issueDate}}>
                       <Field
                         component={TextField}
-                        type="date"
                         name="issueDate"
                         label="Emissão"
                         readOnly
@@ -531,10 +530,10 @@ const EditInstallment = ({ installmentId, onClose }) => {
                       />
                     </Grid>
 
-                    <Grid item size={{xs: 12, sm: FIELD_SIZE.amountTotal}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.amount}}>
                       <Field
                         component={NumericField}
-                        type="text"
+                        type="number"
                         name="amount"
                         label="Valor"
                       />

@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
@@ -218,6 +218,32 @@ export async function update(formData) {
 
 }
 
+export async function concile(id = []) {
+ 
+  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=${
+    company.dataValues.tiny.token
+  }&conta=${encodeURIComponent(
+    JSON.stringify({
+      conta: {
+        id: item.dataValues.payment.sourceId,
+        data: dayjs(item.statementData?.date).format("DD/MM/YYYY"),
+        contaOrigem: "Mercado Pago",
+        valorPago: parseFloat(item?.amount) * -1,
+        historico: historico
+      }
+    })
+  )}&formato=JSON`
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  })
+
+  const baixado = await response.json()
+
+}
 
 export async function destroy({ codigo_conta_bancaria }) {
   const session = await getServerSession(authOptions)

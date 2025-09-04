@@ -46,17 +46,17 @@ export class StatementDataConciled {
     type: DataTypes.STRING(30)
   }
 
-  /*
   originId = {
     field: 'originId',
-    type: DataTypes.UUIDV4
+    type: DataTypes.SMALLINT
   };
 
   destinationId = {
     field: 'destinationId',
-    type: DataTypes.UUIDV4
+    type: DataTypes.SMALLINT
   };
 
+/*
   transferId = {
     field: 'transferId',
     type: DataTypes.STRING(6)

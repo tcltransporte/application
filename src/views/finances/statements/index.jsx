@@ -5,7 +5,7 @@ import { Button, Paper, Table, TableHead, TableRow, TableCell, TableBody, IconBu
 import { format } from 'date-fns'
 import { ViewAddStatement } from './view.add-statement'
 import { ViewStatementDetail } from './view.statement-detail'
-import { getStatements } from '@/app/server/finances/statements/index.controller'
+import * as statements2 from '@/app/server/finances/statements'
 import { useTitle } from '@/contexts/TitleProvider'
 import { styles } from '@/components/styles'
 import { RangeFilter } from '@/components/RangeFilter'
@@ -29,7 +29,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
   const fetchStatements = async (request) => {
     try {
       setIsFetching(true)
-      const response = await getStatements(request)
+      const response = await statements2.findAll(request)
       setStatements(response)
       //setSelectedIds(new Set()) // limpa seleção ao buscar nova página
     } catch (error) {

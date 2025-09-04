@@ -82,7 +82,7 @@ export async function getPartner(search) {
 
   const session = await getServerSession(authOptions);
 
-  await getTinyPartner(search)
+  //await getTinyPartner(search)
 
   const db = new AppContext();
 

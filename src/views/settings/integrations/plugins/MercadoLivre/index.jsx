@@ -22,7 +22,7 @@ import {
   TextField
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
-import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
+import { addStatement, getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
 import { Successfully } from '../..'
 
 export const ID = '420E434C-CF7D-4834-B8A6-43F5D04E462A'
@@ -30,7 +30,7 @@ export const ID = '420E434C-CF7D-4834-B8A6-43F5D04E462A'
 export const Connect = () => {
 
   const handleConnect = () => {
-    window.location.href = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=1928835050355270&redirect_uri=https://vps53636.publiccloud.com.br:8081/settings/integration/mercado-livre`
+    window.location.href = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=4404783242240588&redirect_uri=https://vps53636.publiccloud.com.br:8081/settings/integration/mercado-livre`
   }
 
   return (
@@ -105,7 +105,8 @@ export const Statement = ({ data, onChange }) => {
     handleMenuClose()
   }
 
-  const handleConfirmNew = () => {
+  const handleConfirmNew = async () => {
+    await addStatement({companyIntegrationId: data.companyIntegrationId, date: dateValue})
     console.log('Data escolhida:', dateValue)
     setOpenModal(false)
     // Aqui você pode chamar sua função de criação de extrato e atualizar a lista

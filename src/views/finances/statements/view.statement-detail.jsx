@@ -22,9 +22,9 @@ import { AutoComplete } from '@/components/field/AutoComplete'
 import { getBankAccounts, getFinancialCategory, getPartner, getUser } from '@/utils/search'
 import { ViewVinculePayment } from './view.vincule-payment'
 import { ViewVinculeReceivement } from './view.vincule-receivement'
-import { deleteStatementConciled, desvinculePayment, getStatement, saveStatementConciled, vinculePayment } from '@/app/server/finances/statements/view.statement-detail.controller'
+import * as statements from '@/app/server/finances/statements'
 import { styles } from '@/components/styles'
-import { NumericField } from '@/components/field'
+import { NumericField, SelectField } from '@/components/field'
 
 // --- Funções Utilitárias (sem alterações) ---
 const entryTypeAlias = {
@@ -68,7 +68,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     if (statementId) {
         try {
             setLoading(loading);
-            const statementData = await getStatement({ statementId });
+            const statementData = await statements.findOne({ statementId });
             setOriginalData(statementData.statementData);
             const filteredData = statementData.statementData.filter((data) =>
                 statementData.entryTypes?.length > 0 ? statementData.entryTypes.includes(data.entryType) : true
@@ -135,7 +135,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const handleClosePayments = () => { setIsDrawerOpen(false); setSelectedItemId(null); };
   const handleOpenReceivements = (id) => { setSelectedItemId(id); setIsDrawerReceivement(true); };
   const handleCloseReceivements = () => { setIsDrawerReceivement(false); setSelectedItemId(null); };
-  const handleVinculePayment = async (statementDataConciledId, id) => { vinculePayment({statementDataConciledId, codigo_movimento_detalhe: id}) /* ... */ };
+  const handleVinculePayment = async (statementDataConciledId, id) => { statements.vinculePayment({statementDataConciledId, codigo_movimento_detalhe: id}) /* ... */ };
 
   const handleDesvinculePayment = async (statementDataConciledId) => { /* ... */ };
   const handleOpenFilterDialog = () => { setEntryTypeFilters(statement?.entryTypes ?? []); setShowFilterDialog(true); };
@@ -229,7 +229,10 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
                 return (
                   <Fragment key={data.id || index}>
-                    <TableRow className="with-hover-actions" hover style={{cursor: 'pointer'}} onDoubleClick={() => toggleExpand(index)}>
+                    <TableRow
+                      className="with-hover-actions"
+                      hover
+                      onDoubleClick={() => toggleExpand(index)}>
                       <TableCell padding="checkbox">
                         <Checkbox
                           color="primary"
@@ -295,7 +298,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         data={data}
                         onDesvincule={handleDesvinculePayment}
                         onViewDetails={handleOpenPayments}
-                        onStatementUpdate={() => fetchStatement(false)}
+                        onStatementUpdate={async () => await fetchStatement(false)}
                         selectedConcileds={selectedConcileds}
                         onSelectionChange={handleSelectionChange}
                       />
@@ -375,12 +378,24 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 // Este componente foi reescrito para construir um array de linhas,
 // evitando que espaços em branco no JSX quebrem a renderização da tabela.
 function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatementUpdate, selectedConcileds, onSelectionChange }) {
+
   const [newConciledInputActive, setNewConciledInputActive] = useState(false)
   const [editingConciledIndex, setEditingConciledIndex] = useState(null)
   const [editingConciledData, setEditingConciledData] = useState(null)
 
-  const handleConciliationSubmitSuccess = () => { onStatementUpdate(); setNewConciledInputActive(false); setEditingConciledIndex(null); setEditingConciledData(null); };
-  const handleCancelForm = () => { setNewConciledInputActive(false); setEditingConciledIndex(null); setEditingConciledData(null); };
+  const handleConciliationSubmitSuccess = async () => {
+    await onStatementUpdate();
+    setNewConciledInputActive(false);
+    setEditingConciledIndex(null);
+    setEditingConciledData(null); 
+  };
+
+  const handleCancelForm = () => {
+    setNewConciledInputActive(false);
+    setEditingConciledIndex(null);
+    setEditingConciledData(null);
+  };
+
   const handleAddConciled = () => { setNewConciledInputActive(true); setEditingConciledIndex(null); setEditingConciledData(null); }
   const handleStartEdit = (i, item) => { setEditingConciledIndex(i); setEditingConciledData(item); setNewConciledInputActive(false); }
   const handleDeleteConciled = async (item) => { try { await deleteStatementConciled({ id: item.id }); toast.success('Registro excluído com sucesso'); handleConciliationSubmitSuccess(); } catch (error) { toast.error(error.message); } }
@@ -471,7 +486,14 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
         />
       </TableCell>
       <TableCell id={`conciled-item-${item.id}`}>{typeDescription(item.type)}</TableCell>
-      <TableCell colSpan={2}>{item.category?.description}<br />{item.partner?.surname}</TableCell>
+      <TableCell colSpan={2}>
+        {(item.type == '1' || item.type == '2') && (
+          <>{item.partner?.surname}<br />{item.category?.description}</>
+        )}
+        {(item.type == 'transfer') && (
+          <>{item.origin?.bank?.name} - {item.origin?.agency}<br />{item.destination?.bank?.name} - {item.destination?.agency}</>
+        )}
+        </TableCell>
       <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
       <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
       <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
@@ -506,14 +528,18 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
 
 function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSubmitted, onCancel }) {
     const validationSchema = Yup.object({
-        type: Yup.string().required('Tipo é obrigatório'),
+        type: Yup.string().required(),
         partner: Yup.object().nullable().when('type', {
             is: (type) => type === 'payment' || type === 'receivement',
             then: (schema) => schema.required('Parceiro é obrigatório para Pagamento/Recebimento'),
             otherwise: (schema) => schema.nullable(),
         }),
-        category: Yup.object().nullable().required('Categoria é obrigatória'),
-        amount: Yup.number().typeError('Valor deve ser um número').required('Valor é obrigatório').min(0.01, 'Valor deve ser maior que zero'),
+        category: Yup.object().nullable().when('type', {
+            is: (type) => type === 'payment' || type === 'receivement',
+            then: (schema) => schema.required('Parceiro é obrigatório para Pagamento/Recebimento'),
+            otherwise: (schema) => schema.nullable(),
+        }),
+        amount: Yup.number().typeError('Valor deve ser um número').required().min(0.01, 'Valor deve ser maior que zero'),
         fee: Yup.number().typeError('Taxa deve ser um número').min(0, 'Taxa não pode ser negativa').nullable(),
         discount: Yup.number().typeError('Desconto deve ser um número').min(0, 'Desconto não pode ser negativa').nullable(),
     });
@@ -521,9 +547,9 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
     const handleSubmitInternal = async (values, { setSubmitting }) => {
         setSubmitting(true);
         try {
-            await saveStatementConciled(statementDataId, values);
+            await statements.saveConciled(statementDataId, values);
             //toast.success('Conciliação salva com sucesso!');
-            onFormSubmitted();
+            await onFormSubmitted();
         } catch (error) {
             toast.error(error.message || 'Erro ao salvar a conciliação.');
         } finally {
@@ -555,51 +581,65 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
                   
                   {(values.type === '1' || values.type === '2') && (
                     <>
-                      <AutoComplete 
+
+                      <Field
                         variant="outlined"
+                        sx={{backgroundColor: '#fff'}}
+                        component={AutoComplete}
                         placeholder="Cliente"
-                        value={values.partner}
-                        text={(partner) => partner.surname}
-                        onChange={(partner) => setFieldValue('partner', partner)}
+                        name="partner"
+                        text={(partner) => partner?.surname}
                         onSearch={getPartner}
-                        onBlur={() => setFieldTouched('partner', true)}
-                        error={touched.partner && Boolean(errors.partner)}
-                        helperText={touched.partner && errors.partner}
-                        sx={{backgroundColor: '#fff'}}>
-                          {(item) => <span>{item.surname}</span>}
-                      </AutoComplete>
-                          
-                      <AutoComplete 
+                        renderSuggestion={(item) => (
+                            <span>{item.surname}</span>
+                        )}
+                      />
+                         
+                      <Field
                         variant="outlined"
+                        sx={{backgroundColor: '#fff'}}
+                        component={AutoComplete}
                         placeholder="Categoria"
-                        value={values.category}
-                        text={(category) => category.description}
-                        onChange={(category) => setFieldValue('category', category)}
+                        name="category"
+                        text={(category) => category?.description || ''}
                         onSearch={(search) => getFinancialCategory(search, values.type)}
-                        onBlur={() => setFieldTouched('category', true)}
-                        error={touched.category && Boolean(errors.category)}
-                        helperText={touched.category && errors.category}
-                        sx={{backgroundColor: '#fff'}}>
-                          {(item) => <span>{item.description}</span>}
-                      </AutoComplete>
+                        renderSuggestion={(item) => (
+                            <span>{item.description}</span>
+                        )}
+                      />
+
                     </>
                   )}
 
                   {(values.type === 'transfer') && (
                     <>
-                      <AutoComplete 
+
+                      <Field
                         variant="outlined"
+                        sx={{backgroundColor: '#fff'}}
+                        component={AutoComplete}
                         placeholder="Origem"
-                        value={values.bankAccount}
-                        text={(bankAccount) => bankAccount.description}
-                        onChange={(bankAccount) => setFieldValue('bankAccount', bankAccount)}
-                        onSearch={(search) => getBankAccounts(search, values.type)}
-                        onBlur={() => setFieldTouched('bankAccount', true)}
-                        error={touched.bankAccount && Boolean(errors.bankAccount)}
-                        helperText={touched.bankAccount && errors.bankAccount}
-                        sx={{backgroundColor: '#fff'}}>
-                          {(item) => <span>{item.description}</span>}
-                      </AutoComplete>
+                        name="origin"
+                        text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
+                        onSearch={getBankAccounts}
+                        renderSuggestion={(bankAccount) => (
+                            <span>{bankAccount.bank?.name} - {bankAccount.agency} / {bankAccount.number}</span>
+                        )}
+                      />
+
+                      <Field
+                        variant="outlined"
+                        sx={{backgroundColor: '#fff'}}
+                        component={AutoComplete}
+                        placeholder="Destino"
+                        name="destination"
+                        text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`}
+                        onSearch={getBankAccounts}
+                        renderSuggestion={(bankAccount) => (
+                            <span>{bankAccount.bank?.name} - {bankAccount.agency} / {bankAccount.number}</span>
+                        )}
+                      />
+
                     </>
                   )}
                 </TableCell>
@@ -607,12 +647,10 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
                 <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Taxa" name="fee" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
                 <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Desconto" name="discount" type="text" sx={{backgroundColor: '#fff'}} />} </TableCell>
                 <TableCell sx={{ p: 1 }} colSpan={3}>
-                  {values.type &&
-                    <>
-                      <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
-                      <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
-                    </>
-                  }
+                  
+                  <Tooltip title='Confirmar'><IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}</IconButton></Tooltip>
+                  <Tooltip title='Cancelar'><IconButton color="error" size="small" onClick={onCancel} disabled={isSubmitting}><i className="ri-close-line" /></IconButton></Tooltip>
+              
                 </TableCell>
             </TableRow>
         )}

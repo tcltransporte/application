@@ -151,6 +151,8 @@ export class AppContext extends Sequelize {
 
     this.StatementDataConciled.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa' })
     this.StatementDataConciled.belongsTo(this.FinancialCategory, { as: 'category', foreignKey: 'categoryId', targetKey: 'id' })
+    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'origin', foreignKey: 'originId', targetKey: 'codigo_conta_bancaria' })
+    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'destination', foreignKey: 'destinationId', targetKey: 'codigo_conta_bancaria' })
 
     
     this.Shippiment.belongsTo(this.Partner, { as: 'sender', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa' })

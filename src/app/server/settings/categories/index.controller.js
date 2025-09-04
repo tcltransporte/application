@@ -15,9 +15,14 @@ export async function getCategories() {
 
   const db = new AppContext()
 
+  const where = []
+
+  where.push({'$idEmpresa$': session.company.companyBusinessId})
+
   const categories = await db.FinancialCategory.findAll({
     attributes: ['id', 'description', 'operation'],
     order: [['description', 'asc']],
+    where,
     //limit: 20,
     //offset: 0,
   })

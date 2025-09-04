@@ -19,7 +19,7 @@ import {
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { parseISO, format } from 'date-fns'
-import { getPayments } from '@/app/server/finances/payments/index.controller'
+//import * as payments from '@/app/server/finances/payments'
 import _ from 'lodash'
 
 export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
@@ -42,7 +42,8 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const payments = await getPayments({
+      /*
+      const items = await payments.findAll({
         limit: 50,
         offset: 0,
         dueDate: {
@@ -50,7 +51,8 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
           end: '2025-06-23 23:59:59',
         },
       })
-      setPayments(payments)
+      setPayments(items)
+      */
     } finally {
       setLoading(false)
     }

@@ -12,7 +12,7 @@ import * as yup from 'yup'
 import { AutoComplete } from '@/components/field/AutoComplete'
 import { getBankAccounts } from '@/utils/search'
 import { PluginRenderer } from '@/views/settings/integrations/plugins'
-import { onSubmitChanges } from '@/app/server/finances/statements/view.add-statement.controller'
+import * as statements from '@/app/server/finances/statements'
 import _ from 'lodash'
 //import { onSubmitChanges } from './view.add-statement.controller'
 
@@ -32,7 +32,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
 
   const handleSubmit = async (values, { resetForm }) => {
     try {
-      await onSubmitChanges(values)
+      await statements.create(values)
       onSubmit()
     } catch (error) {
       console.log(error)

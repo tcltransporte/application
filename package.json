@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "dotenv -e .env.production -- next build",
+    "build:core": "dotenv -e .env.core -- next build",
     "build:tcl": "dotenv -e .env.tcl -- next build",
     "start": "next start",
     "lint": "next lint",
-    "publish": "node publish.js",
+    "publish:core": "node publish-core.js",
     "publish:tcl": "node publish-tcl.js"
   },
   "dependencies": {

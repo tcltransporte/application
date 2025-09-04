@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename)
 const publishDir = path.join(__dirname, 'publish')
 const archivePath = path.join(__dirname, 'publish.tar.gz')
 
-dotenv.config({ path: path.resolve(__dirname, '.env.production') })
+dotenv.config({ path: path.resolve(__dirname, '.env.tcl') })
 
 async function prepareBuildFolder() {
 

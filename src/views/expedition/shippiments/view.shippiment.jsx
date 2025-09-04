@@ -7,7 +7,7 @@ import * as Yup from "yup";
 import { Backdrop, CircularProgress } from "@mui/material";
 import { AutoComplete } from "@/components/field/AutoComplete";
 import { styles } from "@/components/styles";
-import { createMovement, getInstallment, submitInstallment } from "@/app/server/finances/payments/view.payment-installment.controller";
+import * as payments from "@/app/server/finances/payments";
 import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
@@ -23,7 +23,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
     const fetchInstallment = async () => {
       setLoading(true);
       try {
-        const installment = await getInstallment({ shippimentId });
+        const installment = await payments.findOne({ shippimentId });
         console.log(installment)
         setInstallment(installment);
       } catch (error) {
@@ -53,7 +53,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
     try {
       values.codigo_movimento_detalhe = shippimentId;
       values.paymentMethodId = values.paymentMethod?.id || null;
-      await submitInstallment(values);
+      await payments.update(values);
       onClose(true);
     } catch (error) {
       console.error(error.message);

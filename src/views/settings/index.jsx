@@ -55,8 +55,8 @@ export const ViewSettings = ({ company, integrations }) => {
           <CustomTabList onChange={(event, value) => setActiveTab(value)} variant='scrollable'>
             <Tab label='Empresa' icon={<i className='ri-building-4-line' />} iconPosition='start' value='company' />
             <Tab label='Usuários' icon={<i className='ri-user-settings-line' />} iconPosition='start' value='users' />
-            <Tab label='Contas' icon={<i className='ri-bank-line' />} iconPosition='start' value='bankAccounts' />
-            <Tab label='Plano de contas' icon={<i className='ri-file-list-3-line' />} iconPosition='start' value='categories' />
+            <Tab label='Bancos' icon={<i className='ri-bank-line' />} iconPosition='start' value='bankAccounts' />
+            <Tab label='Categorias' icon={<i className='ri-file-list-3-line' />} iconPosition='start' value='categories' />
             {/*<Tab label='Certificado' icon={<i className='ri-shield-check-line' />} iconPosition='start' value='security' />*/}
             {/*<Tab label='Assinatura' icon={<i className='ri-vip-crown-line' />} iconPosition='start' value='billing-plans' />*/}
             {/*<Tab label='Notifications' icon={<i className='ri-notification-3-line' />} iconPosition='start' value='notifications' />*/}
