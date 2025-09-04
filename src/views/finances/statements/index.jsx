@@ -104,7 +104,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                   <TableCell>Inicio</TableCell>
                   <TableCell>Fim</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="center">Ações</TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -120,7 +120,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                       <TableRow
                         key={index}
                         hover
-                        //onClick={() => toggleSelect(id)}
+                        onDoubleClick={() => handleEdit({statementId: statement.id})}
                         role="checkbox"
                         //aria-checked={isItemSelected}
                         //selected={isItemSelected}

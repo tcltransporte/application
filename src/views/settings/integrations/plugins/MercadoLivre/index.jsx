@@ -23,7 +23,6 @@ import {
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
 import { addStatement, getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
-import { Successfully } from '../..'
 
 export const ID = '420E434C-CF7D-4834-B8A6-43F5D04E462A'
 
@@ -57,6 +56,7 @@ export const Statement = ({ data, onChange }) => {
   const [openModal, setOpenModal] = useState(false) // modal "Novo"
   const today = new Date().toISOString().split('T')[0]
   const [dateValue, setDateValue] = useState(today) // campo de data
+  const [confirming, setConfirming] = useState(false) // estado de loading do confirmar
 
   useEffect(() => {
     fetch({ companyIntegrationId: data.companyIntegrationId })
@@ -106,10 +106,17 @@ export const Statement = ({ data, onChange }) => {
   }
 
   const handleConfirmNew = async () => {
-    await addStatement({companyIntegrationId: data.companyIntegrationId, date: dateValue})
-    console.log('Data escolhida:', dateValue)
-    setOpenModal(false)
-    // Aqui você pode chamar sua função de criação de extrato e atualizar a lista
+    setConfirming(true)
+    try {
+      await addStatement({ companyIntegrationId: data.companyIntegrationId, date: dateValue })
+      console.log('Data escolhida:', dateValue)
+      setOpenModal(false)
+      await fetch({ companyIntegrationId: data.companyIntegrationId })
+    } catch (err) {
+      console.error('Erro ao criar extrato:', err)
+    } finally {
+      setConfirming(false)
+    }
   }
 
   return (
@@ -218,7 +225,7 @@ export const Statement = ({ data, onChange }) => {
       <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="xs">
         <DialogTitle>Novo extrato</DialogTitle>
         <DialogContent>
-          <div style={{padding: '15px'}}>
+          <div style={{ padding: '15px' }}>
             <TextField
               label="Data"
               type="date"
@@ -233,14 +240,18 @@ export const Statement = ({ data, onChange }) => {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenModal(false)}>Cancelar</Button>
+          <Button onClick={() => setOpenModal(false)} disabled={confirming}>
+            Cancelar
+          </Button>
           <Button
             variant="contained"
             onClick={handleConfirmNew}
-            disabled={!dateValue}
-            startIcon={<i className="ri-check-line" />}
+            disabled={!dateValue || confirming}
+            startIcon={
+              confirming ? <CircularProgress size={16} color="inherit" /> : <i className="ri-check-line" />
+            }
           >
-            Confirmar
+            {confirming ? 'Confirmando...' : 'Confirmar'}
           </Button>
         </DialogActions>
       </Dialog>

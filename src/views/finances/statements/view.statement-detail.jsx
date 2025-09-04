@@ -25,6 +25,7 @@ import { ViewVinculeReceivement } from './view.vincule-receivement'
 import * as statements from '@/app/server/finances/statements'
 import { styles } from '@/components/styles'
 import { NumericField, SelectField } from '@/components/field'
+import { BackdropLoading } from '@/components/BackdropLoading'
 
 // --- Funções Utilitárias (sem alterações) ---
 const entryTypeAlias = {
@@ -175,7 +176,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
   return (
     <>
-      {loading && ( <Backdrop open sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff' }}> <CircularProgress color="inherit" /> <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>&nbsp;Carregando...</Typography> </Backdrop> )}
+
+      <BackdropLoading loading={loading} message={`Carregando...`} />
 
       <Dialog open={statementId !== undefined && !loading} onClose={onClose} fullWidth maxWidth="lg" scroll="paper" slotProps={{ paper: { sx: { position: 'fixed', top: '32px', left: '50%', transform: 'translateX(-50%)', margin: 0, maxHeight: 'calc(100vh - 64px)' } } }} >
         <DialogTitle sx={styles.dialogTitle}> Extrato detalhado <IconButton aria-label="close" onClick={() => onClose()} sx={styles.dialogClose} size="large"> <i className="ri-close-line" /> </IconButton> </DialogTitle>

@@ -17,6 +17,7 @@ import * as Yup from 'yup'
 import { Alert, FormControlLabel, Switch, TextField } from '@mui/material'
 import { createCompanyUser, deleteCompanyUser, getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
 import _ from 'lodash'
+import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewUser = ({ companyUserId, onClose }) => {
   const [errorState, setErrorState] = useState(null)
@@ -90,12 +91,7 @@ export const ViewUser = ({ companyUserId, onClose }) => {
   return (
     <>
 
-      <Backdrop open={loading} sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff', flexDirection: 'column' }}>
-        <CircularProgress color='inherit' />
-        <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
+      <BackdropLoading loading={loading} message={`Carregando...`} />
 
       <Drawer
         open={companyUserId !== undefined && !loading}

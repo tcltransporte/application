@@ -102,27 +102,32 @@ export async function findOne({ statementId }) {
 
 export async function create(formData) {
 
-  console.log(formData.statement.statementData)
-  
   const session = await getServerSession(authOptions)
 
   const db = new AppContext()
 
   await db.transaction(async (transaction) => {
 
-      const statement = await db.Statement.create({
-          companyId: session.company.codigo_empresa_filial,
-          sourceId: formData.statement.sourceId,
-          bankAccountId: formData.bankAccount.codigo_conta_bancaria,
-          begin: format(fromZonedTime(formData.statement.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
-          end: format(fromZonedTime(formData.statement.end, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
-          isActive: true
-      }, {transaction})
+    const archive = await db.Archive.create({
+      name: "mercado-livre.csv",
+      type: "text/csv",
+      content: content
+    })
 
-      for (const item of formData.statement.statementData) {
-        console.log(item)
-        await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
-      }
+    const statement = await db.Statement.create({
+        companyId: session.company.codigo_empresa_filial,
+        sourceId: formData.statement.sourceId,
+        bankAccountId: formData.bankAccount.codigo_conta_bancaria,
+        begin: format(fromZonedTime(formData.statement.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
+        end: format(fromZonedTime(formData.statement.end, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
+        archiveId: archive.id,
+        isActive: true
+    }, {transaction})
+
+    for (const item of formData.statement.statementData) {
+      console.log(item)
+      await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
+    }
 
   })
 

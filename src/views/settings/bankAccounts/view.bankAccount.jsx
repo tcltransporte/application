@@ -21,6 +21,7 @@ import { getCategorie, saveCategorie } from '@/app/server/settings/categories/vi
 import { TextField, SelectField, NumericField, AutoComplete } from '@/components/field'
 import * as bankAccount from '@/app/server/settings/bank-accounts'
 import { getBanks } from '@/utils/search'
+import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewBankAccount = ({ categorieId, onClose }) => {
 
@@ -98,12 +99,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
   return (
     <>
 
-      <Backdrop open={loading} sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff', flexDirection: 'column' }}>
-        <CircularProgress color='inherit' />
-        <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
+      <BackdropLoading loading={loading} message={`Carregando...`} />
 
       <Drawer
         open={categorieId !== undefined && !loading}

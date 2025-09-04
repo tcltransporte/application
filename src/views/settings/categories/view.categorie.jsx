@@ -19,6 +19,7 @@ import { createCompanyUser, deleteCompanyUser, getCompanyUser, setCompanyUser } 
 import _ from 'lodash'
 import { getCategorie, saveCategorie } from '@/app/server/settings/categories/view.categorie.controller'
 import { TextField, SelectField, NumericField } from '@/components/field'
+import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewCategorie = ({ categorieId, onClose }) => {
   const [errorState, setErrorState] = useState(null)
@@ -95,12 +96,7 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
   return (
     <>
 
-      <Backdrop open={loading} sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff', flexDirection: 'column' }}>
-        <CircularProgress color='inherit' />
-        <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
+      <BackdropLoading loading={loading} message={`Carregando...`} />
 
       <Drawer
         open={categorieId !== undefined && !loading}

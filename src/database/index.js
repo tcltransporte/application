@@ -25,6 +25,7 @@ import { CteNfe } from './models/cteNfe.model.js'
 import { Nfe } from './models/Nfe.model.js'
 import { CenterCost } from './models/centerCost.model.js'
 import { BankAccountIntegration } from './models/bankAccountIntegration.model.js'
+import { Archive } from './models/archive.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -43,6 +44,8 @@ const afterFind = (result) => {
 }
 
 export class AppContext extends Sequelize {
+  
+  Archive = this.define('archive', new Archive(), { tableName: 'archive' })
   
   Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
 

@@ -13,6 +13,7 @@ import { addDays, addMonths, format } from "date-fns";
 import { AutoComplete, NumericField, TextField } from "@/components/field";
 import { useSession } from "next-auth/react";
 import _ from "lodash";
+import { BackdropLoading } from "@/components/BackdropLoading";
 
 const FIELD_SIZE = {
 
@@ -461,12 +462,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
   return (
     <>
     
-      <Backdrop open={installmentId !== undefined && loading} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
-        <CircularProgress color="inherit" />
-        <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
+      <BackdropLoading loading={installmentId !== undefined && loading} message={`Carregando...`}></BackdropLoading>
 
       <Dialog open={installmentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={'lg'}>
 

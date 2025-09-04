@@ -64,12 +64,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
   return (
     <>
     
-      <Backdrop open={shippimentId !== undefined && loading} sx={{ zIndex: 1200, color: "#fff", flexDirection: "column" }}>
-        <CircularProgress color="inherit" />
-        <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
-          Carregando...
-        </Typography>
-      </Backdrop>
+      <BackdropLoading loading={shippimentId !== undefined && loading} message={`Carregando...`} />
 
       <Dialog open={shippimentId !== undefined && !loading} onClose={() => onClose(false)} maxWidth={false} slotProps={{ paper: { sx: {position: 'fixed', top: '32px', width: '750px'}} }}>
 
