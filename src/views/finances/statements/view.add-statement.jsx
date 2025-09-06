@@ -143,11 +143,6 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
                   setFieldValue('bankAccount', bankAccount)
                 }}
               />
-              {touched.bankAccount && errors.bankAccount && (
-                <Typography color="error" variant="caption">
-                  {errors.bankAccount}
-                </Typography>
-              )}
             </Box>
 
             {values.uploadType === 'integration' && integrationId && (

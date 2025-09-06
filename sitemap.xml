@@ -88,6 +88,15 @@
       <!--<siteMapNode title="Relatório por Tipo Pagamento" url="${URL}\Financeiro\RelPortipoPagamento.aspx" description="Relatório por tipo de pagmento"/>-->
     </siteMapNode>
 
+    <siteMapNode title="Expedição" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-truck-line">
+      <siteMapNode title="Conhecimentos" url="\expedition\ctes" description="Conhecimentos"/>
+      <siteMapNode title="Romaneios" url="\expedition\shippiments" description="Romaneios"/>
+    </siteMapNode>
+
+    <siteMapNode title="Logística" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
+      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
+    </siteMapNode>
+
     <!--
     <siteMapNode title="Fiscal" roles="Administrador,fiscal000, fiscal010, fiscal020, fiscal030, fiscal040, fiscal050,fiscal060,fiscal070,fiscal080, fiscal090,fiscal100,fiscal110,fiscal120,fiscal130,fiscal140,fiscal150,fiscal160,fiscal170,fiscal180,fiscal190,fiscal200 " icon="ri-bar-chart-box-line">
       <siteMapNode title="Repositório DFe" url="${URL}\Compras\ListaDfe.aspx?p1=2" description="Repositório de documentos fiscal eletrônico."/>

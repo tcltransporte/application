@@ -147,7 +147,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                   {errorState && (<Alert severity="warning">{errorState}</Alert>)}
 
                   <Field
-                    as={AutoComplete}
+                    component={AutoComplete}
                     name="bank"
                     label="Banco"
                     text={(bank) => bank?.name || ''}
@@ -158,7 +158,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                   />
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Titular'
                     name='holder'
                     error={Boolean(touched.holder && errors.holder)}
@@ -168,7 +168,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                   />
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Agência'
                     name='agency'
                     error={Boolean(touched.agency && errors.agency)}
@@ -178,7 +178,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                   />
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Conta'
                     name='number'
                     error={Boolean(touched.number && errors.number)}

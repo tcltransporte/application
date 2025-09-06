@@ -2,11 +2,13 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { format } from "date-fns"
+import { addDays, format } from "date-fns"
 import { fromZonedTime } from "date-fns-tz"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
+import { orders } from "../settings/integrations/plugins/index.controller"
+import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 
 export async function findAll({limit, offset, date}) {
 
@@ -132,13 +134,12 @@ export async function create(formData) {
 
   await db.transaction(async (transaction) => {
 
-    /*
-    const archive = await db.Archive.create({
-      name: "mercado-livre.csv",
-      type: "text/csv",
-      content: content
-    })
-    */
+    const begin = format(addDays(new Date(formData.statement.begin), -60), 'dd/MM/yyyy HH:mm')
+    const end = format(addDays(new Date(formData.statement.end), 30), 'dd/MM/yyyy HH:mm')
+
+    const tiny_payments = await getTinyReceivements({start: begin, end: end})
+
+    const mercadolivre_orders = await orders({companyIntegrationId: '00A649D7-C96A-47EB-BA71-87999EE16849', start: '2025-08-05', end: '2025-09-05'})
 
     const statement = await db.Statement.create({
         companyId: session.company.codigo_empresa_filial,
@@ -151,8 +152,27 @@ export async function create(formData) {
     }, {transaction})
 
     for (const item of formData.statement.statementData) {
+
       console.log(item)
-      await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
+
+      const statementData = await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
+
+      const pack_id = mercadolivre_orders.filter((c) => c.id.toString() == item.reference?.toString())[0]?.pack_id
+
+      const receivement = await db.FinancialMovementInstallment.findOne({
+        include: [
+          {model: db.FinancialMovement, as: 'financialMovement'}
+        ],
+        where: [{'$financialMovementInstallment.Descricao$': {[Sequelize.Op.like]: `%${pack_id}%`}}],
+        transaction
+      })
+
+      if (receivement) {
+
+        await db.StatementDataConciled.create({statementDataId: statementData.id, type: 1, partnerId: receivement.financialMovement?.partnerId, amount: receivement.amount, receivementId: receivement.codigo_movimento_detalhe}, {transaction})
+
+      }
+
     }
 
   })
@@ -240,5 +260,13 @@ export async function desvinculePayment({statementDataConciledId}) {
   const db = new AppContext()
 
   await db.StatementDataConciled.update({paymentId: null}, {where: [{id: statementDataConciledId}]})
+
+}
+
+export async function refresh() {
+
+  const r = await orders({companyIntegrationId: '00A649D7-C96A-47EB-BA71-87999EE16849', start: '2025-08-05', end: '2025-09-05'})
+
+  console.log(r)
 
 }

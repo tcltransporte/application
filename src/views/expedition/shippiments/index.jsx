@@ -267,8 +267,8 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
           <RangeFilter
             title="Vencimento"
             initialDateRange={[
-              new Date(installments.request?.dueDate?.start),
-              new Date(installments.request?.dueDate?.end),
+              //new Date(installments.request?.dueDate?.start),
+              //new Date(installments.request?.dueDate?.end),
             ]}
             onChange={handlePeriodChange}
           />

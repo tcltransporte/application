@@ -362,8 +362,8 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
       ...installments.request,
       offset: 0,
       dhEmi: {
-        start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
-        end: DateFormat(new Date(dateRange[1]), 'yyyy-MM-dd 23:59'),
+        //start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
+        //end: DateFormat(new Date(dateRange[1]), 'yyyy-MM-dd 23:59'),
       },
     })
   }
@@ -457,8 +457,8 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
             <RangeFilter
               title="Emissão"
               initialDateRange={[
-                new Date(installments.request?.dhEmi?.start),
-                new Date(installments.request?.dhEmi?.end),
+                //new Date(installments.request?.dhEmi?.start),
+                //new Date(installments.request?.dhEmi?.end),
               ]}
               onChange={handlePeriodChange}
             />
@@ -498,7 +498,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
                   <TableCell>Remetente</TableCell>
                   <TableCell>Destinatário</TableCell>
                   <TableCell align='right' sx={{ width: 80 }}>Valor</TableCell>
-                  <TableCell align="center" sx={{ width: 90 }}></TableCell>
+                  <TableCell align="center" sx={{ width: 100 }}></TableCell>
                   <TableCell align="center" sx={{ width: 35 }}></TableCell>
                 </TableRow>
               </TableHead>

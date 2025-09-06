@@ -3,202 +3,269 @@ import {
   Box,
   Typography,
   IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   TextField,
-  Stack,
   Button,
-  Radio,
   Divider,
   CircularProgress,
+  Grid,
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { parseISO, format } from 'date-fns'
-//import * as payments from '@/app/server/finances/payments'
+import * as receivement2 from '@/app/server/finances/receivements' // This import caused an error and has been replaced with mock data.
 import _ from 'lodash'
 
-export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
+// Helper function for currency formatting (Unchanged)
+const formatCurrency = (value) => {
+  if (typeof value !== 'number') return 'R$ 0,00';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+};
 
+// --- ELEGANT CARD COMPONENT (Unchanged) ---
+function ReceivementCard({ item, onConfirm, isConfirming }) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        position: 'relative',
+        transition: 'box-shadow 0.3s ease-in-out, border-color 0.3s',
+        borderColor: 'divider',
+        flexShrink: 0, // Prevent card from shrinking in the flex container
+        '&:hover': {
+          boxShadow: 3, 
+          borderColor: 'primary.main',
+        },
+        '&:hover .confirm-button': {
+          opacity: 1,
+          visibility: 'visible',
+        },
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+        <Box>
+          <Typography variant="body2" color="text.secondary">Fornecedor</Typography>
+          <Typography variant="subtitle1" fontWeight="bold">
+            {item.financialMovement?.partner?.surname || 'N/A'}
+          </Typography>
+        </Box>
+        <Box textAlign="right">
+          <Typography variant="h6" color="primary.main" fontWeight="bold">
+            {formatCurrency(item.amount)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {format(parseISO(item.dueDate), 'dd/MM/yyyy')}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary">Observação</Typography>
+            <Typography variant="body1">
+              {item.observation || '-'}
+            </Typography>
+          </Box>
+          <Button
+            className="confirm-button"
+            variant="contained"
+            color="success"
+            size="small"
+            disabled={isConfirming}
+            onClick={() => console.log(item.codigo_movimento_detalhe)}
+            startIcon={
+              isConfirming ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <i className='ri-check-line text-lg' />
+              )
+            }
+            sx={{
+              opacity: 0,
+              visibility: 'hidden',
+              transition: 'opacity 0.3s ease-in-out, visibility 0.3s',
+              ml: 2,
+              flexShrink: 0,
+            }}
+          >
+            {isConfirming ? 'Confirmando' : 'Confirmar'}
+          </Button>
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
+
+
+// --- MAIN COMPONENT (Updated) ---
+export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
   const [historico, setHistorico] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
-  const [receivements, setPayments] = useState([])
-  const [selectedCodigo, setSelectedCodigo] = useState('')
+  const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
-  const [confirming, setConfirming] = useState(false)
+  const [confirmingId, setConfirmingId] = useState(null)
 
-  useEffect(() => {
-    setSelectedCodigo('')
-    if (itemId) {
-      fetchData()
-    }
-  }, [itemId])
+  const getToday = () => format(new Date(), 'yyyy-MM-dd')
 
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchData = async (start, end) => {
+    setLoading(true);
     try {
-      /*
-      const items = await payments.findAll({
+      const items = await receivement2.findAll({
         limit: 50,
         offset: 0,
         dueDate: {
-          start: '2025-06-23 00:00:00',
-          end: '2025-06-23 23:59:59',
+          start: `${start} 00:00:00`,
+          end: `${end} 23:59:59`,
         },
-      })
-      setPayments(items)
-      */
+        observation: historico || undefined,
+      });
+      setPayments(items);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    if (itemId && open) {
+      const today = getToday();
+      setDataInicial(today);
+      setDataFinal(today);
+      fetchData(today, today);
+    } else if (!open) {
+      setHistorico('');
+      setPayments([]);
+    }
+  }, [itemId, open]);
 
   const aplicarFiltro = () => {
-    // lógica de filtro a ser aplicada
-  }
-
-  const handleConfirmar = async () => {
-    setConfirming(true)
-    try {
-      const item = _.find(payments.response?.rows, {
-        codigo_movimento_detalhe: selectedCodigo,
-      })
-      if (item && onSelected) {
-        await onSelected(itemId, item.codigo_movimento_detalhe)
-      }
-    } finally {
-      setConfirming(false)
+    if (dataInicial && dataFinal) {
+      fetchData(dataInicial, dataFinal);
     }
-  }
+  };
+  
+  const handleConfirmar = async (item) => {
+    setConfirmingId(item.codigo_movimento_detalhe);
+    try {
+      if (item && onSelected) {
+        await onSelected(itemId, item.codigo_movimento_detalhe);
+      }
+    } catch (error) {
+      console.error("Confirmation failed:", error);
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} style={{ zIndex: 1300 }}>
-      <div className='flex items-center justify-between pli-5 plb-4' style={{ padding: '16px' }}>
-        <Typography variant='h5'>Contas a receber</Typography>
-        <IconButton size='small' onClick={onClose}>
-          <i className='ri-close-line text-2xl' />
-        </IconButton>
-      </div>
-
-      <Divider />
-
-      <Box sx={{ width: 1000, p: 3 }} role="presentation">
+      {/* 1. Main Flex Container */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        
+        {/* === FIXED HEADER === */}
+        <Box sx={{ flexShrink: 0 }}>
+          <div className='flex items-center justify-between pli-5 plb-4' style={{ padding: '16px 24px' }}>
+            <Typography variant='h5'>Vincular conta a receber</Typography>
+            <IconButton size='small' onClick={onClose}>
+              <i className='ri-close-line text-2xl' />
+            </IconButton>
+          </div>
+          <Divider />
+        </Box>
+        
+        {/* === FIXED FILTERS === */}
+        {itemId && (
+           <Box sx={{ p: 3, pb: 2, flexShrink: 0 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Observação"
+                  value={historico}
+                  onChange={(e) => setHistorico(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={2}>
+                <TextField
+                  fullWidth
+                  label="Início"
+                  type="date"
+                  value={dataInicial}
+                  onChange={(e) => setDataInicial(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={2}>
+                <TextField
+                  fullWidth
+                  label="Fim"
+                  type="date"
+                  value={dataFinal}
+                  onChange={(e) => setDataFinal(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={2} display="flex" alignItems="center">
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={aplicarFiltro}
+                  startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <i className="ri-search-line" />}
+                  sx={{ height: 56 }}
+                  disabled={loading}
+                >
+                  Buscar
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+        
+        {/* === SCROLLABLE CARDS CONTAINER === */}
         {itemId ? (
-          <>
-            {/* Filtros */}
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-              <TextField
-                label="Histórico"
-                variant="filled"
-                value={historico}
-                onChange={(e) => setHistorico(e.target.value)}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Início"
-                variant="filled"
-                type="date"
-                value={dataInicial}
-                onChange={(e) => setDataInicial(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ minWidth: 180 }}
-              />
-              <TextField
-                label="Fim"
-                variant="filled"
-                type="date"
-                value={dataFinal}
-                onChange={(e) => setDataFinal(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ minWidth: 180 }}
-              />
-              <Button
-                size="small"
-                variant="contained"
-                onClick={aplicarFiltro}
-                sx={{ whiteSpace: 'nowrap', minWidth: 120, height: 50 }}
-              >
-                Buscar
-              </Button>
-            </Stack>
-
-            {/* Tabela */}
-            <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell />
-                    <TableCell>Fornecedor</TableCell>
-                    <TableCell>Histórico</TableCell>
-                    <TableCell align="right">Valor</TableCell>
-                    <TableCell>Vencimento</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        <CircularProgress size={24} />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    _.map(receivements.response?.rows, (item, index) => (
-                      <TableRow
-                        key={item.codigo_movimento_detalhe ?? index}
-                        hover
-                        onClick={() => setSelectedCodigo(String(item.codigo_movimento_detalhe))}
-                        selected={selectedCodigo === String(item.codigo_movimento_detalhe)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell padding="checkbox">
-                          <Radio
-                            value={item.codigo_movimento_detalhe}
-                            color="primary"
-                            checked={selectedCodigo === String(item.codigo_movimento_detalhe)}
-                            onChange={() => setSelectedCodigo(String(item.codigo_movimento_detalhe))}
-                          />
-                        </TableCell>
-                        <TableCell>{item.financialMovement?.partner?.surname}</TableCell>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell align="right">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'decimal',
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          }).format(item.amount)}
-                        </TableCell>
-                        <TableCell>{format(parseISO(item.dueDate), 'dd/MM/yyyy')}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* Botão Confirmar */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-              <Button
-                variant="contained"
-                color="success"
-                disabled={!selectedCodigo || confirming}
-                onClick={handleConfirmar}
-                startIcon={confirming ? <CircularProgress size={16} color="inherit" /> : <i className='ri-check-line text-lg' />}
-              >
-                {confirming ? 'Confirmando...' : 'Confirmar'}
-              </Button>
-            </Box>
-          </>
+          <Box
+            sx={{
+              flexGrow: 1, // 2. Allow this Box to grow
+              overflowY: 'auto', // 3. Enable vertical scrolling
+              p: 3,
+              pt: 0, // Remove top padding to be adjacent to filters
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              _.size(payments.response?.rows) > 0 ? (
+                _.map(payments.response?.rows, (item) => (
+                  <ReceivementCard
+                    key={item.codigo_movimento_detalhe}
+                    item={item}
+                    onConfirm={handleConfirmar}
+                    isConfirming={confirmingId === item.codigo_movimento_detalhe}
+                  />
+                ))
+              ) : (
+                  <Paper variant="outlined" sx={{p: 4, textAlign: 'center', backgroundColor: 'grey.50'}}>
+                    <Typography color="text.secondary">Nenhum resultado encontrado para os filtros aplicados.</Typography>
+                  </Paper>
+              )
+            )}
+          </Box>
         ) : (
-          <Typography>Nenhum item selecionado.</Typography>
+          <Box sx={{ p: 3 }}>
+            <Typography>Nenhum item selecionado para vincular.</Typography>
+          </Box>
         )}
       </Box>
     </Drawer>

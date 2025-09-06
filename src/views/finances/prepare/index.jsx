@@ -164,14 +164,14 @@ const InstallmentCard = ({ installment, loading, onOpenEditModal }) => {
 
         <Box display="flex" alignItems="center">
           <i className="ri-file-text-line mr-1 text-base" style={{ flexShrink: 0 }} />
-          <Tooltip title={installment.description || ''}>
+          <Tooltip title={installment.observation || ''}>
             <Typography
               variant="body2"
               color="text.secondary"
               noWrap
               sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
             >
-              {installment.description}
+              {installment.observation}
             </Typography>
           </Tooltip>
         </Box>

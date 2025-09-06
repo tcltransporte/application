@@ -15,6 +15,11 @@ export class FinancialMovement {
         type: DataTypes.INTEGER
     }
 
+    type_operation = {
+        field: 'type_operation',
+        type: DataTypes.SMALLINT
+    }
+
     documentNumber = {
         field: 'numero_documento',
         type: DataTypes.STRING

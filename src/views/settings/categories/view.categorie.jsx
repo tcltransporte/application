@@ -38,6 +38,7 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
 
         if (categorieId) {
           const categorie = await getCategorie({ id: categorieId })
+          console.log(categorie)
           setUser(categorie)
         } else {
           setUser(null)
@@ -93,6 +94,8 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
     
   }
 
+  console.log(user)
+
   return (
     <>
 
@@ -140,21 +143,16 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
                   {errorState && (<Alert severity="warning">{errorState}</Alert>)}
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Descrição'
                     name='description'
-                    error={Boolean(touched.description && errors.description)}
-                    helperText={touched.description && errors.description}
                     disabled={isSubmitting}
-                    autoFocus
                   />
 
                   <Field
-                    as={SelectField}
+                    component={SelectField}
                     label="Tipo"
                     name="operation"
-                    error={Boolean(touched.operation && errors.operation)}
-                    helperText={touched.operation && errors.operation}
                     disabled={isSubmitting}
                   >
                     <MenuItem value="">[Selecione]</MenuItem>
@@ -163,23 +161,17 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
                   </Field>
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Código'
                     name='code'
-                    error={Boolean(touched.code && errors.code)}
-                    helperText={touched.code && errors.code}
                     disabled={isSubmitting}
-                    autoFocus
                   />
 
                   <Field
-                    as={TextField}
+                    component={TextField}
                     label='Conta'
                     name='account'
-                    error={Boolean(touched.account && errors.account)}
-                    helperText={touched.account && errors.account}
                     disabled={isSubmitting}
-                    autoFocus
                   />
 
                   <Divider />

@@ -82,8 +82,8 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
   whereClauses.push({
     [Sequelize.Op.or]: [
-      { '$financialMovement.financialCategory.codigo_tipo_operacao$': 2 },
-      { '$financialMovement.type_operation$': 2 } // aqui vai o outro campo que você quer
+      { '$financialMovement.financialCategory.codigo_tipo_operacao$': 1 },
+      { '$financialMovement.type_operation$': 1 } // aqui vai o outro campo que você quer
     ]
   })
 

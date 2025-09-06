@@ -13,10 +13,11 @@ export async function authorization({companyIntegrationId}) {
     const db = new AppContext()
 
     const companyIntegration = await db.CompanyIntegration.findOne({
+        attributes: ['id', 'options'],
         where: [{id: companyIntegrationId}]
     })
 
-    let options = JSON.parse(companyIntegration.dataValues.options)
+    let options = JSON.parse(companyIntegration.options)
 
     const params = new URLSearchParams();
 
@@ -24,8 +25,6 @@ export async function authorization({companyIntegrationId}) {
     params.append('client_id', '4404783242240588')
     params.append('client_secret', 'XZKpfqhCIQjvnLk9DnRA4f7UHOs3OC5c')
     params.append('refresh_token', options.refresh_token)
-
-    console.log(options.refresh_token)
 
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
         method: 'POST',
@@ -37,8 +36,6 @@ export async function authorization({companyIntegrationId}) {
     })
 
     const token = await response.json()
-
-    console.log(token)
 
     if (!response.ok) {
         throw new Error(`Erro na requisição: ${response.status}`)
@@ -126,6 +123,8 @@ export async function getStatement({companyIntegrationId, fileName}) {
 
     for (const item of json) {
 
+        console.log(item)
+
         let statementData = {}
 
         //statementData.id = undefined;
@@ -195,5 +194,51 @@ export async function addStatement({companyIntegrationId, date}) {
     //}).catch((error) => {
     //  Exception.unauthorized(res, error);
     //});
+
+}
+
+export async function orders({companyIntegrationId, start, end}) {
+
+    const token = await authorization({companyIntegrationId})
+
+    console.log('token:', token)
+
+    const result = await mercadolivre_orders({start, end, access_token: token.access_token, offset: 0});
+
+    const pages = Math.ceil((result.paging.total) / result.paging.limit || 1);
+
+    var orders = [...result.results];
+
+    for (var i = 1; i < pages; i++) {
+        const proxPagina = await mercadolivre_orders({start, end, access_token: token.access_token, offset: i});
+        for (var item of proxPagina.results) {
+            orders.push(item);
+        }
+    }
+
+    return orders;
+
+
+}
+
+async function mercadolivre_orders({access_token, start, end, offset}) {
+
+    const r = await fetch(
+        `https://api.mercadolibre.com/orders/search?seller=2484487707&offset=${offset * 50}&limit=50&order.date_last_updated.from=${start}T00:00:00.000-04:00&order.date_last_updated.to=${end}T23:59:59.999-04:00`,
+        {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${access_token}`,
+            },
+        }
+    );
+
+    if (!r.ok) {
+        throw new Error(`Erro na requisição: ${r.status} ${r.statusText}`);
+    }
+
+    const data = await r.json();
+    
+    return data;
 
 }

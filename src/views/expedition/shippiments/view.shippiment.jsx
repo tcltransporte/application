@@ -12,6 +12,7 @@ import { getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/sear
 import { addDays, addMonths, format } from "date-fns";
 
 import { NumericField, TextField } from "@/components/field";
+import { BackdropLoading } from "@/components/BackdropLoading";
 
 export const ViewShippiment = ({ shippimentId, onClose }) => {
 

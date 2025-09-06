@@ -22,7 +22,7 @@ export const BankAccounts = () => {
   const [loadingStatus, setLoadingStatus] = useState({})
   const [companyUserId, setCompanyUserId] = useState(undefined)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage, setRowsPerPage] = useState(50)
 
   useEffect(() => {
     onSearch()

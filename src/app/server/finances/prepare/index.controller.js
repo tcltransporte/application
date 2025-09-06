@@ -16,9 +16,10 @@ export async function getBankAccounts() {
     })
 
     const financialMovementInstallments = await db.FinancialMovementInstallment.findAll({
+        attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate', 'observation'],
         include: [
-            {model: db.FinancialMovement, as: 'financialMovement', include: [
-                {model: db.Partner, as: 'partner'},
+            {model: db.FinancialMovement, as: 'financialMovement', attributes: ['codigo_movimento', 'documentNumber'], include: [
+                {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']},
             ]}
         ],
         where: [{

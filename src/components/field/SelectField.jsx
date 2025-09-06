@@ -7,38 +7,41 @@ import {
 } from '@mui/material';
 import React from 'react';
 
-const SelectField = ({
-  label,
-  children,
-  error,
-  helperText,
-  fullWidth = true,
-  variant = 'filled',
-  size = 'small',
-  disabled = false,
-  ...fieldProps
-}) => {
-  const { name, value, onChange, onBlur } = fieldProps;
+const SelectField = (props) => {
+
+  const handleChange = (e) => {
+
+    let val = e.target.value
+
+    props.form?.setFieldValue(props.field?.name, val)
+
+    props.onChange?.(val)
+
+  }
 
   return (
     <FormControl
-      fullWidth={fullWidth}
-      variant={variant}
-      size={size}
-      error={error}
+      fullWidth={props.fullWidth}
+      variant={props.variant}
+      size={props.size}
+      error={props.error}
     >
-      <InputLabel shrink>{label}</InputLabel>
+      <InputLabel shrink>{props.label}</InputLabel>
       <Select
-        name={name}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
+        variant='filled'
+        size='small'
+        name={props.name}
+        {...props.field}
+        {...props}
+        value={props.field?.value || ''}
+        onChange={handleChange}
+        onBlur={props.onBlur}
         displayEmpty
-        disabled={disabled}
+        disabled={props.disabled}
       >
-        {children}
+        {props.children}
       </Select>
-      {error && <FormHelperText>{helperText}</FormHelperText>}
+      {props.error && <FormHelperText>{props.helperText}</FormHelperText>}
     </FormControl>
   );
 };
