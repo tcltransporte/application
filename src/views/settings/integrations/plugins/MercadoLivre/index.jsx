@@ -163,6 +163,7 @@ export const Statement = ({ data, onChange }) => {
             <i className="ri-upload-line" style={{ marginRight: 8 }} /> Importar
           </MenuItem>
         </Menu>
+        
       </Box>
 
       {loading ? (
@@ -170,12 +171,13 @@ export const Statement = ({ data, onChange }) => {
           <CircularProgress size={24} />
         </Box>
       ) : (
-        <Box sx={{ overflowY: 'auto', p: 1 }}>
+        // AQUI A MUDANÇA: Adicionado maxHeight para limitar a altura e ativar a rolagem
+        <Box sx={{ overflowY: 'auto', p: 1, maxHeight: '400px' }}>
           <Grid container spacing={2}>
             {statements.map((item) => {
               const isConfirming = confirming === item.sourceId
               return (
-                <Grid item key={item.sourceId} size={{xs: 12}}>
+                <Grid item key={item.sourceId} size={{xs: 12}}> {/* <-- Prop corrigida */}
                   
                   <Card
                     variant="outlined"
@@ -191,7 +193,7 @@ export const Statement = ({ data, onChange }) => {
                       },
                     }}
                   >
-                    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <CardContent sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Box>
                         <Typography variant="body2" component="span" sx={{ marginRight: 2 }}>
                           {format(
@@ -227,7 +229,7 @@ export const Statement = ({ data, onChange }) => {
                       </Box>
                     </CardContent>
                   </Card>
-                                    
+                                      
                 </Grid>
               )
             })}
