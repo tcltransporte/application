@@ -148,24 +148,37 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   
   // --- NOVO: Handler para decidir qual drawer abrir baseado no tipo do item ---
   const handleViewDetails = (conciledItem) => {
-    if (!conciledItem) return;
 
-    // '1' para Recebimento (Receivement)
-    if (conciledItem.type === '1') {
-      handleOpenReceivements(conciledItem.id);
-    } 
-    // '2' para Pagamento (Payment)
-    else if (conciledItem.type === '2') {
-      handleOpenPayments(conciledItem.id);
+    if (!conciledItem) return
+
+    switch(conciledItem.type) {
+      case '1':
+        handleOpenReceivements(conciledItem.id)
+        break;
+      case '2':
+        handleOpenPayments(conciledItem.id)
+        break;
     }
-  };
+
+  }
 
   const handleVinculePayment = async (statementDataConciledId, id) => {
-    console.log(statementDataConciledId)
-    statements.vinculePayment({ statementDataConciledId, codigo_movimento_detalhe: id }) /* ... */
+    statements.vinculePayment({ statementDataConciledId, codigo_movimento_detalhe: id })
+    await fetchStatement(false)
+    handleClosePayments()
   };
 
-  const handleDesvinculePayment = async (statementDataConciledId) => { /* ... */ };
+  const handleVinculeReceivement = async (statementDataConciledId, id) => {
+    statements.vinculeReceivement({ statementDataConciledId, codigo_movimento_detalhe: id })
+    await fetchStatement(false)
+    handleCloseReceivements()
+  };
+
+  const handleDesvincule = async (statementDataConciledId) => {
+    statements.desvincule({ statementDataConciledId })
+    await fetchStatement(false)
+    handleCloseReceivements()
+  };
 
   const handleOpenFilterDialog = () => {
     setEntryTypeFilters(statement?.entryTypes ?? []);
@@ -280,7 +293,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                       <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
                       <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
                       <TableCell align="right"><font color='green'>{Number(data.credit) > 0 && `+${formatCurrency(data.credit)}`}</font></TableCell>
-                      <TableCell align="right"><font color='red'>{Number(data.debit) < 0 && `(${formatCurrency(data.debit)})`}</font></TableCell>
+                      <TableCell align="right"><font color='red'>{Number(data.debit) < 0 && `${formatCurrency(data.debit)}`}</font></TableCell>
                       <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
                       <TableCell align="left" style={{ width: '80px' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -316,8 +329,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     {expandedRow === index ? (
                       <ConciledDetailRowsGroup
                         data={data}
-                        onDesvincule={handleDesvinculePayment}
-                        // --- MODIFICADO: Passando o novo handler para o componente filho ---
+                        onDesvincule={handleDesvincule}
                         onViewDetails={handleViewDetails}
                         onStatementUpdate={async () => await fetchStatement(false)}
                         selectedConcileds={selectedConcileds}
@@ -366,17 +378,13 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         open={isDrawerOpen}
         onClose={handleClosePayments}
         itemId={selectedItemId}
-        container={document.body}
-        ModalProps={{ sx: { zIndex: 99999 } }}
         onSelected={handleVinculePayment}
       />
       <ViewVinculeReceivement
         open={isDrawerReceivement}
         onClose={handleCloseReceivements}
         itemId={receivementId}
-        container={document.body}
-        ModalProps={{ sx: { zIndex: 99999 } }}
-        onConfirm={(codigo_movimento_detalhe) => handleVinculePayment(selectedItemId, codigo_movimento_detalhe)}
+        onSelected={handleVinculeReceivement}
       />
     </>
   )

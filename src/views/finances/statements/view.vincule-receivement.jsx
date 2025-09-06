@@ -76,7 +76,7 @@ function ReceivementCard({ item, onConfirm, isConfirming }) {
             color="success"
             size="small"
             disabled={isConfirming}
-            onClick={() => console.log(item.codigo_movimento_detalhe)}
+            onClick={() => onConfirm(item)}
             startIcon={
               isConfirming ? (
                 <CircularProgress size={16} color="inherit" />
@@ -151,6 +151,7 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
   };
   
   const handleConfirmar = async (item) => {
+    console.log(item)
     setConfirmingId(item.codigo_movimento_detalhe);
     try {
       if (item && onSelected) {
@@ -171,7 +172,7 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
         {/* === FIXED HEADER === */}
         <Box sx={{ flexShrink: 0 }}>
           <div className='flex items-center justify-between pli-5 plb-4' style={{ padding: '16px 24px' }}>
-            <Typography variant='h5'>Vincular conta a receber</Typography>
+            <Typography variant='h5'>Contas a receber</Typography>
             <IconButton size='small' onClick={onClose}>
               <i className='ri-close-line text-2xl' />
             </IconButton>
@@ -182,49 +183,51 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
         {/* === FIXED FILTERS === */}
         {itemId && (
            <Box sx={{ p: 3, pb: 2, flexShrink: 0 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Observação"
-                  value={historico}
-                  onChange={(e) => setHistorico(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item size={{xs: 12, sm: 4}}>
+                  <TextField
+                    fullWidth
+                    label="Observação"
+                    value={historico}
+                    onChange={(e) => setHistorico(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item size={{xs: 12, sm: 3}}>
+                  <TextField
+                    fullWidth
+                    label="Início"
+                    type="date"
+                    value={dataInicial}
+                    onChange={(e) => setDataInicial(e.target.value)}
+                  />
+                </Grid>
+
+                <Grid item size={{xs: 12, sm: 3}}>
+                  <TextField
+                    fullWidth
+                    label="Fim"
+                    type="date"
+                    value={dataFinal}
+                    onChange={(e) => setDataFinal(e.target.value)}
+                  />
+                </Grid>
+
+                <Grid item size={{xs: 12, sm: 2}} display="flex" alignItems="center">
+                  <Button
+                    fullWidth
+                    size="small"
+                    variant="contained"
+                    onClick={aplicarFiltro}
+                    startIcon={<i className="ri-search-line" />} // Remix Icon
+                    sx={{ height: 38 }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Buscando' : 'Buscar'}
+                  </Button>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Início"
-                  type="date"
-                  value={dataInicial}
-                  onChange={(e) => setDataInicial(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Fim"
-                  type="date"
-                  value={dataFinal}
-                  onChange={(e) => setDataFinal(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2} display="flex" alignItems="center">
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={aplicarFiltro}
-                  startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <i className="ri-search-line" />}
-                  sx={{ height: 56 }}
-                  disabled={loading}
-                >
-                  Buscar
-                </Button>
-              </Grid>
-            </Grid>
           </Box>
         )}
         

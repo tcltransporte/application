@@ -255,11 +255,19 @@ export async function vinculePayment({statementDataConciledId, codigo_movimento_
 
 }
 
-export async function desvinculePayment({statementDataConciledId}) {
+export async function vinculeReceivement({statementDataConciledId, codigo_movimento_detalhe}) {
   
   const db = new AppContext()
 
-  await db.StatementDataConciled.update({paymentId: null}, {where: [{id: statementDataConciledId}]})
+  await db.StatementDataConciled.update({receivementId: codigo_movimento_detalhe}, {where: [{id: statementDataConciledId}]})
+
+}
+
+export async function desvincule({statementDataConciledId}) {
+  
+  const db = new AppContext()
+
+  await db.StatementDataConciled.update({paymentId: null, receivementId: null}, {where: [{id: statementDataConciledId}]})
 
 }
 

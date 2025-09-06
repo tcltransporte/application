@@ -19,7 +19,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Grid,
+  Card,
+  CardContent,
+  CardActions
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
 import { addStatement, getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
@@ -48,21 +52,19 @@ export const Connect = () => {
 export const Statement = ({ data, onChange }) => {
 
   const [statements, setStatements] = useState([])
-  const [selectedStatement, setSelectedStatement] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [rowLoading, setRowLoading] = useState(null)
+  const [confirming, setConfirming] = useState(null) // Renamed for clarity
 
   const [anchorEl, setAnchorEl] = useState(null) // dropdown
   const [openModal, setOpenModal] = useState(false) // modal "Novo"
   const today = new Date().toISOString().split('T')[0]
   const [dateValue, setDateValue] = useState(today) // campo de data
-  const [confirming, setConfirming] = useState(false) // estado de loading do confirmar
 
   useEffect(() => {
-    fetch({ companyIntegrationId: data.companyIntegrationId })
+    fetchStatements({ companyIntegrationId: data.companyIntegrationId })
   }, [])
 
-  const fetch = async ({ companyIntegrationId }) => {
+  const fetchStatements = async ({ companyIntegrationId }) => {
     setLoading(true)
     try {
       const statements = await getStatements({ companyIntegrationId })
@@ -74,20 +76,19 @@ export const Statement = ({ data, onChange }) => {
     }
   }
 
-  const handleRowClick = async (item) => {
-    setRowLoading(item.sourceId)
+  const handleConfirmStatement = async (item) => {
+    setConfirming(item.sourceId)
     try {
       const statementData = await getStatement({
         companyIntegrationId: data.companyIntegrationId,
         fileName: item.fileName
       })
       item.statementData = statementData
-      setSelectedStatement(item)
       await onChange(item)
     } catch (err) {
-      console.error('Erro ao selecionar extrato:', err)
+      console.error('Erro ao confirmar extrato:', err)
     } finally {
-      setRowLoading(null)
+      setConfirming(null)
     }
   }
 
@@ -106,16 +107,15 @@ export const Statement = ({ data, onChange }) => {
   }
 
   const handleConfirmNew = async () => {
-    setConfirming(true)
+    setConfirming('new') // Using a unique key for the new statement
     try {
       await addStatement({ companyIntegrationId: data.companyIntegrationId, date: dateValue })
-      console.log('Data escolhida:', dateValue)
       setOpenModal(false)
-      await fetch({ companyIntegrationId: data.companyIntegrationId })
+      await fetchStatements({ companyIntegrationId: data.companyIntegrationId })
     } catch (err) {
       console.error('Erro ao criar extrato:', err)
     } finally {
-      setConfirming(false)
+      setConfirming(null)
     }
   }
 
@@ -126,7 +126,7 @@ export const Statement = ({ data, onChange }) => {
 
         <ButtonGroup variant="outlined" size="small">
           <Button
-            onClick={() => fetch({ companyIntegrationId: data.companyIntegrationId })}
+            onClick={() => fetchStatements({ companyIntegrationId: data.companyIntegrationId })}
             disabled={loading}
             startIcon={
               <i
@@ -170,55 +170,69 @@ export const Statement = ({ data, onChange }) => {
           <CircularProgress size={24} />
         </Box>
       ) : (
-        <Paper variant="outlined" sx={{ maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell />
-                <TableCell>Início</TableCell>
-                <TableCell>Final</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {statements.map((item) => {
-                const isSelected = selectedStatement?.sourceId === item.sourceId
-                const isLoadingRow = rowLoading === item.sourceId
-
-                return (
-                  <TableRow
-                    key={item.sourceId}
-                    hover
-                    onClick={() => handleRowClick(item)}
+        <Box sx={{ overflowY: 'auto', p: 1 }}>
+          <Grid container spacing={2}>
+            {statements.map((item) => {
+              const isConfirming = confirming === item.sourceId
+              return (
+                <Grid item key={item.sourceId} size={{xs: 12}}>
+                  
+                  <Card
+                    variant="outlined"
                     sx={{
-                      cursor: isLoadingRow ? 'wait' : 'pointer',
-                      backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.08)' : undefined
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&:hover .confirm-button-box': {
+                        opacity: 1,
+                      },
                     }}
                   >
-                    <TableCell width={30}>
-                      {isLoadingRow ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        isSelected && <i className="ri-check-line" style={{ fontSize: '16px' }} />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {format(
-                        fromZonedTime(item.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),
-                        'dd/MM/yyyy HH:mm'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {format(
-                        fromZonedTime(item.end, Intl.DateTimeFormat().resolvedOptions().timeZone),
-                        'dd/MM/yyyy HH:mm'
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </Paper>
+                    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="body2" component="span" sx={{ marginRight: 2 }}>
+                          {format(
+                            fromZonedTime(item.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),
+                            'dd/MM/yyyy'
+                          )}
+                        </Typography>
+                        <Typography variant="body2" component="span" sx={{ marginRight: 2 }}>
+                          até
+                        </Typography>
+                        <Typography variant="body2" component="span">
+                          {format(
+                            fromZonedTime(item.end, Intl.DateTimeFormat().resolvedOptions().timeZone),
+                            'dd/MM/yyyy'
+                          )}
+                        </Typography>
+                      </Box>
+                      <Box
+                        className="confirm-button-box"
+                        sx={{
+                          opacity: 0,
+                          transition: 'opacity 0.3s',
+                        }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleConfirmStatement(item)}
+                          disabled={isConfirming}
+                          startIcon={isConfirming ? <CircularProgress size={16} color="inherit" /> : null}
+                        >
+                          {isConfirming ? 'Carregando...' : 'Confirmar'}
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                                    
+                </Grid>
+              )
+            })}
+          </Grid>
+        </Box>
       )}
 
       {/* Modal Novo */}
@@ -240,18 +254,18 @@ export const Statement = ({ data, onChange }) => {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenModal(false)} disabled={confirming}>
+          <Button onClick={() => setOpenModal(false)} disabled={confirming === 'new'}>
             Cancelar
           </Button>
           <Button
             variant="contained"
             onClick={handleConfirmNew}
-            disabled={!dateValue || confirming}
+            disabled={!dateValue || confirming === 'new'}
             startIcon={
-              confirming ? <CircularProgress size={16} color="inherit" /> : <i className="ri-check-line" />
+              confirming === 'new' ? <CircularProgress size={16} color="inherit" /> : <i className="ri-check-line" />
             }
           >
-            {confirming ? 'Confirmando...' : 'Confirmar'}
+            {confirming === 'new' ? 'Confirmando...' : 'Confirmar'}
           </Button>
         </DialogActions>
       </Dialog>

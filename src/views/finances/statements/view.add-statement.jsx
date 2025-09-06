@@ -30,7 +30,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
     }
   }, [open])
 
-  const handleSubmit = async (values, { resetForm }) => {
+  const handleSubmit = async (values) => {
     try {
       await statements.create(values)
       onSubmit()
@@ -152,6 +152,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
                 data={{ companyIntegrationId: _.filter(values.bankAccount?.bankAccountIntegrations, (item) => item.typeBankAccountIntegrationId == "A4518539-3E1A-4595-B61D-8FA095B1A1A8")[0]?.companyIntegration?.id }}
                 onChange={(item) => {
                   setFieldValue('statement', item)
+                  handleSubmit()
                 }}
               />
             )}
@@ -226,6 +227,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
               </>
             )}
 
+            {/*
             <Box sx={{ pt: 3, borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
               <Button
                 type="submit"
@@ -242,6 +244,8 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
               </Button>
             </Box>
+            */}
+
           </Form>
         )}
       </Formik>
