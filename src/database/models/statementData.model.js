@@ -47,6 +47,11 @@ export class StatementData {
     field: 'fee',
     type: DataTypes.DECIMAL(18, 2)
   }
+  
+  shipping = {
+    field: 'shipping',
+    type: DataTypes.DECIMAL(18, 2)
+  }
 
   debit = {
     field: 'debit',

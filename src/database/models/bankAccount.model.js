@@ -14,7 +14,7 @@ export class BankAccount {
     type: DataTypes.TINYINT
   }
 
-  bankName = {
+  name = {
     field: 'nome_banco',
     type: DataTypes.STRING
   }

@@ -35,7 +35,9 @@ const NumericField = (props) => {
 
   return (
     <MuiTextField
+      {...props.field}
       {...props}
+      type='text'
       value={formatValue(props.field.value)}
       onChange={handleChange}
       slotProps={{ input: { inputMode: 'decimal' } }}

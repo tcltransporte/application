@@ -7,6 +7,7 @@ import { addDays } from "date-fns";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/libs/auth";
 import _ from "lodash";
+import fs from "fs";
 
 export async function authorization({companyIntegrationId}) {
 
@@ -121,15 +122,24 @@ export async function getStatement({companyIntegrationId, fileName}) {
 
     const statements = []
 
-    for (const item of json) {
+    for (let item of json) {
 
-        console.log(item)
+        //const pack_id = mercadolivre_orders.filter((c) => c.id.toString() == item.ORDER_ID?.toString())[0]?.pack_id
 
+        if (item.ORDER_ID) {
+            
+            const order = await findOne({access_token: token.access_token, orderId: item.ORDER_ID})
+
+            const result = order.results[0]
+
+            //fs.writeFileSync(`C:\\Arquivos\\order-${item.ORDER_ID}.json`, JSON.stringify(order, null, 2), "utf-8");
+
+            item.DESCRIPTION = result.status
+
+        }
+        
         let statementData = {}
-
-        //statementData.id = undefined;
-        //statementData.shippingCost = undefined;
-        //statementData.statementId = statement2.id;              
+         
         statementData.entryDate = item.DATE ? format(new Date(item.DATE), 'yyyy-MM-dd HH:mm:ss') : null
         statementData.entryType = item.DESCRIPTION
         statementData.sourceId = item.SOURCE_ID?.toString()
@@ -137,16 +147,10 @@ export async function getStatement({companyIntegrationId, fileName}) {
         statementData.amount = parseFloat(item.GROSS_AMOUNT)
         statementData.fee = parseFloat(item.MP_FEE_AMOUNT)
         //statementData.coupon = parseFloat(item.COUPON_AMOUNT);
-        //statementData.fee = parseFloat(item.MP_FEE_AMOUNT);
-        //statementData.shipping = parseFloat(item.SHIPPING_FEE_AMOUNT);
+        statementData.shipping = parseFloat(item.SHIPPING_FEE_AMOUNT)
         statementData.debit = parseFloat(item.NET_DEBIT_AMOUNT) * -1
         statementData.credit = parseFloat(item.NET_CREDIT_AMOUNT)
         statementData.balance = parseFloat(item.BALANCE_AMOUNT)
-        statementData.extra = {
-            coupon: parseFloat(item.COUPON_AMOUNT),
-            shipping: parseFloat(item.SHIPPING_FEE_AMOUNT)
-        }
-        //statementData.archive = `{"fileName": "${fileName}", "base64": "${csvText}"}`
 
         statements.push(statementData)
 
@@ -157,44 +161,31 @@ export async function getStatement({companyIntegrationId, fileName}) {
 }
 
 export async function addStatement({companyIntegrationId, date}) {
+    try {
 
-    //await Auth.verify(req, res).then(async({options, companyId}) => {
+        const token = await authorization({companyIntegrationId})
 
-    //  await MercadoPago.verify(options, companyId).then(async ({id, access_token}) => {
-
-        try {
-
-            const token = await authorization({companyIntegrationId})
-
-            const data = {
-                begin_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'"),
-                end_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'")
-            }
-
-            const response = await fetch("https://api.mercadopago.com/v1/account/release_report", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token.access_token}`
-                },
-                body: JSON.stringify(data)
-            })
-
-            if (!response.ok) {
-                throw new Error(`Erro: ${response.status} - ${response.statusText}`)
-            }
-
-        } catch (error) {
-          throw new Error(error.message)
+        const data = {
+            begin_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'"),
+            end_date: format(addDays(date, 2), "yyyy-MM-dd'T'00:00:00'Z'")
         }
-    //  }).catch((error) => {
-    //    MercadoLivreException.unauthorized(res, error);
-    //  });
-      
-    //}).catch((error) => {
-    //  Exception.unauthorized(res, error);
-    //});
 
+        const response = await fetch("https://api.mercadopago.com/v1/account/release_report", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token.access_token}`
+            },
+            body: JSON.stringify(data)
+        })
+
+        if (!response.ok) {
+            throw new Error(`Erro: ${response.status} - ${response.statusText}`)
+        }
+
+    } catch (error) {
+        throw new Error(error.message)
+    }
 }
 
 export async function orders({companyIntegrationId, start, end}) {
@@ -218,13 +209,34 @@ export async function orders({companyIntegrationId, start, end}) {
 
     return orders;
 
-
 }
 
 async function mercadolivre_orders({access_token, start, end, offset}) {
 
     const r = await fetch(
         `https://api.mercadolibre.com/orders/search?seller=2484487707&offset=${offset * 50}&limit=50&order.date_last_updated.from=${start}T00:00:00.000-04:00&order.date_last_updated.to=${end}T23:59:59.999-04:00`,
+        {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${access_token}`,
+            },
+        }
+    );
+
+    if (!r.ok) {
+        throw new Error(`Erro na requisição: ${r.status} ${r.statusText}`);
+    }
+
+    const data = await r.json();
+    
+    return data;
+
+}
+
+async function findOne({access_token, orderId}) {
+
+    const r = await fetch(
+        `https://api.mercadolibre.com/orders/search?seller=2484487707&q=${orderId}`,
         {
             method: "GET",
             headers: {

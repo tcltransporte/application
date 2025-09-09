@@ -82,7 +82,7 @@ export async function getPartner(search) {
 
     const session = await getServerSession(authOptions);
 
-    //await getTinyPartner(search)
+    await getTinyPartner(search)
 
     const db = new AppContext();
 
@@ -166,7 +166,7 @@ export async function getBankAccounts (search) {
     where.push({ agencia: { [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
 
     const bankAccounts = await db.BankAccount.findAll({
-        attributes: ['codigo_conta_bancaria', 'agency', 'number'],
+        attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'],
         include: [
             {model: db.Bank, as: 'bank', attributes: ['id', 'name']},
             {model: db.BankAccountIntegration, as: 'bankAccountIntegrations', attributes: ['id', 'typeBankAccountIntegrationId'], include: [

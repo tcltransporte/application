@@ -12,57 +12,55 @@ import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 
 export async function findAll({limit, offset, date}) {
 
-  console.log(date)
+  const session = await getServerSession(authOptions)
 
-    const session = await getServerSession(authOptions)
+  const db = new AppContext()
 
-    const db = new AppContext()
+  const whereClauses = []
 
-    const whereClauses = []
+  whereClauses.push({'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial})
 
-    whereClauses.push({'$bankAccount.CodigoEmpresaFilial$': session.company.codigo_empresa_filial})
-
-    // Filtro por data de vencimento
-    if (date?.begin && date?.end) {
-      whereClauses.push({
-        [Sequelize.Op.or]: [
-          {
-            begin: {
-              [Sequelize.Op.between]: [date.begin, date.end]
-            }
-          },
-          {
-            end: {
-              [Sequelize.Op.between]: [date.begin, date.end]
-            }
+  // Filtro por data de vencimento
+  if (date?.begin && date?.end) {
+    whereClauses.push({
+      [Sequelize.Op.or]: [
+        {
+          begin: {
+            [Sequelize.Op.between]: [date.begin, date.end]
           }
-        ]
-      })
-    }
-
-    const statements = await db.Statement.findAndCountAll({
-        include: [
-            {model: db.BankAccount, as: 'bankAccount', include: [
-                {model: db.Bank, as: 'bank'}
-            ]}
-        ],
-        where: whereClauses,
-        order: [['createdAt', 'DESC']],
-        limit,
-        offset
-    })
-
-    //return _.map(statements, (item) => item.get({ plain: true }))
-
-    return {
-        request: {
-            limit, offset, date
         },
-        response: {
-            count: statements.count,
-            rows: _.map(statements.rows, (item) => item.get({ plain: true }))
+        {
+          end: {
+            [Sequelize.Op.between]: [date.begin, date.end]
+          }
         }
-    }
+      ]
+    })
+  }
+
+  const statements = await db.Statement.findAndCountAll({
+      include: [
+          {model: db.BankAccount, as: 'bankAccount', include: [
+              {model: db.Bank, as: 'bank'}
+          ]}
+      ],
+      where: whereClauses,
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+  })
+
+  //return _.map(statements, (item) => item.get({ plain: true }))
+
+  return {
+      request: {
+          limit, offset, date
+      },
+      response: {
+          count: statements.count,
+          rows: _.map(statements.rows, (item) => item.get({ plain: true }))
+      }
+  }
 
 }
 
@@ -97,10 +95,10 @@ export async function findOne({ statementId }) {
         include: [
           { model: db.Partner, as: 'partner' },
           { model: db.FinancialCategory, as: 'category' },
-          { model: db.BankAccount, as: 'origin', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
+          { model: db.BankAccount, as: 'origin', attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'], include: [
             { model: db.Bank, as: 'bank', attributes: ['id', 'name']}
           ]},
-          { model: db.BankAccount, as: 'destination', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
+          { model: db.BankAccount, as: 'destination', attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'], include: [
             { model: db.Bank, as: 'bank', attributes: ['id', 'name']}
           ]}
         ]
@@ -120,8 +118,6 @@ export async function findOne({ statementId }) {
     allEntryTypes
   }
 
-  console.log(response)
-
   return response;
 
 }
@@ -137,14 +133,12 @@ export async function create(formData) {
     const begin = format(addDays(new Date(formData.statement.begin), -60), 'dd/MM/yyyy HH:mm')
     const end = format(addDays(new Date(formData.statement.end), 30), 'dd/MM/yyyy HH:mm')
 
-    const tiny_payments = await getTinyReceivements({start: begin, end: end})
-
-    const mercadolivre_orders = await orders({companyIntegrationId: '00A649D7-C96A-47EB-BA71-87999EE16849', start: '2025-08-05', end: '2025-09-05'})
+    await getTinyReceivements({start: begin, end: end})
 
     const statement = await db.Statement.create({
         companyId: session.company.codigo_empresa_filial,
         sourceId: formData.statement.sourceId,
-        bankAccountId: formData.bankAccount.codigo_conta_bancaria,
+        bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
         begin: format(fromZonedTime(formData.statement.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
         end: format(fromZonedTime(formData.statement.end, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
         //archiveId: archive.id,
@@ -153,24 +147,69 @@ export async function create(formData) {
 
     for (const item of formData.statement.statementData) {
 
-      console.log(item)
-
       const statementData = await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
 
-      const pack_id = mercadolivre_orders.filter((c) => c.id.toString() == item.reference?.toString())[0]?.pack_id
+      if (item.entryType == `paid`) {
 
-      const receivement = await db.FinancialMovementInstallment.findOne({
-        include: [
-          {model: db.FinancialMovement, as: 'financialMovement'}
-        ],
-        where: [{'$financialMovementInstallment.Descricao$': {[Sequelize.Op.like]: `%${pack_id}%`}}],
-        transaction
-      })
+        const receivement = await db.FinancialMovementInstallment.findOne({
+          include: [
+            {model: db.FinancialMovement, as: 'financialMovement'}
+          ],
+          where: [{
+            [Sequelize.Op.or]: [
+              { '$financialMovementInstallment.Descricao$': { [Sequelize.Op.like]: `%${item.reference}%` } }
+            ]
+          }],
+          transaction
+        })
 
-      if (receivement) {
+        if (receivement) {
 
-        await db.StatementDataConciled.create({statementDataId: statementData.id, type: 1, partnerId: receivement.financialMovement?.partnerId, amount: receivement.amount, receivementId: receivement.codigo_movimento_detalhe}, {transaction})
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 1,
+            partnerId: receivement.financialMovement?.partnerId,
+            categoryId: receivement.financialMovement?.categoryId,
+            amount: receivement.amount,
+            receivementId: receivement.codigo_movimento_detalhe,
+          }, {transaction})
 
+        }
+
+      }
+
+      if (item.entryType == `cancelled`) {
+
+        await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          type: `transfer`,
+          originId: 1,
+          destinationId: 15,
+          amount: 0,
+        }, {transaction})
+
+      }
+
+      if (parseFloat(statementData.fee) < 0) {
+        await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          type: 2,
+          partnerId: 109,
+          categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
+          amount: parseFloat(statementData.fee)},
+          {transaction}
+        );
+      }
+
+      if (parseFloat(statementData.shipping) < 0) {
+        await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          type: 2,
+          partnerId: 109,
+          categoryId: 34, //'4.25 - Fretes
+          amount: parseFloat(statementData.shipping)}, 
+          {transaction}
+        );
       }
 
     }
@@ -209,7 +248,6 @@ export async function update(statementDataId, values) {
 
 }
 
-
 export async function saveConciled(statementDataId, values) {
 
   const db = new AppContext()
@@ -219,6 +257,8 @@ export async function saveConciled(statementDataId, values) {
     type: values.type,
     partnerId: values.partner?.codigo_pessoa || null,
     categoryId: values.category?.id || null,
+    originId: values.origin?.codigo_conta_bancaria || null,
+    destinationId: values.destination?.codigo_conta_bancaria || null,
     amount: Number(values.amount) || 0,
     fee: Number(values.fee) || 0,
     discount: Number(values.discount) || 0,
@@ -271,6 +311,13 @@ export async function desvincule({statementDataConciledId}) {
 
 }
 
+export async function concile({id}) {
+
+  console.log(id)
+
+}
+
+//excluir função - NÃO UTILIZADA
 export async function refresh() {
 
   const r = await orders({companyIntegrationId: '00A649D7-C96A-47EB-BA71-87999EE16849', start: '2025-08-05', end: '2025-09-05'})

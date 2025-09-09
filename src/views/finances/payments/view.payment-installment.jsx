@@ -437,7 +437,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     financialCategory: installment?.financialMovement?.financialCategory || null,
     amount: installment?.amount || 0,
     digitableLine: installment?.boleto?.digitableLine || "",
-    issueDate: installment?.financialMovement?.issueDate ? format(new Date(installment.financialMovement.issueDate), "yyyy-MM-dd") : null,
+    issueDate: installment?.financialMovement?.issueDate ? format(new Date(installment.financialMovement.issueDate), "dd/MM/yyyy") : null,
     dueDate: installment?.dueDate,
     boletoNumber: installment?.boleto?.number || "",
     observation: installment?.observation || "",
@@ -529,7 +529,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.amount}}>
                       <Field
                         component={NumericField}
-                        type="number"
+                        type="text"
                         name="amount"
                         label="Valor"
                       />
@@ -538,7 +538,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.installments}}>
                       <Field
                         component={TextField}
-                        type="text"
+                        type="number"
                         name="installment"
                         label="Parcela"
                       />

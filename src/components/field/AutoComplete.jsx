@@ -70,12 +70,16 @@ export const AutoComplete = (props) => {
     }
   }
 
+  const requestIdRef = useRef(0)
+
   const handleInputChange = async (e) => {
     try {
       if (props.value || props.field?.value) return
 
       const query = e?.target?.value
       updateBoxPosition()
+
+      const currentRequestId = ++requestIdRef.current
 
       setState(prev => ({
         ...prev,
@@ -86,19 +90,21 @@ export const AutoComplete = (props) => {
       }))
 
       const data = await props.onSearch(query)
-      setState(prev => ({
-        ...prev,
-        data,
-        nothing: data.length === 0
-      }))
 
-      if (props.form && props.field) {
-        props.form.setFieldValue(props.field.name, null) // reset temporário enquanto digita
+      // só aplica se for a requisição mais recente
+      if (currentRequestId === requestIdRef.current) {
+        setState(prev => ({
+          ...prev,
+          data,
+          nothing: data.length === 0,
+          loading: false
+        }))
       }
     } catch (error) {
       console.error(error)
-    } finally {
-      setState(prev => ({ ...prev, loading: false }))
+      if (currentRequestId === requestIdRef.current) {
+        setState(prev => ({ ...prev, loading: false }))
+      }
     }
   }
 
@@ -236,7 +242,7 @@ export const AutoComplete = (props) => {
                 <IconButton tabIndex={-1} size="small" edge="end" disabled>
                   <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
                 </IconButton>
-              ) : (props.field?.value ? (
+              ) : (valueText ? (
                 <IconButton tabIndex={-1} size="small" edge="end" onClick={handleClear} disabled={props.disabled}>
                   <i className="ri-close-line" style={{ fontSize: 20 }} />
                 </IconButton>

@@ -220,18 +220,43 @@ export async function update(formData) {
 
 }
 
-export async function concile(id = []) {
- 
-  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=${
-    company.dataValues.tiny.token
-  }&conta=${encodeURIComponent(
+export async function concile({codigo_movimento_detalhe, date, bankAccountId, amount, observation}) {
+
+  const db = new AppContext()
+
+  const payment = await db.FinancialMovementInstallment.findOne({
+      attributes: ['installment', 'amount', 'dueDate', 'observation'],
+      include: [
+          {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'],
+              include: [
+                  {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']},
+                  {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname']},
+                  {model: db.CenterCost, as: 'centerCost', attributes: ['id', 'description']},
+                  {model: db.FinancialCategory, as: 'financialCategory', attributes: ['id', 'description']},
+              ]
+          },
+          {model: db.PaymentMethod, as: 'paymentMethod', attributes: ['id', 'name']},
+          {model: db.BankAccount, as: 'bankAccount', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
+              {model: db.Bank, as: 'bank', attributes: ['id', 'name']}
+          ]},
+      ],
+      where: [
+          {codigo_movimento_detalhe: codigo_movimento_detalhe}
+      ]
+  })
+
+  console.log(payment)
+
+  return
+  
+  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
       conta: {
-        id: item.dataValues.payment.sourceId,
-        data: dayjs(item.statementData?.date).format("DD/MM/YYYY"),
+        id: payment.externalId,
+        data: dayjs(date).format("DD/MM/YYYY"),
         contaOrigem: "Mercado Pago",
-        valorPago: parseFloat(item?.amount) * -1,
-        historico: historico
+        valorPago: amount * -1,
+        historico: observation
       }
     })
   )}&formato=JSON`
@@ -243,7 +268,7 @@ export async function concile(id = []) {
     }
   })
 
-  const baixado = await response.json()
+  await response.json()
 
 }
 

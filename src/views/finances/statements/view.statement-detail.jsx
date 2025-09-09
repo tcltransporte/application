@@ -350,9 +350,11 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
               </Button>
             ) : (
               <>
+              {/*
                 <Button variant="outlined" color="info" startIcon={<i className="ri-delete-bin-line" style={{ fontSize: 18 }} />} onClick={() => statements.refresh()}>
                   Buscar
                 </Button>
+              */}
               </>
             )}
           </div>
@@ -360,7 +362,11 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             <Button variant="text" onClick={onClose} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />}>
               Desconciliar
             </Button>
-            <Button variant="contained" color="success" onClick={onClose} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}>
+            <Button variant="contained" color="success" onClick={async () => {
+
+              await statements.concile({id: selectedConcileds})
+
+            }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}>
               Conciliar
             </Button>
           </div>
@@ -471,7 +477,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
       <ConciliationForm
         key="new-conciled-form"
         statementDataId={data.id}
-        initialValues={{ type: '', partner: null, category: null, amount: '', fee: '', discount: '' }}
+        initialValues={{ type: '', partner: null, category: null, amount: 0, fee: 0, discount: 0 }}
         onFormSubmitted={handleConciliationSubmitSuccess}
         onCancel={handleCancelForm}
       />
@@ -511,7 +517,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
           <>{item.partner?.surname}<br />{item.category?.description}</>
         )}
         {(item.type == 'transfer') && (
-          <>{item.origin?.bank?.name} - {item.origin?.agency}<br />{item.destination?.bank?.name} - {item.destination?.agency}</>
+          <>{item.origin?.name} - {item.origin?.agency} / {item.origin?.number}<br />{item.destination?.name} - {item.destination?.agency} / {item.destination?.number}</>
         )}
       </TableCell>
       <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
@@ -550,6 +556,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
 
 function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSubmitted, onCancel }) {
   const validationSchema = Yup.object({
+    /*
     type: Yup.string().required(),
     partner: Yup.object().nullable().when('type', {
       is: (type) => type === 'payment' || type === 'receivement',
@@ -564,9 +571,11 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
     amount: Yup.number().typeError('Valor deve ser um número').required().min(0.01, 'Valor deve ser maior que zero'),
     fee: Yup.number().typeError('Taxa deve ser um número').min(0, 'Taxa não pode ser negativa').nullable(),
     discount: Yup.number().typeError('Desconto deve ser um número').min(0, 'Desconto não pode ser negativa').nullable(),
+    */
   });
 
   const handleSubmitInternal = async (values, { setSubmitting }) => {
+    console.log(values)
     setSubmitting(true);
     try {
       await statements.saveConciled(statementDataId, values);
@@ -580,7 +589,7 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
 
   return (
     <Formik
-      initialValues={initialValues || { type: '', partner: null, category: null, bankAccount: null, amount: '', fee: '', discount: '' }}
+      initialValues={initialValues || { type: '', partner: null, category: null, origin: null, destination: null, bankAccount: null, amount: '', fee: '', discount: '' }}
       validationSchema={validationSchema}
       enableReinitialize={true}
       onSubmit={handleSubmitInternal}
@@ -621,8 +630,8 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
             )}
             {(values.type === 'transfer') && (
               <>
-                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.bank?.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
-                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(bankAccount) => `${bankAccount.bank?.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.bank?.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
+                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(bankAccount) => `${bankAccount.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
+                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(bankAccount) => `${bankAccount.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
               </>
             )}
           </TableCell>

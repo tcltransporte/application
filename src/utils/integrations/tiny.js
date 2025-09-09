@@ -7,7 +7,8 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 
 export async function getTinyPartner(search) {
-  
+  try {
+
     const session = await getServerSession(authOptions)
 
     const db = new AppContext()
@@ -35,6 +36,8 @@ export async function getTinyPartner(search) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         const r = await response.json()
+
+        console.log(r.retorno.contatos)
 
         const externalIdsFromApi = _.map(r.retorno.contatos, item => _.get(item, 'contato.id'))
     
@@ -65,6 +68,9 @@ export async function getTinyPartner(search) {
 
     }
 
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function getTinyCategories(search) {

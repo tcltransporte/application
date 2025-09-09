@@ -70,6 +70,7 @@
     -->
 
     <siteMapNode title="Finanças" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
+      <siteMapNode title="Caixa" url="\finances\cashier" description="Caixa"/>
       <!--<siteMapNode title="Caixa Fechamento" url="${URL}\Financeiro\ListaCaixaFechamento.aspx" description="Fechamento do caixa. Realiza o bloqueio do caixa para evitar lançamentos indevidos."/>-->
       <!--<siteMapNode title="Conciliação" url="${URL}\Financeiro\ListaconciliacaoNovo.aspx" description="Conciliação bancária"/>-->
       <siteMapNode title="Contas a pagar" url="\finances\payments" description="Contas a pagar"/>
@@ -94,7 +95,8 @@
     </siteMapNode>
 
     <siteMapNode title="Logística" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
-      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
+      <!--<siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>-->
+      <siteMapNode title="Andamento" url="\logistic\decrease" description="Viagens"/>
     </siteMapNode>
 
     <!--

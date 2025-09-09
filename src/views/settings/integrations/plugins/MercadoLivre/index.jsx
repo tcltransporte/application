@@ -120,8 +120,15 @@ export const Statement = ({ data, onChange }) => {
   }
 
   return (
-    <div>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Cabeçalho fixo */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={1}
+        sx={{ flexShrink: 0 }}
+      >
         <Typography fontWeight="bold">Selecione um extrato</Typography>
 
         <ButtonGroup variant="outlined" size="small">
@@ -163,22 +170,20 @@ export const Statement = ({ data, onChange }) => {
             <i className="ri-upload-line" style={{ marginRight: 8 }} /> Importar
           </MenuItem>
         </Menu>
-        
       </Box>
 
+      {/* Lista com rolagem */}
       {loading ? (
-        <Box mt={2} display="flex" justifyContent="center">
+        <Box mt={2} display="flex" justifyContent="center" sx={{ flexGrow: 1 }}>
           <CircularProgress size={24} />
         </Box>
       ) : (
-        // AQUI A MUDANÇA: Adicionado maxHeight para limitar a altura e ativar a rolagem
-        <Box sx={{ overflowY: 'auto', p: 1, maxHeight: '400px' }}>
+        <Box sx={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', p: 1 }}>
           <Grid container spacing={2}>
             {statements.map((item) => {
               const isConfirming = confirming === item.sourceId
               return (
-                <Grid item key={item.sourceId} size={{xs: 12}}> {/* <-- Prop corrigida */}
-                  
+                <Grid item key={item.sourceId} size={{xs: 12}}>
                   <Card
                     variant="outlined"
                     sx={{
@@ -193,7 +198,13 @@ export const Statement = ({ data, onChange }) => {
                       },
                     }}
                   >
-                    <CardContent sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <CardContent
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
                       <Box>
                         <Typography variant="body2" component="span" sx={{ marginRight: 2 }}>
                           {format(
@@ -216,7 +227,8 @@ export const Statement = ({ data, onChange }) => {
                         sx={{
                           opacity: 0,
                           transition: 'opacity 0.3s',
-                        }}>
+                        }}
+                      >
                         <Button
                           variant="contained"
                           size="small"
@@ -224,12 +236,11 @@ export const Statement = ({ data, onChange }) => {
                           disabled={isConfirming}
                           startIcon={isConfirming ? <CircularProgress size={16} color="inherit" /> : null}
                         >
-                          {isConfirming ? 'Carregando...' : 'Confirmar'}
+                          {isConfirming ? 'Downloading...' : 'Download'}
                         </Button>
                       </Box>
                     </CardContent>
                   </Card>
-                                      
                 </Grid>
               )
             })}
@@ -271,6 +282,7 @@ export const Statement = ({ data, onChange }) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   )
+
 }
