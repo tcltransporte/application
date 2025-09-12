@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
 import { orders } from "../settings/integrations/plugins/index.controller"
 import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
+import * as payments from "@/app/server/finances/payments"
 
 export async function findAll({limit, offset, date}) {
 
@@ -80,20 +81,29 @@ export async function findOne({ statementId }) {
     : entryTypes
 
   const statementData = await db.StatementData.findAll({
-    where: {
+    where: [{
       statementId: statement.id,
+      sourceId: { [Sequelize.Op.ne]: '' }
       //entryType: { [Sequelize.Op.in]: entryTypesArray }
-    },
+    }],
     order: [
       [Sequelize.literal('CASE WHEN [entryDate] IS NULL THEN 1 ELSE 0 END'), 'ASC'],
-      ['entryDate', 'ASC']
+      ['entryDate', 'ASC'],
+      [{ model: db.StatementDataConciled, as: 'concileds' }, 'type', 'ASC']
     ],
     include: [
-      {
-        model: db.StatementDataConciled,
-        as: 'concileds',
-        include: [
-          { model: db.Partner, as: 'partner' },
+      { model: db.StatementDataConciled, as: 'concileds', attributes: ['id', 'type', 'amount', 'fee', 'discount', 'paymentId', 'receivementId', 'isConciled', 'message'], include: [
+          { model: db.FinancialMovementInstallment, as: 'receivement', attributes: ['codigo_movimento_detalhe', 'amount', 'observation'], include: [
+            { model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'], include: [
+              { model: db.Partner, as: 'partner', attributes: ['surname'] }
+            ]}
+          ]},
+          { model: db.FinancialMovementInstallment, as: 'payment', attributes: ['codigo_movimento_detalhe', 'amount', 'observation'], include: [
+            { model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'], include: [
+              { model: db.Partner, as: 'partner', attributes: ['surname'] }
+            ]}
+          ]},
+          { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname'] },
           { model: db.FinancialCategory, as: 'category' },
           { model: db.BankAccount, as: 'origin', attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'], include: [
             { model: db.Bank, as: 'bank', attributes: ['id', 'name']}
@@ -106,7 +116,9 @@ export async function findOne({ statementId }) {
     ]
   });
 
-  const cleanData = statementData.map(data => data.get({ plain: true }))
+  let cleanData = statementData.map(data => data.get({ plain: true }))
+
+  cleanData = _.filter(cleanData, (c) => c.sourceId && c.description != 'reserve_for_debt_payment' && c.description != 'reserve_for_payout' && (parseFloat(c.credit) > 0 || parseFloat(c.debit) < 0))
 
   const allEntryTypes = [
     ...new Set(cleanData.map(data => data.entryType))
@@ -152,8 +164,9 @@ export async function create(formData) {
       if (item.entryType == `paid`) {
 
         const receivement = await db.FinancialMovementInstallment.findOne({
+          attributes: ['codigo_movimento_detalhe', 'amount'],
           include: [
-            {model: db.FinancialMovement, as: 'financialMovement'}
+            {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
           ],
           where: [{
             [Sequelize.Op.or]: [
@@ -162,19 +175,39 @@ export async function create(formData) {
           }],
           transaction
         })
+        
+        await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          type: 1,
+          partnerId: receivement?.financialMovement?.partnerId,
+          categoryId: receivement?.financialMovement?.categoryId || 2,
+          amount: receivement?.amount,
+          receivementId: receivement?.codigo_movimento_detalhe,
+        }, {transaction})
 
-        if (receivement) {
-
+          
+        if (parseFloat(statementData.fee) < 0) {
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
-            type: 1,
-            partnerId: receivement.financialMovement?.partnerId,
-            categoryId: receivement.financialMovement?.categoryId,
-            amount: receivement.amount,
-            receivementId: receivement.codigo_movimento_detalhe,
-          }, {transaction})
-
+            type: 2,
+            partnerId: 159,
+            categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
+            amount: parseFloat(statementData.fee)},
+            {transaction}
+          );
         }
+
+        if (parseFloat(statementData.shipping) < 0) {
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 2,
+            partnerId: 159,
+            categoryId: 34, //'4.25 - Fretes
+            amount: parseFloat(statementData.shipping)}, 
+            {transaction}
+          );
+        }
+
 
       }
 
@@ -185,34 +218,69 @@ export async function create(formData) {
           type: `transfer`,
           originId: 1,
           destinationId: 15,
-          amount: 0,
+          amount: item.amount,
         }, {transaction})
 
       }
 
-      if (parseFloat(statementData.fee) < 0) {
-        await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          type: 2,
-          partnerId: 109,
-          categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
-          amount: parseFloat(statementData.fee)},
-          {transaction}
-        );
-      }
-
-      if (parseFloat(statementData.shipping) < 0) {
-        await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          type: 2,
-          partnerId: 109,
-          categoryId: 34, //'4.25 - Fretes
-          amount: parseFloat(statementData.shipping)}, 
-          {transaction}
-        );
-      }
-
     }
+
+  })
+
+}
+
+export async function destroy({ id }) {
+
+  const db = new AppContext()
+
+  await db.transaction(async (transaction) => {
+
+    // Buscar todos os statementData que pertencem ao statement
+    const statementDataList = await db.StatementData.findAll({
+      where: { statementId: id },
+      transaction
+    })
+
+    const statementDataIds = statementDataList.map(s => s.id)
+
+    if (statementDataIds.length > 0) {
+      // Apaga todos os conciliações vinculadas
+      await db.StatementDataConciled.destroy({
+        where: { statementDataId: statementDataIds },
+        transaction
+      })
+
+      // Apaga os statementData vinculados
+      await db.StatementData.destroy({
+        where: { id: statementDataIds },
+        transaction
+      })
+    }
+
+    // Por fim apaga o statement
+    await db.Statement.destroy({
+      where: { id },
+      transaction
+    })
+
+  })
+}
+
+export async function deleteData({id}) {
+  
+  const db = new AppContext()
+
+  await db.transaction(async (transaction) => {
+
+    await db.StatementDataConciled.destroy({
+      where: [{statementDataId: id}],
+      transaction
+    })
+
+    await db.StatementData.destroy({
+      where: [{id: id}],
+      transaction
+    })
 
   })
 
@@ -278,7 +346,6 @@ export async function saveConciled(statementDataId, values) {
 
 }
 
-
 export async function deleteConciled({id}) {
 
   const db = new AppContext()
@@ -299,7 +366,21 @@ export async function vinculeReceivement({statementDataConciledId, codigo_movime
   
   const db = new AppContext()
 
-  await db.StatementDataConciled.update({receivementId: codigo_movimento_detalhe}, {where: [{id: statementDataConciledId}]})
+  const receivement = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
+    ],
+    where: [{'$codigo_movimento_detalhe$': codigo_movimento_detalhe}]
+  })
+
+  await db.StatementDataConciled.update({
+    receivementId: receivement.codigo_movimento_detalhe,
+    partnerId: receivement.financialMovement.partnerId,
+    categoryId: receivement.financialMovement.categoryId,
+  }, 
+  {where: [{id: statementDataConciledId}]}
+  )
 
 }
 
@@ -313,7 +394,67 @@ export async function desvincule({statementDataConciledId}) {
 
 export async function concile({id}) {
 
-  console.log(id)
+  const db = new AppContext()
+
+  const concileds = await db.StatementDataConciled.findAll({
+    attributes: ['id', 'type', 'amount', 'paymentId', 'receivementId'],
+    include: [
+      {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate'], include: [
+        {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
+      ]}
+    ],
+    where: [{id: id, isConciled: false}]
+  })
+
+  for (const item of concileds) {
+
+    if (item.type == 1) {
+      console.log('recebimento')
+    }
+
+    if (item.type == 2) {
+      try {
+        await payments.concile({
+          codigo_movimento_detalhe: item.paymentId,
+          date: item.statementData.entryDate,
+          amount: item.amount,
+          bankAccountId: item.statementData.statement.bankAccountId,
+          observation: ''
+        })
+        await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
+      } catch (error) {
+        await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
+      }
+    }
+
+    if (item.type == 'transfer') {
+      console.log('transferência')
+    }
+
+  }
+
+}
+
+export async function desconcile({id}) {
+
+  const db = new AppContext()
+
+  const concileds = await db.StatementDataConciled.findAll({
+    attributes: ['id', 'type', 'paymentId'],
+    where: [{id: id}]
+  })
+
+  for (const item of concileds) {
+    try {
+      await payments.desconcile({
+        codigo_movimento_detalhe: item.paymentId
+      })
+      await db.StatementDataConciled.update({isConciled: false, message: null}, {where: [{id: item.id}]})
+    } catch (error) {
+      await db.StatementDataConciled.update({isConciled: false, message: error.message}, {where: [{id: item.id}]})
+    }
+   
+  }
 
 }
 

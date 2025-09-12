@@ -220,43 +220,89 @@ export async function update(formData) {
 
 }
 
-export async function concile({codigo_movimento_detalhe, date, bankAccountId, amount, observation}) {
+export async function desconcile({codigo_movimento_detalhe}) {
 
   const db = new AppContext()
 
   const payment = await db.FinancialMovementInstallment.findOne({
-      attributes: ['installment', 'amount', 'dueDate', 'observation'],
-      include: [
-          {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'],
-              include: [
-                  {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']},
-                  {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname']},
-                  {model: db.CenterCost, as: 'centerCost', attributes: ['id', 'description']},
-                  {model: db.FinancialCategory, as: 'financialCategory', attributes: ['id', 'description']},
-              ]
-          },
-          {model: db.PaymentMethod, as: 'paymentMethod', attributes: ['id', 'name']},
-          {model: db.BankAccount, as: 'bankAccount', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
-              {model: db.Bank, as: 'bank', attributes: ['id', 'name']}
-          ]},
-      ],
-      where: [
-          {codigo_movimento_detalhe: codigo_movimento_detalhe}
-      ]
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
+    ],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
-  console.log(payment)
+  const companyIntegration = await db.CompanyIntegration.findOne({
+    attributes: ['id', 'options'],
+    where: [{id: '92075C95-6935-4FA4-893F-F22EA9B55B5C'}]
+  })
 
-  return
+  const options = JSON.parse(companyIntegration.options)
+
+  console.log(options)
+
+  const args = `[["${payment.financialMovement.externalId}"],false]`;
+  const data = new URLSearchParams();
+  data.append('argsLength', args.length);
+  data.append('args', args);
+
+  const response = await fetch('https://erp.tiny.com.br/services/contas.pagar.server/1/excluirBorderos', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Cookie': `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
+      'Origin': 'https://erp.tiny.com.br',
+      'Referer': 'https://erp.tiny.com.br/caixa',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+      'x-custom-request-for': 'XAJAX',
+      'x-requested-with': 'XMLHttpRequest',
+      'x-user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+    },
+    body: data
+  })
+
+  const result = await response.json()
+
+  console.log(result)
+
+  //if (result[0].cmd != 'jc') {
+  //  throw new Error('Erro ao desconciliar!')
+  //}
+
+}
+
+export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
+
+  const db = new AppContext()
+
+  const payment = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
+    ],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
+  })
+
+  const bankAccount = await db.BankAccount.findOne({
+    attributes: ['name'],
+    where: [{codigo_conta_bancaria: bankAccountId}]
+  })
+
+  //console.log(payment.financialMovement.externalId)
+
+  //console.log({codigo_movimento_detalhe, date, bankAccountId, amount, observation})
+
+  //return
   
   const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
       conta: {
-        id: payment.externalId,
-        data: dayjs(date).format("DD/MM/YYYY"),
-        contaOrigem: "Mercado Pago",
+        id: payment.financialMovement.externalId,
+        data: format(new Date(date), 'dd/MM/yyyy'),
+        contaOrigem: bankAccount.name,
         valorPago: amount * -1,
-        historico: observation
+        historico: `Integração:`
       }
     })
   )}&formato=JSON`
@@ -268,7 +314,12 @@ export async function concile({codigo_movimento_detalhe, date, bankAccountId, am
     }
   })
 
-  await response.json()
+  const r = await response.json()
+
+  if (r.retorno.status == 'Erro') {
+    console.log(r.retorno.registros[0].registro.erros[0].erro)
+    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
+  }
 
 }
 

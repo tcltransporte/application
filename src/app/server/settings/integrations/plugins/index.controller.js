@@ -97,11 +97,13 @@ export async function getStatements({companyIntegrationId}) {
 
 }
 
-export async function getStatement({companyIntegrationId, fileName}) {
+export async function getStatement({companyIntegrationId, item}) {
+
+    console.log(item)
 
     const token = await authorization({companyIntegrationId})
 
-    const response = await fetch(`https://api.mercadopago.com/v1/account/release_report/${fileName}`, {
+    const response = await fetch(`https://api.mercadopago.com/v1/account/release_report/${item.fileName}`, {
         method: 'GET',
         headers: {
                 'Content-Type': 'application/json',
@@ -122,15 +124,25 @@ export async function getStatement({companyIntegrationId, fileName}) {
 
     const statements = []
 
+    //const orders1 = await orders({companyIntegrationId: companyIntegrationId, start: format(addDays(new Date(item.begin), -15), "yyyy-MM-dd"), end: format(addDays(new Date(item.end), 15), "yyyy-MM-dd")})
+
+    //fs.writeFileSync(`C:\\Arquivos\\${item.fileName}.json`, JSON.stringify(orders1, null, 2), "utf-8");
+
+    //console.log(orders1)
+
     for (let item of json) {
 
-        //const pack_id = mercadolivre_orders.filter((c) => c.id.toString() == item.ORDER_ID?.toString())[0]?.pack_id
+        //const pack_id = orders1.filter((c) => c.id.toString() == item.ORDER_ID.toString())[0]?.pack_id
 
         if (item.ORDER_ID) {
             
             const order = await findOne({access_token: token.access_token, orderId: item.ORDER_ID})
 
             const result = order.results[0]
+            
+            if (result.pack_id != null) {
+                item.ORDER_ID = result.pack_id
+            }
 
             //fs.writeFileSync(`C:\\Arquivos\\order-${item.ORDER_ID}.json`, JSON.stringify(order, null, 2), "utf-8");
 
@@ -191,8 +203,6 @@ export async function addStatement({companyIntegrationId, date}) {
 export async function orders({companyIntegrationId, start, end}) {
 
     const token = await authorization({companyIntegrationId})
-
-    console.log('token:', token)
 
     const result = await mercadolivre_orders({start, end, access_token: token.access_token, offset: 0});
 

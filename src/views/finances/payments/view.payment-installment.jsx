@@ -316,7 +316,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                       <Field
                         component={AutoComplete}
                         name="financialCategory"
-                        label="Plano de conta"
+                        label="Categoria"
                         text={(categorie) => categorie?.description}
                         onSearch={(search) => getFinancialCategory(search, 2)}
                         renderSuggestion={(item) => (
@@ -613,7 +613,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
                       <Field
                         component={TextField}
                         type="text"
-                        label="Plano de conta"
+                        label="Categoria"
                         name="financialCategory.description"
                         readOnly
                       />

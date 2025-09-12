@@ -110,7 +110,7 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
         sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
       >
         <div className='flex items-center justify-between pli-5 plb-4' style={{ padding: '16px' }}>
-          <Typography variant='h5'>{categorieId ? 'Editar' : 'Adicionar'} plano de conta</Typography>
+          <Typography variant='h5'>{categorieId ? 'Editar' : 'Adicionar'} Categoria</Typography>
           <IconButton size='small' onClick={handleClose}>
             <i className='ri-close-line text-2xl' />
           </IconButton>

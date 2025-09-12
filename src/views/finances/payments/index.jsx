@@ -104,7 +104,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
 
               <AutoComplete
                 name="category"
-                label="Plano de conta"
+                label="Categoria"
                 value={values.category}
                 text={(p) => p?.description}
                 onChange={(val) => setFieldValue("category", val)}
@@ -314,7 +314,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                   <TableCell sx={{ width: 56, minWidth: 56, px: 1 }} align="center"><Checkbox color="primary" checked={allSelected} indeterminate={selectedIds.size > 0 && !allSelected} onChange={toggleSelectAll}/></TableCell>
                   <TableCell sx={{ width: 80 }} align="left">Nº Doc.</TableCell>
                   <TableCell sx={{ width: 'auto', minWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} align="left">Filial / Beneficiário</TableCell>
-                  <TableCell sx={{ width: 240 }} align="left">Plano de conta</TableCell>
+                  <TableCell sx={{ width: 240 }} align="left">Categoria</TableCell>
                   <TableCell sx={{ width: 100 }} align="left">Tipo</TableCell>
                   <TableCell sx={{ width: 100 }} align="center">Vencimento</TableCell>
                   <TableCell sx={{ width: 100 }} align="center">Agendamento</TableCell>

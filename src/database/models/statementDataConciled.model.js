@@ -34,13 +34,6 @@ export class StatementDataConciled {
     type: DataTypes.INTEGER
   }
 
-/*
-  action = {
-    field: 'action',
-    type: DataTypes.STRING(30)
-  };
-  */
-
   type = {
     field: 'type',
     type: DataTypes.STRING(30)
@@ -56,37 +49,33 @@ export class StatementDataConciled {
     type: DataTypes.SMALLINT
   };
 
-/*
-  transferId = {
-    field: 'transferId',
-    type: DataTypes.STRING(6)
-  };
-*/
   amount = {
     field: 'amount',
-    type: DataTypes.DECIMAL(18, 2)
+    type: DataTypes.DECIMAL(18, 2),
+    defaultValue: 0
   }
 
   fee = {
     field: 'fee',
-    type: DataTypes.DECIMAL(18, 2)
+    type: DataTypes.DECIMAL(18, 2),
+    defaultValue: 0
   }
 
   discount = {
     field: 'discount',
-    type: DataTypes.DECIMAL(18, 2)
+    type: DataTypes.DECIMAL(18, 2),
+    defaultValue: 0
   }
 
-/*
   isConciled = {
     field: 'isConciled',
-    type: DataTypes.BOOLEAN
-  };
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  }
 
   message = {
     field: 'message',
     type: DataTypes.STRING(150)
-  };
-  */
+  }
 
 }

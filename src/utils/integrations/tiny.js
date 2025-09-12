@@ -308,7 +308,6 @@ export async function getTinyPayments({ start, end }) {
 }
 
 export async function getTinyReceivements({ start, end }) {
-
   await getTinyCategories()
 
   const session = await getServerSession(authOptions)
@@ -324,133 +323,177 @@ export async function getTinyReceivements({ start, end }) {
     ],
   })
 
-  if (companyIntegration) {
-    const options = JSON.parse(companyIntegration.dataValues.options)
+  if (!companyIntegration) return
 
-    const receivements = async ({ token, start, end, offset }) => {
-      const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`)
-      return await res.json()
+  const options = JSON.parse(companyIntegration.dataValues.options)
+
+  const receivements = async ({ token, start, end, offset }) => {
+    const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`)
+    return await res.json()
+  }
+
+  const receivementDetails = async ({ token, id }) => {
+    const url = `https://api.tiny.com.br/api2/conta.receber.obter.php?token=${token}&id=${id}&formato=json`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Erro ao buscar id ${id}: ${res.statusText}`)
+    return await res.json()
+  }
+
+  const firstPage = await receivements({ token: options.token, start, end, offset: 1 })
+  const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1
+  let contas = [...(firstPage?.retorno?.contas || [])]
+
+  if (totalPages > 1) {
+    const promises = []
+    for (let i = 2; i <= totalPages; i++) {
+      promises.push(receivements({ token: options.token, start, end, offset: i }))
     }
-
-    const receivementDetails = async ({ token, id }) => {
-      const url = `https://api.tiny.com.br/api2/conta.receber.obter.php?token=${token}&id=${id}&formato=json`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`Erro ao buscar id ${id}: ${res.statusText}`)
-      return await res.json()
+    const responses = await Promise.all(promises)
+    for (const response of responses) {
+      contas.push(...(response?.retorno?.contas || []))
     }
+  }
 
-    const firstPage = await receivements({ token: options.token, start, end, offset: 1 })
-    const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1
-    let contas = [...(firstPage?.retorno?.contas || [])]
+  await db.transaction(async (transaction) => {
+    // 1. Garantir que os parceiros existem
+    const partnerNames = _.uniq(contas.map((item) => item.conta.nome_cliente).filter(Boolean))
+    const existingPartners = await db.Partner.findAll({
+      where: { surname: partnerNames },
+      transaction,
+    })
 
-    if (totalPages > 1) {
-      const promises = []
-      for (let i = 2; i <= totalPages; i++) {
-        promises.push(receivements({ token: options.token, start, end, offset: i }))
+    const partnerMap = new Map(existingPartners.map((p) => [p.surname, p]))
+
+    for (const name of partnerNames) {
+      if (!partnerMap.has(name)) {
+        const newPartner = await db.Partner.create({ surname: name }, { transaction })
+        partnerMap.set(name, newPartner)
       }
-      const responses = await Promise.all(promises)
-      for (const response of responses) {
-        contas.push(...(response?.retorno?.contas || []))
+    }
+
+    // 2. Mapear pagamentos
+    const allPayments = contas.map((item) => {
+      const id = item.conta.id
+      const name = item.conta.nome_cliente
+      const partner = partnerMap.get(name)
+
+      return {
+        externalId: id,
+        documentNumber: id,
+        amountTotal: item.conta.valor,
+        issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
+        dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
+        observation: item.conta.historico,
+        partnerId: partner?.codigo_pessoa || null,
+      }
+    })
+
+    // 3. Buscar movimentos financeiros existentes
+    const existingMovements = await db.FinancialMovement.findAll({
+      where: {
+        externalId: allPayments.map((p) => p.externalId),
+      },
+      transaction,
+    })
+
+    const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]))
+
+    const toCreate = []
+    const toUpdate = []
+
+    for (const receivement of allPayments) {
+      const existing = existingMap.get(receivement.externalId)
+
+      if (!existing) {
+        // NOVO registro → cria
+        const detail = await receivementDetails({ token: options.token, id: receivement.externalId })
+
+        if (detail.retorno.conta?.categoria) {
+          const categorie = await db.FinancialCategory.findOne({
+            attributes: ['id'],
+            where: [{ Descricao: detail.retorno.conta?.categoria }],
+            transaction,
+          })
+          receivement.categoryId = categorie?.dataValues.id
+        }
+
+        receivement.type_operation = 1
+        receivement.companyId = session.company.companyBusiness.codigo_empresa
+        toCreate.push(receivement)
+
+      } else {
+        // JÁ EXISTE → verificar se precisa atualizar
+        const detail = await receivementDetails({ token: options.token, id: receivement.externalId })
+
+        let categoryId = existing.categoryId
+        if (detail.retorno.conta?.categoria) {
+          const categorie = await db.FinancialCategory.findOne({
+            attributes: ['id'],
+            where: [{ Descricao: detail.retorno.conta?.categoria }],
+            transaction,
+          })
+          categoryId = categorie?.dataValues.id || existing.categoryId
+        }
+
+        const updatedFields = {
+          documentNumber: receivement.documentNumber,
+          amountTotal: receivement.amountTotal,
+          issueDate: receivement.issueDate,
+          dueDate: receivement.dueDate,
+          observation: receivement.observation,
+          partnerId: receivement.partnerId,
+          categoryId,
+        }
+
+        // Só atualiza se tiver diferença
+        const hasChanges = Object.keys(updatedFields).some(
+          (key) => String(existing[key]) !== String(updatedFields[key])
+        )
+
+        if (hasChanges) {
+          toUpdate.push({ id: existing.codigo_movimento, ...updatedFields })
+        }
       }
     }
 
-    await db.transaction(async (transaction) => {
-      // 1. Garantir que os parceiros existem
-      const partnerNames = _.uniq(contas.map((item) => item.conta.nome_cliente).filter(Boolean))
-      const existingPartners = await db.Partner.findAll({
-        where: { surname: partnerNames },
+    // 4. Criar os novos
+    const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
+      transaction,
+      returning: true,
+    })
+
+    // 5. Atualizar os já existentes
+    for (const updateData of toUpdate) {
+      await db.FinancialMovement.update(updateData, {
+        where: { codigo_movimento: updateData.id },
         transaction,
       })
+    }
 
-      const partnerMap = new Map(existingPartners.map((p) => [p.surname, p]))
+    // 6. Criar parcelas apenas para os novos registros
+    const allMovements = createdMovements
+    const movementMap = new Map(allMovements.map((m) => [m.externalId, m]))
 
-      for (const name of partnerNames) {
-        if (!partnerMap.has(name)) {
-          const newPartner = await db.Partner.create({ surname: name }, { transaction })
-          partnerMap.set(name, newPartner)
-        }
-      }
+    for (const payment of toCreate) {
+      const movement = movementMap.get(payment.externalId)
 
-      // 2. Mapear pagamentos
-      const allPayments = contas.map((item) => {
-        const id = item.conta.id
-        const name = item.conta.nome_cliente
-        const partner = partnerMap.get(name)
+      if (!movement) continue
 
-        return {
-          externalId: id,
-          documentNumber: id,
-          amountTotal: item.conta.valor,
-          issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-          dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-          observation: item.conta.historico,
-          partnerId: partner?.codigo_pessoa || null,
-        }
-      })
-
-      // 3. Buscar movimentos financeiros existentes
-      const existingMovements = await db.FinancialMovement.findAll({
+      await db.FinancialMovementInstallment.findOrCreate({
         where: {
-          externalId: allPayments.map((p) => p.externalId),
+          financialMovementId: movement?.codigo_movimento,
+          installment: 1,
+        },
+        defaults: {
+          issueDate: payment.issueDate,
+          dueDate: payment.dueDate,
+          amount: payment.amountTotal,
+          observation: payment.observation,
         },
         transaction,
       })
-
-      const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]))
-
-      const toCreate = []
-
-      for (const receivement of allPayments) {
-        if (!existingMap.has(receivement.externalId)) {
-          const detail = await receivementDetails({ token: options.token, id: receivement.externalId })
-          
-          if (detail.retorno.conta?.categoria) {
-            const categorie = await db.FinancialCategory.findOne({
-              attributes: ['id'],
-              where: [{ Descricao: detail.retorno.conta?.categoria }],
-              transaction,
-            })
-            receivement.categoryId = categorie?.dataValues.id
-          }
-          receivement.type_operation = 1
-          receivement.companyId = session.company.companyBusiness.codigo_empresa
-          toCreate.push(receivement)
-
-        }
-      }
-
-      const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
-        transaction,
-        returning: true,
-      })
-
-      const allMovements = createdMovements
-      const movementMap = new Map(allMovements.map((m) => [m.externalId, m]))
-
-      // 4. Criar parcelas apenas para os novos registros
-      for (const payment of toCreate) {
-        const movement = movementMap.get(payment.externalId)
-
-        if (!movement) continue
-
-        await db.FinancialMovementInstallment.findOrCreate({
-          where: {
-            financialMovementId: movement?.codigo_movimento,
-            installment: 1,
-          },
-          defaults: {
-            issueDate: payment.issueDate,
-            dueDate: payment.dueDate,
-            amount: payment.amountTotal,
-            observation: payment.observation,
-          },
-          transaction,
-        })
-      }
-
-    })
-
-  }
+    }
+  })
 }

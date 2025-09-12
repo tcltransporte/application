@@ -104,7 +104,7 @@ export async function getPartner(search) {
 
 }
 
-export async function getFinancialCategory (search, operation) {
+export async function getFinancialCategory (search) {
 
     const session = await getServerSession(authOptions)
 
@@ -118,7 +118,7 @@ export async function getFinancialCategory (search, operation) {
 
     where.push({'$descricao$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
 
-    where.push({'$codigo_tipo_operacao$': operation})
+    //where.push({'$codigo_tipo_operacao$': operation})
 
     const financialCategories = await db.FinancialCategory.findAll({
         attributes: ['id', 'description'],

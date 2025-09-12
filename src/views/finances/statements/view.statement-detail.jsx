@@ -5,7 +5,7 @@ import {
   MenuItem, TextField, Paper, Grid, Backdrop, Badge, Tooltip, Menu, Checkbox, Box,
 } from '@mui/material'
 import { format } from 'date-fns'
-import { Fragment, useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback, useRef } from 'react'
 import { toast } from 'react-toastify'
 import { Field, Formik } from 'formik'
 import * as Yup from 'yup'
@@ -20,6 +20,7 @@ import * as statements from '@/app/server/finances/statements'
 import { styles } from '@/components/styles'
 import { NumericField, SelectField } from '@/components/field'
 import { BackdropLoading } from '@/components/BackdropLoading'
+import Swal from 'sweetalert2'
 
 // --- Funções Utilitárias (sem alterações) ---
 const entryTypeAlias = {
@@ -46,6 +47,7 @@ const typeDescription = (raw) => {
 };
 
 export function ViewStatementDetail({ statementId, onClose, onError }) {
+
   const [loading, setLoading] = useState(false)
   const [statement, setStatement] = useState(null)
   const [originalData, setOriginalData] = useState(null)
@@ -58,6 +60,47 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [isDrawerReceivement, setIsDrawerReceivement] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(null)
   const [receivementId, setReceivementId] = useState(null)
+
+  const [isAddingNewStatement, setIsAddingNewStatement] = useState(false)
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+
+  // ref para o container do body da tabela (usado para restaurar scroll se necessário)
+  const tableBodyRef = useRef(null);
+
+  const handleStartAddStatement = (e) => {
+
+    Swal.fire({
+      icon: `warning`,
+      title: `Ops`,
+      text: `Sem permissão para adicionar!`,
+      confirmButtonText: `Ok`
+    })
+
+    return
+
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    // salva scroll atual
+    const tableBody = tableBodyRef.current;
+    const prevScrollTop = tableBody?.scrollTop ?? 0;
+
+    setIsAddingNewStatement(true);
+
+    // restaura no próximo tick (fallback)
+    setTimeout(() => {
+      if (tableBody) tableBody.scrollTop = prevScrollTop;
+    }, 0);
+  };
+
+  const handleFinishAddStatement = async () => {
+    setIsAddingNewStatement(false);
+    await fetchStatement(false);
+    // restaura scroll após atualização
+    setTimeout(() => {
+      const tableBody = tableBodyRef.current;
+      if (tableBody) tableBody.scrollTop = tableBody.scrollTop; // noop para garantir repaint
+    }, 0);
+  };
 
   const fetchStatement = useCallback(async (loading = true) => {
     if (statementId) {
@@ -256,7 +299,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                 <TableCell sx={{ width: 110 }} align="right">Crédito</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Débito</TableCell>
                 <TableCell sx={{ width: 90 }} align="right">Saldo</TableCell>
-                <TableCell />
+                <TableCell sx={{ width: 90 }} />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -278,55 +321,119 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
                 return (
                   <Fragment key={data.id || index}>
-                    <TableRow className="with-hover-actions" style={{ cursor: 'pointer' }} hover onDoubleClick={() => toggleExpand(index)}>
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          color="primary"
-                          indeterminate={isIndeterminate}
-                          checked={isStatementSelected}
-                          onChange={handleRowSelectAllClick}
-                        />
-                      </TableCell>
-                      <TableCell style={{ width: '140px' }}>{data.sourceId}</TableCell>
-                      <TableCell>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                      <TableCell>{data.reference}</TableCell>
-                      <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
-                      <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
-                      <TableCell align="right"><font color='green'>{Number(data.credit) > 0 && `+${formatCurrency(data.credit)}`}</font></TableCell>
-                      <TableCell align="right"><font color='red'>{Number(data.debit) < 0 && `${formatCurrency(data.debit)}`}</font></TableCell>
-                      <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
-                      <TableCell align="left" style={{ width: '80px' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <IconButton
-                            size="small"
-                            sx={{
-                              p: 0, width: 24, height: 24, borderRadius: '50%', fontSize: '0.75rem',
-                              backgroundColor: _.size(data.concileds) > 0 ? 'var(--mui-palette-primary-dark)' : '#C0C0C0', color: '#fff',
-                              '&:hover': { backgroundColor: 'primary.dark' }
-                            }}
-                          >
-                            {_.size(data.concileds) || 0}
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => toggleExpand(index)}
-                            className={expandedRow != index ? 'row-actions' : ''}
-                            sx={{
-                              border: '2px solid #ccc',
-                              borderRadius: '50%', padding: 0,
-                              width: 32, height: 32,
-                            }}
-                          >
-                            {expandedRow === index ? (
-                              <i className="ri-arrow-up-line" style={{ fontSize: 25, color: 'tomato' }} />
-                            ) : (
-                              <i className="ri-arrow-down-line" style={{ fontSize: 25 }} />
-                            )}
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                    {expandedRow === index ? (
+                    {/* Linha principal */}
+                    {editingRowIndex !== index && (
+                      <TableRow
+                        hover
+                        style={{ cursor: 'pointer' }}
+                        //onClick={() => toggleExpand(index)}
+                        sx={{
+                          "& .actions-container": { display: 'flex', alignItems: 'center', gap: 2 },
+                          "& .concileds": { display: 'block' },
+                          "& .edit": { display: 'none' },
+                          "&:hover .concileds": { display: 'none' },
+                          "&:hover .edit": { display: 'inline-flex' },
+                          "& .expand": { visibility: 'hidden' },
+                          "&:hover .expand": { visibility: 'visible' },
+                        }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            color="primary"
+                            indeterminate={isIndeterminate}
+                            checked={isStatementSelected}
+                            onChange={handleRowSelectAllClick}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ width: 140 }}>{data.sourceId}</TableCell>
+                        <TableCell>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                        <TableCell>{data.reference}</TableCell>
+                        <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
+                        <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
+                        <TableCell align="right" sx={{ color: 'green' }}>
+                          {Number(data.credit) > 0 && `+${formatCurrency(data.credit)}`}
+                        </TableCell>
+                        <TableCell align="right" sx={{ color: 'red' }}>
+                          {Number(data.debit) < 0 && formatCurrency(data.debit)}
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
+                        <TableCell align="left" sx={{ width: 80 }}>
+                          <Box className="actions-container">
+                            <IconButton
+                              sx={{
+                                p: 0, width: 24, height: 24, borderRadius: '50%',
+                                fontSize: 12,
+                                backgroundColor: _.size(data.concileds) > 0 ? 'var(--mui-palette-primary-dark)' : '#C0C0C0',
+                                color: '#fff',
+                                '&:hover': { backgroundColor: 'primary.dark' },
+                              }}
+                              className="concileds"
+                            >
+                              {_.size(data.concileds) || 0}
+                            </IconButton>
+
+                            <Tooltip title='Editar'>
+                              <IconButton
+                                sx={{
+                                  p: 0, width: 24, height: 24, borderRadius: '50%',
+                                  backgroundColor: '#f57c00',
+                                  color: '#fff',
+                                  '&:hover': { backgroundColor: 'primary.dark' },
+                                }}
+                                onClick={(e) => {
+                                  Swal.fire({
+                                    icon: `warning`,
+                                    title: `Ops`,
+                                    text: `Sem permissão para editar!`,
+                                    confirmButtonText: `Ok`
+                                  })
+                                  //e.stopPropagation();
+                                  //setEditingRowIndex(index);
+                                }}
+                                className="edit"
+                              >
+                                <i className="ri-pencil-line" style={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+
+                            <IconButton
+                              size="small"
+                              onClick={(e) => { e.stopPropagation(); toggleExpand(index); }}
+                              sx={{
+                                border: '2px solid #ccc',
+                                borderRadius: '50%',
+                                p: 0,
+                                width: 32,
+                                height: 32,
+                                color: expandedRow === index ? 'tomato' : 'inherit',
+                              }}
+                              className="expand"
+                            >
+                              {expandedRow === index ? (
+                                <i className="ri-arrow-up-line" style={{ fontSize: 25 }} />
+                              ) : (
+                                <i className="ri-arrow-down-line" style={{ fontSize: 25 }} />
+                              )}
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* Linha de edição */}
+                    {editingRowIndex === index && (
+                      <StatementDataForm
+                        initialValues={data}
+                        onCancel={() => setEditingRowIndex(null)}
+                        onFormSubmitted={async () => {
+                          await fetchStatement(false);
+                          setEditingRowIndex(null);
+                        }}
+                      />
+                    )}
+
+                    {/* Linha expandida */}
+                    {expandedRow === index && (
                       <ConciledDetailRowsGroup
                         data={data}
                         onDesvincule={handleDesvincule}
@@ -335,17 +442,52 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         selectedConcileds={selectedConcileds}
                         onSelectionChange={handleSelectionChange}
                       />
-                    ) : null}
+                    )}
                   </Fragment>
                 )
               })}
+
+              {/* Linha de adicionar novo lançamento */}
+              <TableRow key="add-statement-row">
+                <TableCell colSpan={11} sx={{ borderBottom: "none", p: 1 }}>
+                  {isAddingNewStatement ? (
+                    <StatementDataForm
+                      onFormSubmitted={async () => {
+                        await handleFinishAddStatement();
+                      }}
+                      onCancel={() => setIsAddingNewStatement(false)}
+                    />
+                  ) : (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Button
+                        type="button"
+                        variant="text"
+                        startIcon={<i className="ri-add-circle-line" />}
+                        onClick={handleStartAddStatement}
+                      >
+                        Adicionar lançamento
+                      </Button>
+                    </Box>
+                  )}
+                </TableCell>
+              </TableRow>
             </TableBody>
+
           </Table>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'space-between' }}>
           <div>
             {selectedStatements.size > 0 ? (
-              <Button variant="outlined" color="error" startIcon={<i className="ri-delete-bin-line" style={{ fontSize: 18 }} />} onClick={() => alert(1)}>
+              <Button variant="outlined" color="error" startIcon={<i className="ri-delete-bin-line" style={{ fontSize: 18 }} />} onClick={async () => {
+                Swal.fire({
+                  icon: `warning`,
+                  title: `Ops`,
+                  text: `Sem permissão para excluir!`,
+                  confirmButtonText: `Ok`
+                })
+                //await statements.deleteData({id: Array.from(selectedStatements)})
+                //await fetchStatement(false)
+              }}>
                 Excluir
               </Button>
             ) : (
@@ -359,16 +501,26 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             )}
           </div>
           <div>
-            <Button variant="text" onClick={onClose} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />}>
-              Desconciliar
-            </Button>
-            <Button variant="contained" color="success" onClick={async () => {
+            {selectedStatements.size > 0 && (
+              <>
+                <Button variant="text" onClick={async () => {
 
-              await statements.concile({id: selectedConcileds})
+                  await statements.desconcile({id: Array.from(selectedConcileds)})
 
-            }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}>
-              Conciliar
-            </Button>
+                }} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />}>
+                  Desconciliar
+                </Button>
+                <Button variant="contained" color="success" onClick={async () => {
+
+                  await statements.concile({id: Array.from(selectedConcileds)})
+
+                }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}>
+                  Conciliar
+                </Button>
+              </>
+
+            )}
+            
           </div>
         </DialogActions>
       </Dialog>
@@ -395,6 +547,140 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     </>
   )
 }
+
+function StatementDataForm({ initialValues, onFormSubmitted, onCancel }) {
+  const validationSchema = Yup.object({
+    reference: Yup.string().required("Referência obrigatória"),
+    amount: Yup.number().typeError("Valor inválido").required("Obrigatório"),
+    entryDate: Yup.date().typeError("Data inválida").required("Obrigatória"),
+  });
+
+  const handleSubmitInternal = async (values, { setSubmitting }) => {
+    try {
+      //await statements.saveStatementData(values); // 🔹 você implementa no service (igual saveConciled)
+      await onFormSubmitted();
+    } catch (error) {
+      toast.error(error.message || "Erro ao salvar statementData");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Formik
+      initialValues={initialValues || { reference: "", amount: "", entryDate: new Date(), fee: 0, credit: 0, debit: 0 }}
+      validationSchema={validationSchema}
+      enableReinitialize
+      onSubmit={handleSubmitInternal}
+    >
+      {({ values, handleChange, handleSubmit, isSubmitting }) => (
+        <TableRow sx={{ backgroundColor: "#f0f0f0" }}>
+ 
+          {/* SourceId (não editável, só mostra valor) */}
+          <TableCell sx={{ width: 150 }} colSpan={2}>
+            <TextField
+              fullWidth
+              size="small"
+              name="sourceId"
+              value={values.sourceId}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* EntryDate */}
+          <TableCell sx={{ width: 140 }}>
+            <TextField
+              fullWidth
+              size="small"
+              type="datetime-local"
+              name="entryDate"
+              value={format(values.entryDate, "yyyy-MM-dd'T'HH:mm")}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Reference */}
+          <TableCell>
+            <TextField
+              fullWidth
+              size="small"
+              name="reference"
+              value={values.reference}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Amount */}
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              name="amount"
+              value={values.amount}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Fee */}
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              name="fee"
+              value={values.fee}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Credit */}
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              name="credit"
+              value={values.credit}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Debit */}
+          <TableCell align="right">
+            <TextField
+              fullWidth
+              size="small"
+              type="number"
+              name="debit"
+              value={values.debit}
+              onChange={handleChange}
+            />
+          </TableCell>
+
+          {/* Balance (não editável) */}
+          <TableCell align="right">{formatCurrency(values.balance || 0)}</TableCell>
+
+          {/* Actions */}
+          <TableCell align="left">
+            <Tooltip title="Confirmar">
+              <IconButton color="success" size="small" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? <CircularProgress size={18} /> : <i className="ri-check-line" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Cancelar">
+              <IconButton color="error" size="small" onClick={onCancel}>
+                <i className="ri-close-line" />
+              </IconButton>
+            </Tooltip>
+          </TableCell>
+        </TableRow>
+      )}
+    </Formik>
+
+  );
+}
+
 
 function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatementUpdate, selectedConcileds, onSelectionChange }) {
   const [newConciledInputActive, setNewConciledInputActive] = useState(false)
@@ -423,7 +709,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
   }
   const handleDeleteConciled = async (item) => {
     try {
-      await deleteStatementConciled({ id: item.id });
+      await statements.deleteConciled({ id: item.id });
       toast.success('Registro excluído com sucesso');
       handleConciliationSubmitSuccess();
     } catch (error) {
@@ -501,8 +787,17 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
   const [infoAnchorEl, setInfoAnchorEl] = useState(null);
   const handleInfoClick = (event) => setInfoAnchorEl(event.currentTarget);
   const handleInfoClose = () => setInfoAnchorEl(null);
+
+  const rowColor = item.isConciled ? '#155724' : item.message != null ? 'red' : 'inherit'
+  
   return (
-    <TableRow sx={{ backgroundColor: '#fafafa' }} className="with-hover-actions">
+    <TableRow sx={{
+        backgroundColor: '#fafafa',
+        cursor: 'pointer'
+      }}
+      className="with-hover-actions"
+      onDoubleClick={onStartEdit}
+    >
       <TableCell padding="checkbox">
         <Checkbox
           color="primary"
@@ -511,43 +806,146 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
           inputProps={{ 'aria-labelledby': `conciled-item-${item.id}` }}
         />
       </TableCell>
-      <TableCell id={`conciled-item-${item.id}`}>{typeDescription(item.type)}</TableCell>
-      <TableCell colSpan={2}>
-        {(item.type == '1' || item.type == '2') && (
-          <>{item.partner?.surname}<br />{item.category?.description}</>
-        )}
-        {(item.type == 'transfer') && (
-          <>{item.origin?.name} - {item.origin?.agency} / {item.origin?.number}<br />{item.destination?.name} - {item.destination?.agency} / {item.destination?.number}</>
-        )}
+      <TableCell id={`conciled-item-${item.id}`}>
+        <Typography color={rowColor} fontSize={12}>{typeDescription(item.type)}</Typography>
       </TableCell>
-      <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
-      <TableCell align="right">{formatCurrency(item.fee)}</TableCell>
-      <TableCell align="right">{formatCurrency(item.discount)}</TableCell>
       <TableCell colSpan={2}>
-        <Box className="row-actions">
-          <Tooltip title='Editar'><IconButton onClick={onStartEdit}><i className="ri-pencil-line" /></IconButton></Tooltip>
-          <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
-        </Box>
+        <Typography color={rowColor} fontSize={12}>
+          {(item.type === '1' || item.type === '2') && (
+            <>
+              {item.partner?.surname}<br />
+              {item.category?.description}
+            </>
+          )}
+
+          {item.type === 'transfer' && (
+            <>
+              {item.origin?.name}
+              {item.origin?.agency && item.origin?.number
+                ? ` - ${item.origin.agency} / ${item.origin.number}`
+                : ""}
+              <br />
+              {item.destination?.name}
+              {item.destination?.agency && item.destination?.number
+                ? ` - ${item.destination.agency} / ${item.destination.number}`
+                : ""}
+            </>
+          )}
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography color={rowColor} fontSize={12}>
+          {formatCurrency(item.amount)}
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography color={rowColor} fontSize={12}>
+          {formatCurrency(item.fee)}
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography color={rowColor} fontSize={12}>
+          {formatCurrency(item.discount)}
+        </Typography>
+      </TableCell>
+      <TableCell colSpan={2}>
+        {(!item.isConciled) && (
+          <Box className="row-actions">
+            <Tooltip title='Editar'><IconButton onClick={onStartEdit}><i className="ri-pencil-line" /></IconButton></Tooltip>
+            <Tooltip title='Excluir'><IconButton onClick={() => onDelete(item)}><i className="ri-delete-bin-line" /></IconButton></Tooltip>
+          </Box>
+        )}
       </TableCell>
       <TableCell align='left'>
         <Box sx={{ display: 'flex' }}>
-          {(!item.paymentId && !item.receivementId) ? (
+          {(!item.isConciled) && (
             <>
-              {/* --- MODIFICADO: Passando o objeto 'item' completo em vez de apenas 'item.id' --- */}
-              <IconButton className="row-actions" size='small' onClick={() => onViewDetails(item)} sx={{ p: 1 }}><i className="ri-search-line" /></IconButton>
-            </>
-          ) : (
-            <>
-              <Tooltip title='Informações'><IconButton size='small' onClick={handleInfoClick} sx={{ p: 1, backgroundColor: '#4ace4aff', '&:hover': { backgroundColor: 'success.dark' }, width: 24, height: 24 }}><i className="ri-checkbox-circle-fill" style={{ color: '#fff' }} /></IconButton></Tooltip>
-              <Menu
-                anchorEl={infoAnchorEl}
-                open={Boolean(infoAnchorEl)}
-                onClose={handleInfoClose}
-              >
-                <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular</MenuItem>
-              </Menu>
+              {(!item.paymentId && !item.receivementId) ? (
+                <>
+                  {/* --- MODIFICADO: Passando o objeto 'item' completo em vez de apenas 'item.id' --- */}
+                  <IconButton className="row-actions" size='small' onClick={() => onViewDetails(item)} sx={{ p: 1 }}><i className="ri-search-line" /></IconButton>
+                </>
+              ) : (
+                <>
+                  
+                  <Tooltip
+                    title={
+                      <>
+                        <Typography fontSize={18} color='white'>Conta a {item.paymentId ? 'pagar': 'receber'}</Typography>
+                        <ul style={{ paddingLeft: '18px' }}>
+                          <li>Cliente: {item.receivement?.financialMovement?.partner?.surname || item.payment?.financialMovement?.partner?.surname}</li>
+                          <li>Valor: {item.receivement?.amount || item.payment?.amount}</li>
+                          <li>Observação: {item.receivement?.observation || item.payment?.observation}</li>
+                        </ul>
+                      </>
+                    }
+                    placement="left"
+                    slotProps={{
+                      tooltip: {
+                        sx: {
+                          width: 900, // largura fixa
+                          maxWidth: 'unset', // remove limite padrão
+                          fontSize: 13,
+                        },
+                      },
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={handleInfoClick}
+                      sx={{
+                        p: 1,
+                        backgroundColor: '#4ace4aff',
+                        '&:hover': { backgroundColor: 'success.dark' },
+                        width: 24,
+                        height: 24,
+                      }}
+                    >
+                      <i className="ri-checkbox-circle-fill" style={{ color: '#fff' }} />
+                    </IconButton>
+                  </Tooltip>
+
+                  
+                  <Menu
+                    anchorEl={infoAnchorEl}
+                    open={Boolean(infoAnchorEl)}
+                    onClose={handleInfoClose}
+                  >
+                    <MenuItem onClick={() => { handleInfoClose(); onDesvincule(item.id); }}><i className="ri-link-unlink" style={{ marginRight: 8 }} /> Desvincular</MenuItem>
+                    {item.receivement?.financialMovement?.externalId && (
+                      <MenuItem
+                        onClick={() => {
+                          handleInfoClose();
+                          window.open(`https://erp.tiny.com.br/contas_receber#edit/${item.receivement?.financialMovement?.externalId}`, "_blank", "noopener,noreferrer")
+                        }}
+                      >
+                        <i className="ri-external-link-line" style={{ marginRight: 8 }} /> 
+                        Abrir link externo
+                      </MenuItem>
+                    )}
+                    {item.payment?.financialMovement?.externalId && (
+                      <MenuItem
+                        onClick={() => {
+                          handleInfoClose();
+                          window.open(`https://erp.tiny.com.br/contas_pagar#edit/${item.payment?.financialMovement?.externalId}`, "_blank", "noopener,noreferrer")
+                        }}
+                      >
+                        <i className="ri-external-link-line" style={{ marginRight: 8 }} /> 
+                        Abrir link externo
+                      </MenuItem>
+                    )}
+                  </Menu>
+                </>
+              )}
             </>
           )}
+          
+          {(item.message != null) && (
+            <>
+              <Tooltip title={item.message}><IconButton size='small' sx={{ p: 1, backgroundColor: 'red', '&:hover': { backgroundColor: 'red' }, width: 24, height: 24 }}><i className="ri-close-circle-fill" style={{ color: '#fff' }} /></IconButton></Tooltip>
+            </>
+          )}
+
         </Box>
       </TableCell>
     </TableRow>
@@ -625,7 +1023,7 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
             {(values.type === '1' || values.type === '2') && (
               <>
                 <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Cliente" name="partner" text={(partner) => partner?.surname} onSearch={getPartner} renderSuggestion={(item) => (<span>{item.surname}</span>)} />
-                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Categoria" name="category" text={(category) => category?.description || ''} onSearch={(search) => getFinancialCategory(search, values.type)} renderSuggestion={(item) => (<span>{item.description}</span>)} />
+                <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Categoria" name="category" text={(category) => category?.description || ''} onSearch={(search) => getFinancialCategory(search)} renderSuggestion={(item) => (<span>{item.description}</span>)} />
               </>
             )}
             {(values.type === 'transfer') && (

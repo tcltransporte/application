@@ -58,9 +58,15 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
     setStatementId(statementId)
   }
 
-  const handleDelete = (id) => {
-    const updated = statements.filter((s) => s.sourceId !== id)
-    setStatements(updated)
+  const handleDelete = async (id) => {
+    await statements2.destroy({id})
+    fetchStatements({
+      ...statements.request
+    })
+    //alert(id)
+    //console.log(statements)
+    //const updated = _.filter(statements.response?.rows, (s) => s.id !== id)
+    //setStatements(updated)
   }
 
   return (
@@ -178,7 +184,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Excluir">
-                              <IconButton onClick={() => handleDelete(statement.sourceId)} color="error">
+                              <IconButton onClick={() => handleDelete(statement.id)} color="error">
                                 <i className="ri-delete-bin-line text-lg" />
                               </IconButton>
                             </Tooltip>

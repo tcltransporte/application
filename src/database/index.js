@@ -114,56 +114,65 @@ export class AppContext extends Sequelize {
       },
     })
 
-    this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId' })
-    this.BankAccount.hasMany(this.BankAccountIntegration, { as: 'bankAccountIntegrations', foreignKey: 'bankAccountId' })
+    this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId', onDelete: 'CASCADE' })
+    this.BankAccount.hasMany(this.BankAccountIntegration, { as: 'bankAccountIntegrations', foreignKey: 'bankAccountId', onDelete: 'CASCADE' })
 
-    this.BankAccountIntegration.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId' })
+    this.BankAccountIntegration.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId', onDelete: 'CASCADE' })
 
-    this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId' })
+    this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId', onDelete: 'CASCADE' })
 
-    this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId' })
+    this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId', onDelete: 'CASCADE' })
     
-    this.CompanyIntegration.belongsTo(this.Integration, { as: 'integration', foreignKey: 'integrationId' })
+    this.CompanyIntegration.belongsTo(this.Integration, { as: 'integration', foreignKey: 'integrationId', onDelete: 'CASCADE' })
 
     this.CompanyUser.belongsTo(this.User, { as: 'user', foreignKey: 'userId' })
-    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId' })
+    this.CompanyUser.belongsTo(this.Company, { as: 'company', foreignKey: 'companyId', onDelete: 'CASCADE' })
 
-    this.Cte.belongsTo(this.Partner, {as: 'sender', foreignKey: 'senderId', targetKey: 'codigo_pessoa'})
-    this.Cte.belongsTo(this.Shippiment, {as: 'shippiment', foreignKey: 'IDCarga', targetKey: 'codigo_carga'})
-    this.Cte.belongsTo(this.Partner, {as: 'recipient', foreignKey: 'recipientId', targetKey: 'codigo_pessoa'})
+    this.Cte.belongsTo(this.Partner, {as: 'sender', foreignKey: 'senderId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
+    this.Cte.belongsTo(this.Shippiment, {as: 'shippiment', foreignKey: 'IDCarga', targetKey: 'codigo_carga', onDelete: 'CASCADE'})
+    this.Cte.belongsTo(this.Partner, {as: 'recipient', foreignKey: 'recipientId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
 
-    this.Cte.hasMany(this.CteNfe, {as: 'nfes', foreignKey: 'cteId'})
+    this.Cte.hasMany(this.CteNfe, {as: 'nfes', foreignKey: 'cteId', onDelete: 'CASCADE'})
 
-    this.CteNfe.belongsTo(this.Cte, {as: 'cte', foreignKey: 'cteId', targetKey: 'id'})
-    this.CteNfe.belongsTo(this.Nfe, {as: 'nfe', foreignKey: 'nfeId', targetKey: 'codigo_nota'})
+    this.CteNfe.belongsTo(this.Cte, {as: 'cte', foreignKey: 'cteId', targetKey: 'id', onDelete: 'CASCADE'})
+    this.CteNfe.belongsTo(this.Nfe, {as: 'nfe', foreignKey: 'nfeId', targetKey: 'codigo_nota', onDelete: 'CASCADE'})
 
-    this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento' })
-    this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId' })
-    this.FinancialMovementInstallment.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId' })
+    this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento', onDelete: 'CASCADE' })
+    this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId', onDelete: 'CASCADE' })
+    this.FinancialMovementInstallment.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', onDelete: 'CASCADE' })
     
-    this.FinancialMovement.belongsTo(this.Company, { as: 'company', foreignKey: 'CodigoEmpresaFilial', targetKey: 'codigo_empresa_filial' })
-    this.FinancialMovement.belongsTo(this.CenterCost, { as: 'centerCost', foreignKey: 'IDCentroCusto', targetKey: 'id' })
-    this.FinancialMovement.belongsTo(this.FinancialCategory, { as: 'financialCategory', foreignKey: 'IDPlanoContasContabil', targetKey: 'id' })
-    this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa' })
-    this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta' })
+    this.FinancialMovement.belongsTo(this.Company, { as: 'company', foreignKey: 'CodigoEmpresaFilial', targetKey: 'codigo_empresa_filial', onDelete: 'CASCADE' })
+    this.FinancialMovement.belongsTo(this.CenterCost, { as: 'centerCost', foreignKey: 'IDCentroCusto', targetKey: 'id', onDelete: 'CASCADE' })
+    this.FinancialMovement.belongsTo(this.FinancialCategory, { as: 'financialCategory', foreignKey: 'IDPlanoContasContabil', targetKey: 'id', onDelete: 'CASCADE' })
+    this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
+    this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta', onDelete: 'CASCADE' })
 
-    this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria' })
-    this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId' })
-
-    this.StatementData.hasMany(this.StatementDataConciled, { as: 'concileds', foreignKey: 'statementDataId' })
-
-    this.StatementDataConciled.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa' })
-    this.StatementDataConciled.belongsTo(this.FinancialCategory, { as: 'category', foreignKey: 'categoryId', targetKey: 'id' })
-    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'origin', foreignKey: 'originId', targetKey: 'codigo_conta_bancaria' })
-    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'destination', foreignKey: 'destinationId', targetKey: 'codigo_conta_bancaria' })
+    this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
+    this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId', onDelete: 'CASCADE' })
 
     
-    this.Shippiment.belongsTo(this.Partner, { as: 'sender', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa' })
-    this.Shippiment.hasMany(this.Cte, {as: 'ctes', foreignKey: 'shippimentId'})
+    this.StatementData.belongsTo(this.Statement, { as: 'statement', foreignKey: 'statementId', targetKey: 'id', onDelete: 'CASCADE' })
+    this.StatementData.hasMany(this.StatementDataConciled, { as: 'concileds', foreignKey: 'statementDataId', onDelete: 'CASCADE' })
+
+
+    this.StatementDataConciled.belongsTo(this.StatementData, { as: 'statementData', foreignKey: 'statementDataId', targetKey: 'id', onDelete: 'CASCADE' })
+
+    this.StatementDataConciled.belongsTo(this.Partner, { as: 'partner', foreignKey: 'partnerId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
+    this.StatementDataConciled.belongsTo(this.FinancialCategory, { as: 'category', foreignKey: 'categoryId', targetKey: 'id', onDelete: 'CASCADE' })
+
+    this.StatementDataConciled.belongsTo(this.FinancialMovementInstallment, { as: 'payment', foreignKey: 'paymentId', targetKey: 'codigo_movimento_detalhe', onDelete: 'CASCADE' })
+    this.StatementDataConciled.belongsTo(this.FinancialMovementInstallment, { as: 'receivement', foreignKey: 'receivementId', targetKey: 'codigo_movimento_detalhe', onDelete: 'CASCADE' })
+
+    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'origin', foreignKey: 'originId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
+    this.StatementDataConciled.belongsTo(this.BankAccount, { as: 'destination', foreignKey: 'destinationId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
+
+    
+    this.Shippiment.belongsTo(this.Partner, { as: 'sender', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
+    this.Shippiment.hasMany(this.Cte, {as: 'ctes', foreignKey: 'shippimentId', onDelete: 'CASCADE'})
     
 
-    this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId' })
-    this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId' })
+    this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId', onDelete: 'CASCADE' })
+    this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId', onDelete: 'CASCADE' })
 
 
     this.Bank.addHook('afterFind', afterFind)

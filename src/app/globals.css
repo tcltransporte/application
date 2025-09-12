@@ -2,12 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+.swal2-container {
+  z-index: 1500 !important; /* maior que o z-index padrão do MUI Dialog (1300) */
+}
+
 .with-hover-actions .row-actions {
   visibility: hidden;
 }
 
 .with-hover-actions:hover .row-actions {
   visibility: visible;
+}
+
+.with-hover-actions .row-no-actions {
+  display: block;
+}
+
+.with-hover-actions:hover .row-no-actions {
+  display: none;
 }
 
 

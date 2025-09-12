@@ -54,10 +54,11 @@ export const Statement = ({ data, onChange }) => {
 
   const handleRowClick = async (item) => {
     setRowLoading(item.sourceId)
+
     try {
       const statementData = await getStatement({
         companyIntegrationId: data.companyIntegrationId,
-        fileName: item.fileName
+        item
       })
       item.statementData = statementData
       setSelectedStatement(item)

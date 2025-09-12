@@ -81,7 +81,7 @@ export const Statement = ({ data, onChange }) => {
     try {
       const statementData = await getStatement({
         companyIntegrationId: data.companyIntegrationId,
-        fileName: item.fileName
+        item: item
       })
       item.statementData = statementData
       await onChange(item)
