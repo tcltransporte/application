@@ -315,9 +315,9 @@ const NewInstallment = ({ installmentId, onClose }) => {
                     <Grid item size={{xs: 12, sm: FIELD_SIZE.category}}>
                       <Field
                         component={AutoComplete}
-                        name="financialCategory"
+                        name="category"
                         label="Categoria"
-                        text={(categorie) => categorie?.description}
+                        text={(category) => category?.description}
                         onSearch={(search) => getFinancialCategory(search, 2)}
                         renderSuggestion={(item) => (
                           <span>{item.description}</span>
@@ -434,7 +434,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     bankAccount: installment?.bankAccount || null,
     documentNumber: installment?.financialMovement?.documentNumber || "",
     company: installment?.financialMovement?.company || null,
-    financialCategory: installment?.financialMovement?.financialCategory || null,
+    category: installment?.financialMovement?.category || null,
     amount: installment?.amount || 0,
     digitableLine: installment?.boleto?.digitableLine || "",
     issueDate: installment?.financialMovement?.issueDate ? format(new Date(installment.financialMovement.issueDate), "dd/MM/yyyy") : null,
@@ -614,7 +614,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
                         component={TextField}
                         type="text"
                         label="Categoria"
-                        name="financialCategory.description"
+                        name="category.description"
                         readOnly
                       />
                     </Grid>

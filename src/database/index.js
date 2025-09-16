@@ -146,6 +146,7 @@ export class AppContext extends Sequelize {
     this.FinancialMovement.belongsTo(this.FinancialCategory, { as: 'financialCategory', foreignKey: 'IDPlanoContasContabil', targetKey: 'id', onDelete: 'CASCADE' })
     this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta', onDelete: 'CASCADE' })
+    //this.FinancialMovement.hasMany(this.FinancialMovementInstallment, { as: 'installments', foreignKey: 'financialMovementId', onDelete: 'CASCADE' })
 
     this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
     this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId', onDelete: 'CASCADE' })

@@ -10,6 +10,7 @@ import { Sequelize } from "sequelize"
 import { orders } from "../settings/integrations/plugins/index.controller"
 import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 import * as payments from "@/app/server/finances/payments"
+import * as receivements from "@/app/server/finances/receivements"
 
 export async function findAll({limit, offset, date}) {
 
@@ -213,13 +214,29 @@ export async function create(formData) {
 
       if (item.entryType == `cancelled`) {
 
-        await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          type: `transfer`,
-          originId: 1,
-          destinationId: 15,
-          amount: item.amount,
-        }, {transaction})
+        if (Number(item.credit) > 0) {
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: `transfer`,
+            originId: 1,
+            destinationId: 15,
+            amount: item.credit,
+          }, {transaction})
+
+        }
+
+        if (Number(item.debit) < 0) {
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: `transfer`,
+            originId: 15,
+            destinationId: 1,
+            amount: item.debit * -1,
+          }, {transaction})
+
+        }
 
       }
 
@@ -397,7 +414,7 @@ export async function concile({id}) {
   const db = new AppContext()
 
   const concileds = await db.StatementDataConciled.findAll({
-    attributes: ['id', 'type', 'amount', 'paymentId', 'receivementId'],
+    attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
     include: [
       {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate'], include: [
         {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
@@ -409,11 +426,100 @@ export async function concile({id}) {
   for (const item of concileds) {
 
     if (item.type == 1) {
-      console.log('recebimento')
+      try {
+
+        if (!item.receivementId) {
+
+          const installment = await receivements.insert({
+            company: {
+              codigo_empresa_filial: 2,
+            },
+            //documentNumber: '12345',
+            amount: item.amount,
+            installment: 1,
+            issueDate: item.statementData.entryDate,
+            startDate: item.statementData.entryDate,
+            //scheduledDate: null,
+            //interval: 'monthly',
+            //customDays: 30,
+            //centerCost: null,
+            //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
+            bankAccount: null,
+            receiver: { codigo_pessoa: item.partnerId },
+            observation: 'teste',
+            installments: [
+              {
+                installment: 1,
+                amount: item.amount,
+                dueDate: item.statementData.entryDate,
+                digitableLine: '',
+                boletoNumber: ''
+              }
+            ],
+            category: { id: item.categoryId }
+          })
+
+          item.receivementId = installment
+          
+          await item.save()
+
+        }
+
+        await receivements.concile({
+          codigo_movimento_detalhe: item.receivementId,
+          date: item.statementData.entryDate,
+          amount: item.amount,
+          bankAccountId: item.statementData.statement.bankAccountId,
+          observation: ''
+        })
+
+        await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
+        
+      } catch (error) {
+        await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
+      }
     }
 
     if (item.type == 2) {
       try {
+
+        if (!item.paymentId) {
+
+          const installment = await payments.insert({
+            company: {
+              codigo_empresa_filial: 2,
+            },
+            //documentNumber: '12345',
+            amount: Number(item.amount) * -1,
+            installment: 1,
+            issueDate: item.statementData.entryDate,
+            startDate: item.statementData.entryDate,
+            //scheduledDate: null,
+            //interval: 'monthly',
+            //customDays: 30,
+            //centerCost: null,
+            //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
+            bankAccount: null,
+            receiver: { codigo_pessoa: item.partnerId },
+            observation: 'teste',
+            installments: [
+              {
+                installment: 1,
+                amount: item.amount,
+                dueDate: item.statementData.entryDate,
+                digitableLine: '',
+                boletoNumber: ''
+              }
+            ],
+            category: { id: item.categoryId }
+          })
+
+          item.paymentId = installment
+
+          await item.save()
+
+        }
+       
         await payments.concile({
           codigo_movimento_detalhe: item.paymentId,
           date: item.statementData.entryDate,
@@ -421,7 +527,10 @@ export async function concile({id}) {
           bankAccountId: item.statementData.statement.bankAccountId,
           observation: ''
         })
+
         await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
+      
+
       } catch (error) {
         await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
       }
@@ -440,18 +549,53 @@ export async function desconcile({id}) {
   const db = new AppContext()
 
   const concileds = await db.StatementDataConciled.findAll({
-    attributes: ['id', 'type', 'paymentId'],
-    where: [{id: id}]
+    attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
+    where: [{id: id, isConciled: true}]
   })
 
   for (const item of concileds) {
     try {
-      await payments.desconcile({
-        codigo_movimento_detalhe: item.paymentId
-      })
-      await db.StatementDataConciled.update({isConciled: false, message: null}, {where: [{id: item.id}]})
+
+      if (item.type == 1) {
+
+        if (item.receivementId) {
+          
+          await receivements.desconcile({
+            codigo_movimento_detalhe: item.receivementId
+          })
+
+          await db.StatementDataConciled.update({isConciled: false, message: null}, {where: [{id: item.id}]})
+
+        }
+
+      }
+
+      if (item.type == 2) {
+
+        if (item.receivementId) {
+          
+          await receivements.desconcile({
+            codigo_movimento_detalhe: item.receivementId
+          })
+
+          await db.StatementDataConciled.update({isConciled: false, message: null}, {where: [{id: item.id}]})
+
+        }
+
+        if (item.paymentId) {
+
+          await payments.desconcile({
+            codigo_movimento_detalhe: item.paymentId
+          })
+
+          await db.StatementDataConciled.update({isConciled: false, message: null}, {where: [{id: item.id}]})
+
+        }
+
+      }
+
     } catch (error) {
-      await db.StatementDataConciled.update({isConciled: false, message: error.message}, {where: [{id: item.id}]})
+      await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
     }
    
   }

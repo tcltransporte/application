@@ -4,9 +4,11 @@ import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
 import { getTinyPayments } from "@/utils/integrations/tiny"
 import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
+import { authentication } from "../settings/integrations/index.controller"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
@@ -153,32 +155,100 @@ export async function findOne({ installmentId }) {
 }
 
 export async function insert(formData) {
+  
+  if (_.isEmpty(formData.documentNumber)) {
+    formData.documentNumber = Math.floor(100000000 + Math.random() * 900000000)
+  }
 
-  const db = new AppContext();
+  const db = new AppContext()
+
+  let installment2
 
   await db.transaction(async (transaction) => {
 
+    /* TINY INTEGRAÇÃO */
+    const historico = `` //`Integração: ${/*item.statementData.sourceId} | ${item.statementData.orderId} / ${item.receivement?.name ?? ''*/}`;
+
+    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname'], where: [{'codigo_pessoa': formData.receiver?.codigo_pessoa}]})
+
+    const category = await db.FinancialCategory.findOne({attributes: ['id', 'description'], where: [{'id': formData.category?.id}]})
+
+    const conta = {
+      conta: {
+        nro_documento: formData.documentNumber,
+        data: format(formData.issueDate, 'dd/MM/yyyy', { locale: ptBR }),
+        vencimento: format(formData.issueDate, 'dd/MM/yyyy', { locale: ptBR }),
+        competencia: format(formData.issueDate, 'MM/yyyy', { locale: ptBR }),
+        valor: parseFloat(formData.amount ?? 0),
+        valorTaxas: 0,
+        valorDesconto: 0,
+        cliente: {
+          nome: partner?.surname
+        },
+        categoria: category?.description,
+        historico: historico
+      }
+    }
+
+    const url = `https://api.tiny.com.br/api2/conta.receber.incluir.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded', // Tiny espera nesse formato
+        'Accept': 'application/json'
+      }
+    })
+
+    const incluir = await response.json()
+
+    if (incluir?.retorno?.status === 'Erro') {
+      throw new Error(incluir?.retorno?.registros[0].registro?.erros[0].erro)
+      console.log(`ERROR`)
+      //console.log('suspeita 1');
+      //await db.StatementDataConciled.update(
+      //  { message: incluir.retorno.registros[0].registro.erros[0].erro },
+      //  { where: [{ id: item.id }], transaction }
+      //);
+      //return;
+    }
+
+    let receivementExternal
+
+    if (incluir?.retorno?.status === 'OK') {
+      receivementExternal = {
+        name: formData.name,
+        sourceId: incluir.retorno.registros[0].registro.id,
+        amount: parseFloat(formData?.amount),
+        description: historico,
+      }
+    }
+    /* TINY INTEGRAÇÃO */
+
     const movement = await db.FinancialMovement.create({
         ...formData,
+        type_operation: 1,
         companyId: formData.company?.codigo_empresa_filial,
         centerCostId: formData.centerCost?.id,
-        categoryId: formData.financialCategory?.id,
+        categoryId: formData.category?.id,
         partnerId: formData.receiver?.codigo_pessoa,
-        observation: formData.observation
+        observation: formData.observation,
+        externalId: receivementExternal.sourceId
     }, {transaction})
 
     let installment = 1
     let observation = formData.observation
+
     for (const item of formData.installments) {
 
         if (_.size(formData.installments > 1)) {
             observation += ` - Parcela ${installment}`
         }
 
-        await db.FinancialMovementInstallment.create({
+        installment2 = await db.FinancialMovementInstallment.create({
             ...item,
             financialMovementId: movement.codigo_movimento,
-            paymentMethodId: formData.paymentMethod.id,
+            paymentMethodId: formData.paymentMethod?.id,
             bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
             observation
         }, {transaction})
@@ -188,6 +258,8 @@ export async function insert(formData) {
     }
 
   })
+
+  return installment2.codigo_movimento_detalhe
 
 }
 
@@ -220,18 +292,107 @@ export async function update(formData) {
 
 }
 
-export async function concile(id = []) {
- 
-  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=${
-    company.dataValues.tiny.token
-  }&conta=${encodeURIComponent(
+export async function desconcile({codigo_movimento_detalhe}) {
+
+  const db = new AppContext()
+
+  const receivement = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
+    ],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
+  })
+
+  const auth = await authentication({
+    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
+  })
+
+  const args1 = `[${receivement.financialMovement.externalId},"R"]`
+
+  let data1 = `argsLength=${_.size(args1)}&args=${args1}`;
+
+  const response1 = await fetch(
+    "https://erp.tiny.com.br/services/contas.receber.server/1/iniciarEstornoDaConta",
+    {
+      method: "POST",
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "origin": "https://erp.tiny.com.br",
+        "referer": "https://erp.tiny.com.br/caixa",
+        "x-custom-request-for": "XAJAX",
+        "x-requested-with": "XMLHttpRequest",
+      },
+      body: data1,
+    }
+  )
+
+  if (!response1.ok) {
+    throw new Error(`Erro HTTP! status: ${response1.status}`)
+  }
+
+  const r = await response1.text()
+
+  const bordero = JSON.parse(r)
+
+  if (bordero.response[0].cmd != 'jc') {
+    throw new Error(`Error`)
+  }
+
+  const args2 = `[["${bordero.response[0]?.args[1][0]?.idBordero}"],false]`
+
+  let data2 = `argsLength=${_.size(args2)}&args=${args2}`
+
+  const response2 = await fetch(
+    "https://erp.tiny.com.br/services/contas.receber.server/1/excluirBorderos",
+    {
+      method: "POST",
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "origin": "https://erp.tiny.com.br",
+        "referer": "https://erp.tiny.com.br/caixa",
+        "x-custom-request-for": "XAJAX",
+        "x-requested-with": "XMLHttpRequest",
+      },
+      body: data2,
+    }
+  )
+
+  if (!response2.ok) {
+    throw new Error(`Erro HTTP! status: ${response2.status}`)
+  }
+
+}
+
+export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
+
+  const db = new AppContext()
+
+  const receivement = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
+    ],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
+  })
+
+  const bankAccount = await db.BankAccount.findOne({
+    attributes: ['name'],
+    where: [{codigo_conta_bancaria: bankAccountId}]
+  })
+
+  const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
       conta: {
-        id: item.dataValues.payment.sourceId,
-        data: dayjs(item.statementData?.date).format("DD/MM/YYYY"),
-        contaOrigem: "Mercado Pago",
-        valorPago: parseFloat(item?.amount) * -1,
-        historico: historico
+        id: receivement.financialMovement.externalId,
+        data: format(new Date(date), 'dd/MM/yyyy'),
+        contaOrigem: bankAccount.name,
+        valorPago: amount,
+        historico: `Integração:`
       }
     })
   )}&formato=JSON`
@@ -243,7 +404,12 @@ export async function concile(id = []) {
     }
   })
 
-  const baixado = await response.json()
+  const r = await response.json()
+
+  if (r.retorno.status == 'Erro') {
+    console.log(r.retorno.registros[0].registro.erros[0].erro)
+    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
+  }
 
 }
 

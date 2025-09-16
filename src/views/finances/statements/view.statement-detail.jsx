@@ -61,6 +61,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   const [selectedItemId, setSelectedItemId] = useState(null)
   const [receivementId, setReceivementId] = useState(null)
 
+  const [desconciling, setDesconciling] = useState(false)
+  const [conciling, setConciling] = useState(false)
+
   const [isAddingNewStatement, setIsAddingNewStatement] = useState(false)
   const [editingRowIndex, setEditingRowIndex] = useState(null);
 
@@ -501,21 +504,45 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             )}
           </div>
           <div>
-            {selectedStatements.size > 0 && (
+            {selectedConcileds.size > 0 && (
               <>
                 <Button variant="text" onClick={async () => {
+                  try {
 
-                  await statements.desconcile({id: Array.from(selectedConcileds)})
+                    setDesconciling(true)
 
-                }} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />}>
-                  Desconciliar
+                    await statements.desconcile({id: Array.from(selectedConcileds)})
+                  
+                    await fetchStatement(false)
+
+                    toast.success('Desconciliado com sucesso!')
+                    
+                  } catch (error) {
+                    console.log(error)
+                  } finally {
+                    setDesconciling(false)
+                  }
+                }} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />} disabled={desconciling}>
+                  {desconciling ? 'Desconciliando' : 'Desconciliar'}
                 </Button>
                 <Button variant="contained" color="success" onClick={async () => {
+                  try {
 
-                  await statements.concile({id: Array.from(selectedConcileds)})
+                    setConciling(true)
+                    
+                    await statements.concile({id: Array.from(selectedConcileds)})
+                  
+                    await fetchStatement(false)
 
-                }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />}>
-                  Conciliar
+                    toast.success('Conciliado com sucesso!')
+
+                  } catch (error) {
+                    console.log(error)
+                  } finally {
+                    setConciling(false)
+                  }
+                }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />} disabled={conciling}>
+                  {conciling ? 'Conciliando' : 'Conciliar'}
                 </Button>
               </>
 
@@ -905,7 +932,6 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
                     </IconButton>
                   </Tooltip>
 
-                  
                   <Menu
                     anchorEl={infoAnchorEl}
                     open={Boolean(infoAnchorEl)}

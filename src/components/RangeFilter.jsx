@@ -141,7 +141,7 @@ export const RangeFilter = ({
         end: normalizeEndDate(subDays(today, 1)),
       },
       {
-        label: 'Esta semana',
+        label: 'Semana atual',
         start: normalizeStartDate(startOfWeek(today, { weekStartsOn: 1 })),
         end: normalizeEndDate(endOfWeek(today, { weekStartsOn: 1 })),
       },
@@ -156,7 +156,7 @@ export const RangeFilter = ({
         end: normalizeEndDate(endOfWeek(today, { weekStartsOn: 1 })),
       },
       {
-        label: 'Este mês',
+        label: 'Mês atual',
         start: normalizeStartDate(startOfMonth(today)),
         end: normalizeEndDate(endOfMonth(today)),
       },
@@ -166,7 +166,7 @@ export const RangeFilter = ({
         end: normalizeEndDate(endOfMonth(subMonths(today, 1))),
       },
       {
-        label: 'Este ano',
+        label: 'Ano atual',
         start: normalizeStartDate(startOfYear(today)),
         end: normalizeEndDate(endOfYear(today)),
       },
@@ -228,7 +228,7 @@ export const RangeFilter = ({
       },
     },
     {
-      label: 'Esta semana',
+      label: 'Semana atual',
       action: () => {
         setTempRange({
           startDate: normalizeStartDate(startOfWeek(today, { weekStartsOn: 1 })),
@@ -258,7 +258,7 @@ export const RangeFilter = ({
       },
     },
     {
-      label: 'Este mês',
+      label: 'Mês atual',
       action: () => {
         setTempRange({
           startDate: normalizeStartDate(startOfMonth(today)),
@@ -278,7 +278,7 @@ export const RangeFilter = ({
       },
     },
     {
-      label: 'Este ano',
+      label: 'Ano atual',
       action: () => {
         setTempRange({
           startDate: normalizeStartDate(startOfYear(today)),

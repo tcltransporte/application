@@ -52,6 +52,7 @@
     "next-auth": "^4.24.11",
     "pdfmake": "^0.2.20",
     "pg-hstore": "^2.3.4",
+    "playwright": "^1.55.0",
     "postcss": "^8.5.5",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",

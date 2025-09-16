@@ -106,8 +106,8 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 name="category"
                 label="Categoria"
                 value={values.category}
-                text={(p) => p?.description}
-                onChange={(val) => setFieldValue("category", val)}
+                text={(category) => category?.description}
+                onChange={(category) => setFieldValue("category", category)}
                 onSearch={(search) => getFinancialCategory(search, 2)}
               >
                 {(item) => <span>{item.description}</span>}
@@ -193,8 +193,6 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
 
   const handlePeriodChange = (dateRange) => {
     
-    console.log(dateRange)
-
     fetchPayments({
       ...installments.request,
       offset: 0,
@@ -262,7 +260,6 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
     
       <ViewPaymentInstallment installmentId={installmentId} onClose={(updated) => {
         setInstallmentId(undefined)
-        console.log(updated)
         if (updated == true) {
           fetchPayments(installments.request)
         }
@@ -360,7 +357,7 @@ export const ViewFinancesPayments = ({ initialPayments = [] }) => {
                           </Typography>
                         </TableCell>
                         */}
-                        <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.financialMovement?.financialCategory?.description}</TableCell>
+                        <TableCell align="left" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{payment.financialMovement?.category?.description}</TableCell>
                         <TableCell align="left">{payment.paymentMethod?.name}</TableCell>
                         <TableCell align="center">{format(parseISO(payment.dueDate), 'dd/MM/yyyy')}</TableCell>
                         <TableCell align="center"></TableCell>

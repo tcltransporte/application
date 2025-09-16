@@ -25,7 +25,7 @@ export class FinancialMovement {
         type: DataTypes.STRING
     }
 
-    amountTotal = {
+    amount = {
         field: 'valor_total',
         type: DataTypes.DECIMAL
     }
@@ -49,7 +49,8 @@ export class FinancialMovement {
         field: 'dataEmissao',
         type: DataTypes.STRING,
         get() {
-            return this.getDataValue('issueDate')?.formatUTC()
+            if (!this.getDataValue('issueDate')) return null
+            return new Date(this.getDataValue('issueDate'))?.formatUTC()
         }
     }
 
@@ -63,7 +64,8 @@ export class FinancialMovement {
         type: DataTypes.STRING,
         defaultValue: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
         get() {
-            return this.getDataValue('createdAt')?.formatUTC()
+            if (!this.getDataValue('createdAt')) return null
+            return new Date(this.getDataValue('createdAt'))?.formatUTC()
         }
     }
 
@@ -71,5 +73,5 @@ export class FinancialMovement {
         field: 'externalId',
         type: DataTypes.STRING(15)
     }
-  
+
 }

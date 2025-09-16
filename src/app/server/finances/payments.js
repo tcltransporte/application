@@ -7,6 +7,8 @@ import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
+import { authentication } from "../settings/integrations/index.controller"
+import { ptBR } from "date-fns/locale"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
@@ -154,40 +156,114 @@ export async function findOne({ installmentId }) {
 
 export async function insert(formData) {
 
-  const db = new AppContext();
+  if (_.isEmpty(formData.documentNumber)) {
+    formData.documentNumber = Math.floor(100000000 + Math.random() * 900000000)
+  }
+
+  const db = new AppContext()
+
+  let installment2
 
   await db.transaction(async (transaction) => {
+    
+    /* TINY INTEGRAÇÃO */
+    const historico = `` //`Integração: ${/*item.statementData.sourceId} | ${item.statementData.orderId} / ${item.receivement?.name ?? ''*/}`;
+
+    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname'], where: [{'codigo_pessoa': formData.receiver.codigo_pessoa}]})
+
+    const category = await db.FinancialCategory.findOne({attributes: ['id', 'description'], where: [{'id': formData.category?.id}]})
+
+    const conta = {
+      conta: {
+        nro_documento: formData.documentNumber,
+        data: format(formData.issueDate, 'dd/MM/yyyy', { locale: ptBR }),
+        vencimento: format(formData.issueDate, 'dd/MM/yyyy', { locale: ptBR }),
+        competencia: format(formData.issueDate, 'MM/yyyy', { locale: ptBR }),
+        valor: parseFloat(formData.amount ?? 0),
+        valorTaxas: 0,
+        valorDesconto: 0,
+        cliente: {
+          nome: partner?.surname
+        },
+        categoria: category?.description,
+        historico: historico
+      }
+    }
+
+    const url = `https://api.tiny.com.br/api2/conta.pagar.incluir.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded', // Tiny espera nesse formato
+        'Accept': 'application/json'
+      }
+    })
+
+    const incluir = await response.json();
+
+    if (incluir?.retorno?.status === 'Erro') {
+      throw new Error(incluir?.retorno?.registros[0].registro?.erros[0].erro)
+      //console.log('suspeita 1');
+      //await db.StatementDataConciled.update(
+      //  { message: incluir.retorno.registros[0].registro.erros[0].erro },
+      //  { where: [{ id: item.id }], transaction }
+      //);
+      //return;
+    }
+
+    let paymentExternal
+
+    if (incluir?.retorno?.status === 'OK') {
+      paymentExternal = {
+        name: formData.name,
+        sourceId: incluir.retorno.registros[0].registro.id,
+        amount: parseFloat(formData?.amount),
+        description: historico,
+      };
+      console.log(paymentExternal)
+    }
+    /* TINY INTEGRAÇÃO */
 
     const movement = await db.FinancialMovement.create({
         ...formData,
+        type_operation: 2,
         companyId: formData.company?.codigo_empresa_filial,
         centerCostId: formData.centerCost?.id,
-        categoryId: formData.financialCategory?.id,
+        categoryId: formData.category?.id,
         partnerId: formData.receiver?.codigo_pessoa,
-        observation: formData.observation
+        observation: formData.observation,
+        externalId: paymentExternal.sourceId
     }, {transaction})
 
     let installment = 1
     let observation = formData.observation
+    
+    //movement.dataValues.installments = []
+
     for (const item of formData.installments) {
 
         if (_.size(formData.installments > 1)) {
             observation += ` - Parcela ${installment}`
         }
 
-        await db.FinancialMovementInstallment.create({
+        installment2 = await db.FinancialMovementInstallment.create({
             ...item,
             financialMovementId: movement.codigo_movimento,
-            paymentMethodId: formData.paymentMethod.id,
+            paymentMethodId: formData.paymentMethod?.id,
             bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
             observation
         }, {transaction})
+
+        //movement.dataValues.installments.push(installment2)
 
         installment++
 
     }
 
   })
+
+  return installment2.codigo_movimento_detalhe
 
 }
 
@@ -232,43 +308,67 @@ export async function desconcile({codigo_movimento_detalhe}) {
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
-  const companyIntegration = await db.CompanyIntegration.findOne({
-    attributes: ['id', 'options'],
-    where: [{id: '92075C95-6935-4FA4-893F-F22EA9B55B5C'}]
+  const auth = await authentication({
+    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
   })
 
-  const options = JSON.parse(companyIntegration.options)
+  const args1 = `[${payment.financialMovement.externalId},"P"]`
 
-  console.log(options)
+  let data1 = `argsLength=${_.size(args1)}&args=${args1}`;
 
-  const args = `[["${payment.financialMovement.externalId}"],false]`;
-  const data = new URLSearchParams();
-  data.append('argsLength', args.length);
-  data.append('args', args);
+  const response1 = await fetch(
+    "https://erp.tiny.com.br/services/contas.pagar.server/1/iniciarEstornoDaConta",
+    {
+      method: "POST",
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "origin": "https://erp.tiny.com.br",
+        "referer": "https://erp.tiny.com.br/caixa",
+        "x-custom-request-for": "XAJAX",
+        "x-requested-with": "XMLHttpRequest",
+      },
+      body: data1,
+    }
+  )
 
-  const response = await fetch('https://erp.tiny.com.br/services/contas.pagar.server/1/excluirBorderos', {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'Cookie': `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
-      'Origin': 'https://erp.tiny.com.br',
-      'Referer': 'https://erp.tiny.com.br/caixa',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-      'x-custom-request-for': 'XAJAX',
-      'x-requested-with': 'XMLHttpRequest',
-      'x-user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
-    },
-    body: data
-  })
+  if (!response1.ok) {
+    throw new Error(`Erro HTTP! status: ${response1.status}`)
+  }
 
-  const result = await response.json()
+  const r = await response1.text()
 
-  console.log(result)
+  const bordero = JSON.parse(r)
 
-  //if (result[0].cmd != 'jc') {
-  //  throw new Error('Erro ao desconciliar!')
-  //}
+  if (bordero.response[0].cmd != 'jc') {
+    throw new Error(`Error`)
+  }
+
+  const args2 = `[["${bordero.response[0]?.args[1][0]?.idBordero}"],false]`
+
+  let data2 = `argsLength=${_.size(args2)}&args=${args2}`
+
+  const response2 = await fetch(
+    "https://erp.tiny.com.br/services/contas.pagar.server/1/excluirBorderos",
+    {
+      method: "POST",
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "origin": "https://erp.tiny.com.br",
+        "referer": "https://erp.tiny.com.br/caixa",
+        "x-custom-request-for": "XAJAX",
+        "x-requested-with": "XMLHttpRequest",
+      },
+      body: data2,
+    }
+  )
+
+  if (!response2.ok) {
+    throw new Error(`Erro HTTP! status: ${response2.status}`)
+  }
 
 }
 
@@ -289,12 +389,6 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
     where: [{codigo_conta_bancaria: bankAccountId}]
   })
 
-  //console.log(payment.financialMovement.externalId)
-
-  //console.log({codigo_movimento_detalhe, date, bankAccountId, amount, observation})
-
-  //return
-  
   const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
       conta: {
