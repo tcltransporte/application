@@ -249,7 +249,21 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     .filter(c => c.type === 'transfer' && c.amount < 0)
     .reduce((sum, c) => sum + c.amount, 0);
 
-  const transferenciasSaldo = totalTransferenciasEntrada - totalTransferenciasSaida; 
+  const transferenciasSaldo = totalTransferenciasEntrada - totalTransferenciasSaida;
+  
+  const totalPendencias = statementDataList.filter(data => {
+    const dontConcileds = (data.concileds?.length ?? 0) === 0;
+    const hasDivergent = _.some(data.concileds, (item) => {
+      if (item.payment) return item.amount != item.payment?.amount;
+      if (item.receivement) return item.amount != item.receivement?.amount;
+      return false;
+    });
+    const sumConcileds = _.sumBy(data.concileds, (c) => Number(c.amount ?? 0));
+    const amountMismatch = (data.concileds?.length ?? 0) > 0 && sumConcileds !== Number(data.entryAmount);
+
+    return dontConcileds || hasDivergent || amountMismatch;
+  }).length;
+
   // note que Saída é negativa, então basta somar
 
   const saldoFinal = entradas - saidas;
@@ -266,7 +280,20 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         case 'receber': return (data.concileds || []).some(c => c.type === '1');
         case 'pagar': return (data.concileds || []).some(c => c.type === '2');
         case 'transferencia': return (data.concileds || []).some(c => c.type === 'transfer');
-        case 'resultado': return true; 
+        case 'pendencia': {
+          const dontConcileds = (data.concileds?.length ?? 0) === 0;
+
+          const hasDivergent = _.some(data.concileds, (item) => {
+            if (item.payment) return item.amount != item.payment?.amount;
+            if (item.receivement) return item.amount != item.receivement?.amount;
+            return false;
+          });
+
+          const sumConcileds = _.sumBy(data.concileds, (c) => Number(c.amount ?? 0));
+          const amountMismatch = data.concileds?.length > 0 && sumConcileds !== Number(data.entryAmount);
+
+          return dontConcileds || hasDivergent || amountMismatch;
+        }
         default: return true;
       }
     });
@@ -327,13 +354,13 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             }}
           >
             {[
-              { label: "Entradas", value: entradas, icon: "ri-arrow-down-circle-line", type: "entrada" },
-              { label: "Saídas", value: saidas, icon: "ri-arrow-up-circle-line", type: "saida" },
-              { label: "Saldo Final", value: saldoFinal, icon: "ri-wallet-3-line", type: "saldo" },
-              { label: "Contas a pagar", value: contasAPagar * -1, icon: "ri-bill-line", type: "pagar" },
-              { label: "Contas a receber", value: contasAReceber, icon: "ri-money-dollar-circle-line", type: "receber" },
-              { label: "Transferências", value: transferenciasSaldo, icon: "ri-arrow-left-right-line", type: "transferencia" },
-              { label: "Pendência", value: 0, icon: "ri-bar-chart-line", type: "resultado" },
+              { label: "Entradas", value: `R$ ${entradas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-arrow-down-circle-line", type: "entrada" },
+              { label: "Saídas", value: `R$ ${saidas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-arrow-up-circle-line", type: "saida" },
+              { label: "Saldo Final", value: `R$ ${saldoFinal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-wallet-3-line", type: "saldo" },
+              { label: "Contas a pagar", value: `R$ ${(contasAPagar * -1).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-bill-line", type: "pagar" },
+              { label: "Contas a receber", value: `R$ ${contasAReceber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-money-dollar-circle-line", type: "receber" },
+              { label: "Transferências", value: `R$ ${transferenciasSaldo.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: "ri-arrow-left-right-line", type: "transferencia" },
+              { label: "Pendência", value: totalPendencias, icon: "ri-bar-chart-line", type: "pendencia" },
             ].map((item, index) => (
               <Paper
                 key={index}
@@ -367,7 +394,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                   </Typography>
                 </Box>
                 <Typography variant="h6" fontWeight="bold">
-                  R$ {item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {item.value}
                 </Typography>
                 {filterTypes.includes(item.type) && (
                   <i
@@ -427,11 +454,26 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                   if (hasChildren) {
                     handleSelectionChange(allConciledIdsInGroup, newSelectState);
                   }
-                };
+                }
 
-                const rowColor = (data.concileds?.length > 0 && data.concileds.every(c => c.isConciled))
-                            ? '#155724' // verde claro quando todos concileds.isConciled = true
-                            : 'inherit'
+                const allConcileds = (data.concileds?.length > 0 && data.concileds.every(c => c.isConciled))
+                const hasError = _.size(_.filter(data.concileds, (item) => item.message != null)) >= 1
+
+                const dontConcileds = data.concileds?.length == 0
+                const hasDivergent = _.size(_.filter(data.concileds, (item) => {
+                  if (item.payment) {
+                    return item.amount != item.payment?.amount
+                  }
+                  if (item.receivement) {
+                    return item.amount != item.receivement?.amount
+                  }
+                  return false
+                })) >= 1
+
+                const sumConcileds = _.sumBy(data.concileds, (c) => Number(c.amount ?? 0));
+                const amountMismatch = data.concileds?.length > 0 && sumConcileds !== Number(data.entryAmount);
+
+                const rowColor = hasError ? 'red' : (allConcileds ? '#155724' : 'inherit')
 
                 return (
                   <Fragment key={data.id || index}>
@@ -473,17 +515,52 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                         <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.balance)}</Typography></TableCell>
                         <TableCell align="left" sx={{ width: 80 }}>
                           <Box className="actions-container">
+                            
                             <IconButton
                               sx={{
-                                p: 0, width: 24, height: 24, borderRadius: '50%',
+                                p: 0,
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
                                 fontSize: 12,
-                                backgroundColor: _.size(data.concileds) > 0 ? 'var(--mui-palette-primary-dark)' : '#C0C0C0',
+                                backgroundColor: _.size(data.concileds) > 0
+                                  ? 'var(--mui-palette-primary-dark)'
+                                  : '#C0C0C0',
                                 color: '#fff',
                                 '&:hover': { backgroundColor: 'primary.dark' },
+                                position: 'relative', // para suportar posicionamento absoluto
                               }}
                               className="concileds"
                             >
                               {_.size(data.concileds) || 0}
+
+                              {(dontConcileds || hasDivergent || amountMismatch) && (
+                                <>
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      bottom: -2,
+                                      right: -2,
+                                      width: 14,
+                                      height: 14,
+                                      borderRadius: '50%',
+                                      backgroundColor: 'var(--mui-palette-error-main)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#fff',
+                                      fontSize: 10,
+                                      animation: 'pulse 1s infinite',
+
+                                      '@keyframes pulse': {
+                                        '50%': { transform: 'scale(1.2)', opacity: 0.7 },
+                                      },
+                                    }}
+                                  >
+                                    <i className="ri-error-warning-fill" style={{ fontSize: 10 }} />
+                                  </Box>
+                                </>
+                              )}
                             </IconButton>
 
                             <Tooltip title='Editar'>
@@ -1054,6 +1131,33 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
                       }}
                     >
                       <i className="ri-checkbox-circle-fill" style={{ color: '#fff' }} />
+
+                      {item.amount != item.payment?.amount && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            bottom: -2,
+                            right: -2,
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--mui-palette-error-main)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: 10,
+                            animation: 'pulse 1s infinite',
+
+                            '@keyframes pulse': {
+                              '50%': { transform: 'scale(1.2)', opacity: 0.7 },
+                            },
+                          }}
+                        >
+                          <i className="ri-error-warning-fill" style={{ fontSize: 10 }} />
+                        </Box>
+                      )}
+                      
                     </IconButton>
                   </Tooltip>
 

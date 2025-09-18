@@ -63,6 +63,26 @@ export class StatementData {
     type: DataTypes.DECIMAL(18, 2)
   }
 
+  entryAmount = {
+    field: 'entryAmount',
+    type: DataTypes.VIRTUAL,
+    get() {
+
+      const credit = Number(this.getDataValue('credit'))
+      const debit = Number(this.getDataValue('debit'))
+
+      if (credit > 0) {
+        return credit
+      }
+      if (debit < 0) {
+        return debit * -1
+      }
+      
+      return null
+
+    }
+  }
+
   balance = {
     field: 'balance',
     type: DataTypes.DECIMAL(18, 2)
