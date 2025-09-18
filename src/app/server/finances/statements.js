@@ -77,11 +77,6 @@ export async function findOne({ statementId }) {
 
   if (!statement) return null
 
-  const entryTypes = statement.entryTypes ?? []
-  const entryTypesArray = typeof entryTypes === 'string'
-    ? entryTypes.split(',')
-    : entryTypes
-
   const statementData = await db.StatementData.findAll({
     where: [{
       statementId: statement.id,
@@ -91,6 +86,7 @@ export async function findOne({ statementId }) {
     order: [
       [Sequelize.literal('CASE WHEN [entryDate] IS NULL THEN 1 ELSE 0 END'), 'ASC'],
       ['entryDate', 'ASC'],
+      ['reference', 'ASC'],
       [{ model: db.StatementDataConciled, as: 'concileds' }, 'type', 'ASC']
     ],
     include: [

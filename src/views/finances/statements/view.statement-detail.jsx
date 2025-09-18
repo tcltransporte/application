@@ -121,6 +121,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   }, [fetchStatement]);
 
   useEffect(() => {
+    setFilterTypes([])
+    setExpandedRow(null)
     if (!statementId) {
       setSelectedConcileds(new Set());
       setSelectedStatements(new Set());
@@ -551,9 +553,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                                       color: '#fff',
                                       fontSize: 10,
                                       animation: 'pulse 1s infinite',
-
                                       '@keyframes pulse': {
-                                        '50%': { transform: 'scale(1.2)', opacity: 0.7 },
+                                        '50%': { transform: 'scale(1.2)' },
                                       },
                                     }}
                                   >
@@ -964,6 +965,7 @@ function ConciledDetailRowsGroup({ data, onDesvincule, onViewDetails, onStatemen
       rows.push(
         <ConciliationForm
           key={`edit-${item.id}`}
+          statementData={data}
           statementDataId={data.id}
           initialValues={editingConciledData}
           isSelected={selectedConcileds.has(item.id)}
@@ -1207,7 +1209,8 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
   )
 }
 
-function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSubmitted, onCancel }) {
+function ConciliationForm({ statementData, statementDataId, isSelected, initialValues, onFormSubmitted, onCancel }) {
+
   const validationSchema = Yup.object({
     /*
     type: Yup.string().required(),
@@ -1238,11 +1241,16 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
     } finally {
       setSubmitting(false);
     }
-  };
+  }
+
+  console.log(statementData)
+
+  //const origin = statementData
+  //const destinatation = statementData
 
   return (
     <Formik
-      initialValues={initialValues || { type: '', partner: null, category: null, origin: null, destination: null, bankAccount: null, amount: '', fee: '', discount: '' }}
+      initialValues={initialValues || { type: '', partner: null, category: null, origin: origin, destination: destinatation, bankAccount: null, amount: '', fee: '', discount: '' }}
       validationSchema={validationSchema}
       enableReinitialize={true}
       onSubmit={handleSubmitInternal}
