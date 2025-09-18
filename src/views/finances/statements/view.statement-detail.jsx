@@ -22,16 +22,6 @@ import { NumericField, SelectField } from '@/components/field'
 import { BackdropLoading } from '@/components/BackdropLoading'
 import Swal from 'sweetalert2'
 
-// --- Funções Utilitárias (sem alterações) ---
-const entryTypeAlias = {
-  '': { title: 'Abertura e fechamento', content: 'A' },
-  'payment': { title: 'Recebimento', content: 'R' },
-  'shipping': { title: 'Frete', content: 'F' },
-  'payout': { title: 'Transferência', content: 'T' },
-  'reserve_for_payout': { title: 'Reserva para transferência', content: 'T' },
-  'reserve_for_bpp_shipping_return': { title: 'Reserva para devolução', content: 'D' }
-};
-
 const formatCurrency = (value) => {
   if (value == null || isNaN(value)) return '';
   return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
@@ -50,9 +40,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
   const [loading, setLoading] = useState(false)
   const [statement, setStatement] = useState(null)
-  const [originalData, setOriginalData] = useState(null)
-  const [entryTypeFilters, setEntryTypeFilters] = useState([])
-  const [showFilterDialog, setShowFilterDialog] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
   const [selectedConcileds, setSelectedConcileds] = useState(new Set());
   const [selectedStatements, setSelectedStatements] = useState(new Set());
@@ -110,7 +97,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
       try {
         setLoading(loading);
         const statementData = await statements.findOne({ statementId });
-        setOriginalData(statementData.statementData);
+
         const filteredData = statementData.statementData.filter((data) =>
           statementData.entryTypes?.length > 0 ? statementData.entryTypes.includes(data.entryType) : true
         );
@@ -119,7 +106,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           statementData: filteredData,
           entryTypes: statementData.entryTypes ?? [],
         });
-        setEntryTypeFilters(statementData.entryTypes ?? []);
+        
       } catch (error) {
         toast.error(error.message);
         onError();
@@ -170,29 +157,26 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     setExpandedRow((prev) => (prev === idx ? null : idx))
   }
 
-  const applyEntryTypeFilter = () => { /* ... */ };
-
   const handleOpenPayments = (id) => {
     setSelectedItemId(id);
     setIsDrawerOpen(true);
   };
+
   const handleClosePayments = () => {
     setIsDrawerOpen(false);
     setSelectedItemId(null);
   };
 
-  // --- MODIFICADO: Corrigido para usar o estado correto (receivementId) ---
   const handleOpenReceivements = (id) => {
     setReceivementId(id);
     setIsDrawerReceivement(true);
-  };
+  }
 
   const handleCloseReceivements = () => {
     setIsDrawerReceivement(false);
     setReceivementId(null);
-  };
+  }
   
-  // --- NOVO: Handler para decidir qual drawer abrir baseado no tipo do item ---
   const handleViewDetails = (conciledItem) => {
 
     if (!conciledItem) return
@@ -212,27 +196,81 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     statements.vinculePayment({ statementDataConciledId, codigo_movimento_detalhe: id })
     await fetchStatement(false)
     handleClosePayments()
-  };
+  }
 
   const handleVinculeReceivement = async (statementDataConciledId, id) => {
     statements.vinculeReceivement({ statementDataConciledId, codigo_movimento_detalhe: id })
     await fetchStatement(false)
     handleCloseReceivements()
-  };
+  }
 
   const handleDesvincule = async (statementDataConciledId) => {
     statements.desvincule({ statementDataConciledId })
     await fetchStatement(false)
     handleCloseReceivements()
-  };
+  }
 
-  const handleOpenFilterDialog = () => {
-    setEntryTypeFilters(statement?.entryTypes ?? []);
-    setShowFilterDialog(true);
-  };
+  const [filterTypes, setFilterTypes] = useState([]); // múltiplos filtros
 
   const statementDataList = statement?.statementData || [];
   const totalItems = statementDataList.length;
+
+  // ---- totais ----
+  const entradas = statementDataList
+    .filter(d => Number(d.credit) > 0)
+    .reduce((sum, d) => sum + Number(d.credit || 0), 0);
+
+  const saidas = statementDataList
+    .filter(d => Number(d.debit) < 0)               // pega débitos negativos
+    .reduce((sum, d) => sum + Math.abs(Number(d.debit || 0)), 0); // soma como positivo
+
+  // Dentro do seu componente, antes do return
+  const contasAReceber = statementDataList.reduce((sum, data) => {
+    const total = (data.concileds || [])
+      .filter(c => c.type === '1')
+      .reduce((s, c) => s + Number(c.amount ?? 0), 0);
+    return sum + total;
+  }, 0);
+
+  const contasAPagar = statementDataList.reduce((sum, data) => {
+    const total = (data.concileds || [])
+      .filter(c => c.type === '2')
+      .reduce((s, c) => s + Number(c.amount ?? 0), 0);
+    return sum + total;
+  }, 0);
+
+  const totalTransferenciasEntrada = statementDataList
+    .flatMap(d => d.concileds || [])
+    .filter(c => c.type === 'transfer' && c.amount > 0)
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const totalTransferenciasSaida = statementDataList
+    .flatMap(d => d.concileds || [])
+    .filter(c => c.type === 'transfer' && c.amount < 0)
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const transferenciasSaldo = totalTransferenciasEntrada - totalTransferenciasSaida; 
+  // note que Saída é negativa, então basta somar
+
+  const saldoFinal = entradas - saidas;
+
+  // ---- lista que a tabela vai usar ----
+  const filteredDataList = statementDataList.filter(data => {
+    if (filterTypes.length === 0) return true;
+
+    return filterTypes.some(ft => {
+      switch(ft) {
+        case 'entrada': return data.credit > 0;
+        case 'saida': return data.debit < 0;
+        case 'saldo': return true; // pode ignorar ou aplicar regra
+        case 'receber': return (data.concileds || []).some(c => c.type === '1');
+        case 'pagar': return (data.concileds || []).some(c => c.type === '2');
+        case 'transferencia': return (data.concileds || []).some(c => c.type === 'transfer');
+        case 'resultado': return true; 
+        default: return true;
+      }
+    });
+  });
 
   const selectedItemsCount = statementDataList.reduce((count, data) => {
     const allConciledIds = (data.concileds || []).map(c => c.id);
@@ -279,6 +317,75 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           </IconButton>
         </DialogTitle>
         <DialogContent>
+
+        <Box sx={{ mb: 2, mt: 2 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)", // 7 colunas iguais
+              gap: 2,
+            }}
+          >
+            {[
+              { label: "Entradas", value: entradas, icon: "ri-arrow-down-circle-line", type: "entrada" },
+              { label: "Saídas", value: saidas, icon: "ri-arrow-up-circle-line", type: "saida" },
+              { label: "Saldo Final", value: saldoFinal, icon: "ri-wallet-3-line", type: "saldo" },
+              { label: "Contas a pagar", value: contasAPagar * -1, icon: "ri-bill-line", type: "pagar" },
+              { label: "Contas a receber", value: contasAReceber, icon: "ri-money-dollar-circle-line", type: "receber" },
+              { label: "Transferências", value: transferenciasSaldo, icon: "ri-arrow-left-right-line", type: "transferencia" },
+              { label: "Pendência", value: 0, icon: "ri-bar-chart-line", type: "resultado" },
+            ].map((item, index) => (
+              <Paper
+                key={index}
+                elevation={2}
+                sx={{
+                  p: 2,
+                  textAlign: "center",
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  "&:hover": { bgcolor: "grey.100" },
+                  border: filterTypes.includes(item.type) ? '3px solid' : '1px solid #ccc',
+                  borderColor: filterTypes.includes(item.type) ? 'primary.main' : '#ccc',
+                  position: 'relative', // necessário para posicionar o ícone
+                }}
+                onClick={() => {
+                  setFilterTypes(prev => 
+                    prev.includes(item.type) 
+                      ? prev.filter(t => t !== item.type)  // remove se já estava selecionado
+                      : [...prev, item.type]               // adiciona se não estava
+                  );
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <i className={item.icon} style={{ fontSize: 22, color: "#1976d2" }} />
+                  <Typography variant="body2" fontWeight="medium">
+                    {item.label}
+                  </Typography>
+                </Box>
+                <Typography variant="h6" fontWeight="bold">
+                  R$ {item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </Typography>
+                {filterTypes.includes(item.type) && (
+                  <i
+                    className="ri-filter-line"
+                    style={{
+                      position: 'absolute',
+                      bottom: 4,
+                      right: 4,
+                      fontSize: 18,
+                      color: '#1976d2',
+                    }}
+                  />
+                )}
+              </Paper>
+            ))}
+          </Box>
+        </Box>
+
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
@@ -306,7 +413,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {statementDataList.map((data, index) => {
+              {filteredDataList.map((data, index) => {
                 const allConciledIdsInGroup = (data.concileds || []).map(c => c.id);
                 const selectedInGroupCount = allConciledIdsInGroup.filter(id => selectedConcileds.has(id)).length;
                 const hasChildren = allConciledIdsInGroup.length > 0;
@@ -321,6 +428,10 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     handleSelectionChange(allConciledIdsInGroup, newSelectState);
                   }
                 };
+
+                const rowColor = (data.concileds?.length > 0 && data.concileds.every(c => c.isConciled))
+                            ? '#155724' // verde claro quando todos concileds.isConciled = true
+                            : 'inherit'
 
                 return (
                   <Fragment key={data.id || index}>
@@ -348,18 +459,18 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                             onChange={handleRowSelectAllClick}
                           />
                         </TableCell>
-                        <TableCell sx={{ width: 140 }}>{data.sourceId}</TableCell>
-                        <TableCell>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                        <TableCell>{data.reference}</TableCell>
-                        <TableCell align="right">{formatCurrency(data.amount)}</TableCell>
-                        <TableCell align="right">{formatCurrency(data.fee)}</TableCell>
-                        <TableCell align="right" sx={{ color: 'green' }}>
-                          {Number(data.credit) > 0 && `+${formatCurrency(data.credit)}`}
+                        <TableCell sx={{ width: 140 }}><Typography fontSize={12} color={rowColor}>{data.sourceId}</Typography></TableCell>
+                        <TableCell><Typography fontSize={12} color={rowColor}>{data.entryDate ? format(data.entryDate, 'dd/MM/yyyy HH:mm') : ""}</Typography></TableCell>
+                        <TableCell><Typography fontSize={12} color={rowColor}>{data.reference}</Typography></TableCell>
+                        <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.amount)}</Typography></TableCell>
+                        <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.fee)}</Typography></TableCell>
+                        <TableCell align="right">
+                          <Typography fontSize={12} color='green'>{Number(data.credit) > 0 && `+${formatCurrency(data.credit)}`}</Typography>
                         </TableCell>
-                        <TableCell align="right" sx={{ color: 'red' }}>
-                          {Number(data.debit) < 0 && formatCurrency(data.debit)}
+                        <TableCell align="right">
+                          <Typography fontSize={12} color='red'>{Number(data.debit) < 0 && formatCurrency(data.debit)}</Typography>
                         </TableCell>
-                        <TableCell align="right">{formatCurrency(data.balance)}</TableCell>
+                        <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.balance)}</Typography></TableCell>
                         <TableCell align="left" sx={{ width: 80 }}>
                           <Box className="actions-container">
                             <IconButton
@@ -438,7 +549,29 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     {/* Linha expandida */}
                     {expandedRow === index && (
                       <ConciledDetailRowsGroup
-                        data={data}
+                        data={{
+                          ...data,
+                          concileds: (data.concileds || []).filter(c => {
+                            if (filterTypes.length === 0) return true;
+
+                            return filterTypes.some(ft => {
+                              switch(ft) {
+                                case 'entrada':
+                                  return c.type === 'entrada' && c.amount > 0;
+                                case 'saida':
+                                  return c.type === 'saida' && c.amount < 0;
+                                case 'receber':
+                                  return c.type === '1';
+                                case 'pagar':
+                                  return c.type === '2';
+                                case 'transferencia':
+                                  return c.type === 'transfer';
+                                default:
+                                  return true;
+                              }
+                            });
+                          })
+                        }}
                         onDesvincule={handleDesvincule}
                         onViewDetails={handleViewDetails}
                         onStatementUpdate={async () => await fetchStatement(false)}
@@ -551,14 +684,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           </div>
         </DialogActions>
       </Dialog>
-      <EntryTypeFilterDialog
-        open={showFilterDialog}
-        onClose={() => setShowFilterDialog(false)}
-        allEntryTypes={statement?.allEntryTypes || []}
-        selectedFilters={entryTypeFilters}
-        onFilterChange={setEntryTypeFilters}
-        onApplyFilter={applyEntryTypeFilter}
-      />
       <ViewVinculePayment
         open={isDrawerOpen}
         onClose={handleClosePayments}
@@ -1070,37 +1195,4 @@ function ConciliationForm({ statementDataId, isSelected, initialValues, onFormSu
       )}
     </Formik>
   );
-}
-
-function EntryTypeFilterDialog({ open, onClose, allEntryTypes, selectedFilters, onFilterChange, onApplyFilter }) {
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Tipos de lançamentos</DialogTitle>
-      <DialogContent>
-        {allEntryTypes?.map((type) => {
-          const isChecked = selectedFilters.includes(type);
-          return (
-            <div key={type}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={(e) => {
-                    onFilterChange((prev) =>
-                      e.target.checked ? [...prev, type] : prev.filter((t) => t !== type)
-                    )
-                  }}
-                />
-                &nbsp;{entryTypeAlias[type] ? `${entryTypeAlias[type]?.content || ''} - ${entryTypeAlias[type].title}` : type}
-              </label>
-            </div>
-          )
-        })}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={onApplyFilter}>Aplicar</Button>
-      </DialogActions>
-    </Dialog>
-  )
 }

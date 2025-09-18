@@ -11,6 +11,7 @@ import { orders } from "../settings/integrations/plugins/index.controller"
 import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 import * as payments from "@/app/server/finances/payments"
 import * as receivements from "@/app/server/finances/receivements"
+import { authentication } from "../settings/integrations/index.controller"
 
 export async function findAll({limit, offset, date}) {
 
@@ -418,7 +419,9 @@ export async function concile({id}) {
     include: [
       {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate'], include: [
         {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
-      ]}
+      ]},
+      {model: db.BankAccount, as: 'origin', attributes: ['externalId']},
+      {model: db.BankAccount, as: 'destination', attributes: ['externalId']}
     ],
     where: [{id: id, isConciled: false}]
   })
@@ -537,7 +540,15 @@ export async function concile({id}) {
     }
 
     if (item.type == 'transfer') {
-      console.log('transferência')
+      await transfer({
+        date: item.statementData.entryDate,
+        amount: item.amount,
+        originId: item.origin?.externalId,
+        destinationId: item.destination?.externalId
+      })
+
+      await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
+
     }
 
   }
@@ -598,6 +609,47 @@ export async function desconcile({id}) {
       await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
     }
    
+  }
+
+}
+
+async function transfer({date, originId, destinationId, amount, observation = ''}) {
+
+  const auth = await authentication({
+    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
+  })
+
+  const args = `[{"data":"${format(date, 'dd/MM/yyyy')}","valor":"${amount.toString().replace('.', ',')}","idContaOrigem":"${originId}","idContaDestino":"${destinationId}","historicoTransferencia":"${observation}"}]`
+
+  const data = `argsLength=${args.length}&args=${args}`
+
+  const res = await fetch("https://erp.tiny.com.br/services/caixa.server/2/Caixa/salvarTransferencia", {
+    "headers": {
+      "accept": "application/json, text/javascript, */*; q=0.01",
+      "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "priority": "u=1, i",
+      "sec-ch-ua": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "x-custom-request-for": "XAJAX",
+      "x-requested-with": "XMLHttpRequest",
+      "x-user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+      "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+      "Referer": "https://erp.tiny.com.br/caixa",
+      "Referrer-Policy": "strict-origin-when-cross-origin"
+    },
+    "body": data, //"argsLength=149&timeInicio=1758132000767&versaoFront=3.80.38&pageTime=1758131952&pageLastPing=1758131959873&location=https%3A%2F%2Ferp.tiny.com.br%2Fcaixa&curRetry=0&args=%5B%7B%22data%22%3A%2217%2F09%2F2025%22%2C%22valor%22%3A%220%2C01%22%2C%22idContaOrigem%22%3A%22351099665%22%2C%22idContaDestino%22%3A%22351167825%22%2C%22historicoTransferencia%22%3A%22Transfer%C3%AAncia+entre+contas%22%7D%5D",
+    "method": "POST"
+  });
+
+  const r = await res.json()
+
+  if (r.response[0].cmd == 'rj') {
+      throw new Error(r.response[0]?.exc?.detail)
   }
 
 }
