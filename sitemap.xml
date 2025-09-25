@@ -95,7 +95,7 @@
     </siteMapNode>
 
     <siteMapNode title="Logística" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
-      <!--<siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>-->
+      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
       <siteMapNode title="Andamento" url="\logistic\decrease" description="Viagens"/>
     </siteMapNode>
 

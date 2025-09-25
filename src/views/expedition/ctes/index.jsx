@@ -67,18 +67,30 @@ export const ImportDrawer = ({ open, onClose }) => {
   }
 
   const handleUpload = async () => {
-    if (files.length === 0) return alert('Selecione arquivos para enviar')
+    
+    if (files.length === 0) return alert('Selecione arquivos para enviar');
 
     setUploading(true)
     setUploadResult(null)
 
     try {
-      const formData = new FormData()
-      files.forEach((file) => formData.append('files', file))
+      // cria array de objetos com nome e buffer
+      const filesData = await Promise.all(
+        files.map(async ({ file }) => {
+          const arrayBuffer = await file.arrayBuffer() // pega bytes
+          const buffer = Array.from(new Uint8Array(arrayBuffer)) // converte para array de bytes
+          return {
+            name: file.name,
+            type: file.type,
+            data: buffer
+          }
+        })
+      )
 
       const res = await fetch('/api/expedition/ctes', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: filesData }) // envia como JSON
       })
 
       if (!res.ok) throw new Error('Erro ao enviar arquivos')
@@ -86,12 +98,14 @@ export const ImportDrawer = ({ open, onClose }) => {
       const data = await res.json()
       setUploadResult(data)
       setFiles([])
+
     } catch (error) {
       alert(error.message)
     } finally {
       setUploading(false)
     }
   }
+
 
   return (
     <Drawer
@@ -101,7 +115,7 @@ export const ImportDrawer = ({ open, onClose }) => {
       sx={{ '& .MuiDrawer-paper': { width: '600px', maxWidth: '100%' } }}
     >
       <Box display="flex" alignItems="center" justifyContent="space-between" px={3} py={2}>
-        <Typography variant="h5">Notas fiscais</Typography>
+        <Typography variant="h5">Importar</Typography>
         <IconButton onClick={onClose}>
           <i className="ri-close-line text-2xl" />
         </IconButton>
@@ -109,7 +123,6 @@ export const ImportDrawer = ({ open, onClose }) => {
 
       <Divider />
 
-      {/*
       <Box
         {...getRootProps()}
         sx={{
@@ -173,8 +186,7 @@ export const ImportDrawer = ({ open, onClose }) => {
           Enviar arquivos
         </Button>
       </Box>
-      */}
-
+     
     </Drawer>
   )
 }
@@ -362,8 +374,8 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
       ...installments.request,
       offset: 0,
       dhEmi: {
-        //start: DateFormat(new Date(dateRange[0]), 'yyyy-MM-dd 00:00'),
-        //end: DateFormat(new Date(dateRange[1]), 'yyyy-MM-dd 23:59'),
+        start: DateFormat(dateRange[0], 'yyyy-MM-dd 00:00'),
+        end: DateFormat(dateRange[1], 'yyyy-MM-dd 23:59'),
       },
     })
   }
@@ -457,8 +469,8 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
             <RangeFilter
               title="Emissão"
               initialDateRange={[
-                //new Date(installments.request?.dhEmi?.start),
-                //new Date(installments.request?.dhEmi?.end),
+                installments.request?.dhEmi?.start,
+                installments.request?.dhEmi?.end,
               ]}
               onChange={handlePeriodChange}
             />

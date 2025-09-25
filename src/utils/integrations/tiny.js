@@ -229,7 +229,7 @@ export async function getTinyPayments({ start, end }) {
           return {
             externalId: id,
             documentNumber: id,
-            amountTotal: item.conta.valor,
+            amount: item.conta.valor,
             issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
             dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
             observation: item.conta.historico,
@@ -291,7 +291,7 @@ export async function getTinyPayments({ start, end }) {
             defaults: {
               issueDate: payment.issueDate,
               dueDate: payment.dueDate,
-              amount: payment.amountTotal,
+              amount: payment.amount,
               observation: payment.observation,
             },
             transaction,
@@ -308,6 +308,7 @@ export async function getTinyPayments({ start, end }) {
 }
 
 export async function getTinyReceivements({ start, end }) {
+
   await getTinyCategories()
 
   const session = await getServerSession(authOptions)
@@ -329,6 +330,7 @@ export async function getTinyReceivements({ start, end }) {
 
   const receivements = async ({ token, start, end, offset }) => {
     const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`
+    console.log(url)
     const res = await fetch(url)
     if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`)
     return await res.json()
@@ -382,7 +384,7 @@ export async function getTinyReceivements({ start, end }) {
       return {
         externalId: id,
         documentNumber: id,
-        amountTotal: item.conta.valor,
+        amount: item.conta.valor,
         issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
         dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
         observation: item.conta.historico,
@@ -439,7 +441,7 @@ export async function getTinyReceivements({ start, end }) {
 
         const updatedFields = {
           documentNumber: receivement.documentNumber,
-          amountTotal: receivement.amountTotal,
+          amount: receivement.amount,
           issueDate: receivement.issueDate,
           dueDate: receivement.dueDate,
           observation: receivement.observation,
@@ -489,7 +491,7 @@ export async function getTinyReceivements({ start, end }) {
         defaults: {
           issueDate: payment.issueDate,
           dueDate: payment.dueDate,
-          amount: payment.amountTotal,
+          amount: payment.amount,
           observation: payment.observation,
         },
         transaction,

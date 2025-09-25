@@ -75,7 +75,7 @@ export class StatementData {
         return credit
       }
       if (debit < 0) {
-        return debit * -1
+        return debit
       }
       
       return null

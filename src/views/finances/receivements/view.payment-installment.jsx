@@ -32,7 +32,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
   
   const initialValues = {
     documentNumber: '',
-    amountTotal: '',
+    amount: '',
     numParcelas: 1,
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     startDate: format(new Date(), 'yyyy-MM-dd'),
@@ -81,10 +81,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
         {({ values, setFieldValue, isSubmitting }) => {
           // Atualiza parcelas sempre que campos relacionados mudarem
           useEffect(() => {
-            const { amountTotal, startDate, numParcelas, interval, customDays } = values;
-            if (!amountTotal || !startDate || !numParcelas) return;
+            const { amount, startDate, numParcelas, interval, customDays } = values;
+            if (!amount || !startDate || !numParcelas) return;
 
-            const total = parseFloat(amountTotal);
+            const total = parseFloat(amount);
             const baseAmount = +(total / numParcelas).toFixed(2);
             const diff = +(total - baseAmount * numParcelas).toFixed(2);
 
@@ -109,7 +109,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
             setFieldValue('installments', list);
 
-          }, [values.amountTotal, values.numParcelas, values.startDate, values.interval, values.customDays]);
+          }, [values.amount, values.numParcelas, values.startDate, values.interval, values.customDays]);
 
           return (
             <Form>
@@ -158,7 +158,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
                   <Grid item size={{xs: 12, sm: 2.3}}>
                     <Field
                       type="text"
-                      name="amountTotal"
+                      name="amount"
                       label="Valor"
                       component={CurrencyField}
                     />

@@ -1,59 +1,48 @@
-import { AppContext } from "@/database";
-import formidable from "formidable";
+import { AppContext } from '@/database'
+import { addDays, format, parseISO } from 'date-fns'
+import fs from 'fs'
+import path from 'path'
+import xml2js from 'xml2js'
 
 export async function POST(req) {
   try {
-    
-
-    const formData = await req.formData()
-    const files = formData.getAll('files')
-
-    for (const file of files) {
-      // ler o conteúdo com file.arrayBuffer() ou file.stream()
-      console.log(file.stream())
-    }
-
-    return new Response(
-      JSON.stringify({ message: 'deu crto' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
-
-    return
-    console.log(req)
 
     const db = new AppContext()
 
-    const form = formidable({});
-
-    const archives = await form.parse(req)
+    const uploadedFiles = []
 
     await db.transaction(async (transaction) => {
 
-      for (const file of archives[1].files) {
+      const { files } = await req.json() // recebe JSON do cliente
 
-        const xml = fs.readFileSync(file.filepath, 'utf8')
+      //const uploadDir = path.join(process.cwd(), 'uploads')
+      //if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
 
-        console.log(xml)
+      for (const file of files) {
+        //const filePath = path.join(uploadDir, file.name)
+
+        // converte array de bytes de volta para Buffer
+        const buffer = Buffer.from(file.data)
+
+        const xmlString = buffer.toString('utf-8')
 
         const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
 
-        const json = await parser.parseStringPromise(xml)
+        const json = await parser.parseStringPromise(xmlString)
 
         if (!json.cteProc || !json.cteProc.protCTe) {
           return
         }
 
-        /*
-
         let cte = await db.Cte.findOne({attributes: ['id'], where: [{chaveCT: json.cteProc.protCTe.infProt.chCTe}], transaction})
 
-        const sender = await db.Partner.findOne({attributes: ['id', 'diasPrazoPagamento'], where: [{cpfCnpj: json.cteProc.CTe.infCte.rem.CNPJ || json.cteProc.CTe.infCte.rem.CPF}], transaction})
+        const sender = await db.Partner.findOne({attributes: ['codigo_pessoa', 'daysDeadlinePayment'], where: [{cpfCnpj: json.cteProc.CTe.infCte.rem.CNPJ || json.cteProc.CTe.infCte.rem.CPF}], transaction})
 
         if (!sender) {
           throw new Error('Remetente não está cadastrado!')
         }
 
-        let recipient = await db.Partner.findOne({where: {cpfCnpj: json.cteProc.CTe.infCte.dest.CNPJ || json.cteProc.CTe.infCte.dest.CPF}, transaction})
+        let recipient = await db.Partner.findOne({attributes: ['codigo_pessoa'], where: {cpfCnpj: json.cteProc.CTe.infCte.dest.CNPJ || json.cteProc.CTe.infCte.dest.CPF}, transaction})
 
         if (!recipient) {
 
@@ -79,22 +68,22 @@ export async function POST(req) {
           serie: json.cteProc.CTe.infCte.ide.serie,
           chCTe: json.cteProc.protCTe.infProt.chCTe,
           tpCTe: json.cteProc.CTe.infCte.ide.tpCTe,
-          dhEmi: dayjs(json.cteProc.CTe.infCte.ide.dhEmi).format('YYYY-MM-DD HH:mm:ss'),
+          dhEmi: format(parseISO(json.cteProc.CTe.infCte.ide.dhEmi), 'yyyy-MM-dd HH:mm:ss'),
           CFOP: json.cteProc.CTe.infCte.ide.CFOP,
 
           cStat: json.cteProc.protCTe.infProt.cStat,
           xMotivo: json.cteProc.protCTe.infProt.xMotivo,
           nProt: json.cteProc.protCTe.infProt.nProt,
-          dhRecbto: dayjs(json.cteProc.protCTe.infProt.dhRecbto).format('YYYY-MM-DD HH:mm:ss'),
+          dhRecbto: format(parseISO(json.cteProc.protCTe.infProt.dhRecbto), 'yyyy-MM-dd HH:mm:ss'),
 
           codigoUnidade: 1,
           vTPrest: json.cteProc.CTe.infCte.vPrest.vTPrest,
           valorAReceber: json.cteProc.CTe.infCte.vPrest.vRec,
 
-          recipientId: recipient.id,
-          takerId: sender.id,
+          recipientId: recipient.codigo_pessoa,
+          takerId: sender.codigo_pessoa,
 
-          xml
+          xml: xmlString
 
         }
 
@@ -122,15 +111,17 @@ export async function POST(req) {
 
         if (cte.id) {
 
-          await db.Cte.update(cte, {where: [{id: cte.id}], transaction})
+          //await db.Cte.update(cte, {where: [{id: cte.id}], transaction})
+
+          console.log(cte)
 
         } else {
 
-          const receivement = await db.Receivement.create({
+          const receivement = await db.FinancialMovement.create({
             companyId: companyId,
-            payerId: sender.id,
+            partnerId: sender.id,
             documentNumber: cte.nCT,
-            description: `Recebimento do CT-e ${cte.nCT}`,
+            observation: `Recebimento do CT-e ${cte.nCT}`,
             total: cte.valorAReceber,
             releaseDate: cte.dhEmi,
             issueDate: cte.dhEmi,
@@ -138,33 +129,35 @@ export async function POST(req) {
             createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
           }, {transaction})
 
-          await db.ReceivementInstallment.create({
-            receivementId: receivement.id,
-            description: receivement.description,
+          await db.FinancialMovementInstallment.create({
+            observation: receivement.observation,
             installment: 1,
-            dueDate: dayjs(cte.dhEmi).add(sender?.diasPrazoPagamento || 0, 'day').format('YYYY-MM-DD'),
+            dueDate: format(addDays(cte.dhEmi, sender?.daysDeadlinePayment || 0),"yyyy-MM-dd"),
             amount: cte.valorAReceber,
-            createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+            createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
           }, {transaction})
 
           cte.receivementId = receivement.id
 
+          //console.log(cte)
+
           await db.Cte.create(cte, {transaction})
 
-        }*/
+        }
+
+        uploadedFiles.push({ name: file.name, size: buffer.length })
 
       }
 
     })
 
-    res.status(200).json({})
+    return new Response(JSON.stringify({ uploadedFiles }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
 
-
-  } catch (error) {
-    console.error('Erro ao processar upload:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+  } catch (err) {
+    console.error(err)
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 })
   }
 }

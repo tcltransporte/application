@@ -34,7 +34,7 @@ async function prepareBuildFolder() {
   await fse.copy('.next', path.join(publishDir, '.next'))
   await fse.copy('public', path.join(publishDir, 'public'))
   await fse.copy('package.json', path.join(publishDir, 'package.json'))
-  await fse.copy('.env.production', path.join(publishDir, '.env'))
+  await fse.copy('.env.tcl', path.join(publishDir, '.env'))
 
   console.log('✔️  Publish folder is ready')
 

@@ -2,104 +2,83 @@
 
 import { AppContext } from "@/database"
 import _ from "lodash"
-import { Op, Sequelize } from "sequelize"
+import { literal, Op, Sequelize } from "sequelize"
 
-export async function getCtes({limit = 50, offset, cStat, dhEmi}) {
+export async function getCtes({ limit = 50, offset = 0, dhEmi, cStat }) {
 
-  const where = []
+  console.log(dhEmi)
 
-  /*
-  if (search?.input) {
+  const db = new AppContext();
 
-    if (search?.picker == 'nCT') {
-      where.push({nCT: search.input.match(/\d+/g)})
-    }
-
-    if (search?.picker == 'sender') {
-      where.push({'$shippiment.sender.RazaoSocial$': {[Sequelize.Op.like]: `%${search.input.replace(' ', "%")}%`}})
-    }
-
-    if (search?.picker == 'chCTe') {
-      where.push({'$chaveCT$': search.input.match(/\d+/g)})
-    }
-
-  }*/
-
-  const wherePending = {
-    [Sequelize.Op.or]: [
-      { cStat: { [Sequelize.Op.notIn]: [100, 101, 135] } },
-      { cStat: { [Sequelize.Op.eq]: null } }
-    ]
-  }
-  const whereAutorized = {cStat: [100]}
-  const whereCanceled = {cStat: [101, 135]}
-
+  // Filtro geral por período
+  const where = {};
   if (dhEmi?.start && dhEmi?.end) {
-    where.push({dhEmi: {[Op.between]: [dhEmi.start, dhEmi.end]}})
-  }
-  
-  if (cStat == 'pending') {
-    where.push(wherePending)
-  }
-  
-  if (cStat == 'autorized') {
-    where.push(whereAutorized)
+    where.dhEmi = { [Op.between]: [dhEmi.start, dhEmi.end] };
   }
 
-  if (cStat == 'canceled') {
-    where.push(whereCanceled)
+  // Filtro por status (opcional)
+  const statusFilter = {};
+  if (cStat === "pending") {
+    statusFilter.cStat = { [Op.or]: { [Op.notIn]: [100, 101, 135], [Op.eq]: null } };
+  } else if (cStat === "autorized") {
+    statusFilter.cStat = 100;
+  } else if (cStat === "canceled") {
+    statusFilter.cStat = { [Op.in]: [101, 135] };
   }
 
-  const db = new AppContext()
+  // 1️⃣ Contagem correta para paginação
+  const count = await db.Cte.count({ where: { ...where, ...statusFilter } });
 
-  let result
-
-  await db.transaction(async (transaction) => {
-
-    const ctes = await db.Cte.findAndCountAll({
-      attributes: ['id', 'dhEmi', 'nCT', 'serie', 'chCTe', 'cStat', 'calculationBasis'],
-      include: [
-        {model: db.Shippiment, as: 'shippiment', include: [
-          {model: db.Partner, as: 'sender', attributes: ['codigo_pessoa', 'cpfCnpj', 'surname']}
-        ]},
-        {model: db.Partner, as: 'recipient', attributes: ['codigo_pessoa', 'cpfCnpj', 'surname']},
-        /*{model: db.Shippiment, as: 'shippiment', attributes: ['id'], include: [
-          {model: db.Partner, as: 'sender', attributes: ['id', 'surname']}
-        ]},*/
-        {model: db.CteNfe, as: 'nfes', attributes: ['id', 'nfeId'], include: [
-          {model: db.Nfe, as: 'nfe', attributes: ['codigo_nota', 'chNFe']},
-        ]},
-      ],
-      limit: limit,
-      offset: offset * limit,
-      order: [['dhEmi', 'desc']],
-      where,
-      transaction,
-      //subQuery: false,
-    })
-
-    const all = await db.Cte.count({where, transaction})
-    const pending = await db.Cte.count({where: [where, wherePending], transaction})
-    const autorized = await db.Cte.count({where: [where, whereAutorized], transaction})
-    const canceled = await db.Cte.count({where: [where, whereCanceled], transaction})
-
-    const statusCount = {
-      all, pending, autorized, canceled
-    }
-
-    result = {
-      request: {
-        dhEmi, cStat, limit, offset
+  // 2️⃣ Consulta paginada com includes
+  const rows = await db.Cte.findAll({
+    where: { ...where, ...statusFilter },
+    attributes: ["id", "dhEmi", "nCT", "serie", "chCTe", "cStat", "calculationBasis"],
+    include: [
+      {
+        model: db.Shippiment,
+        as: "shippiment",
+        include: [{ model: db.Partner, as: "sender", attributes: ["codigo_pessoa", "cpfCnpj", "surname"] }],
       },
-      response: {
-        statusCount, rows: _.map(ctes.rows, (item) => item.toJSON()), count: ctes.count
-      }
-    }
+      { model: db.Partner, as: "recipient", attributes: ["codigo_pessoa", "cpfCnpj", "surname"] },
+      {
+        model: db.CteNfe,
+        as: "nfes",
+        attributes: ["id", "nfeId"],
+        include: [{ model: db.Nfe, as: "nfe", attributes: ["codigo_nota", "chNFe"] }],
+      },
+    ],
+    order: [["dhEmi", "desc"]],
+    limit,
+    offset: offset * limit, // se offset for número da página
+  });
 
-  })
+  const resultRows = rows.map(r => r.toJSON());
 
-  return result
-  
+  console.log(_.size(resultRows))
+  console.log(count)
+
+  // Contagem total por status dentro do período, ignorando filtro de status
+  const statusTotalsQuery = await db.Cte.findAll({
+    where,
+    attributes: [
+      [literal(`SUM(CASE WHEN cStat = 100 THEN 1 ELSE 0 END)`), "autorized"],
+      [literal(`SUM(CASE WHEN cStat IN (101, 135) THEN 1 ELSE 0 END)`), "canceled"],
+      [literal(`SUM(CASE WHEN cStat IS NULL OR cStat NOT IN (100, 101, 135) THEN 1 ELSE 0 END)`), "pending"],
+      [literal(`COUNT(*)`), "all"],
+    ],
+    raw: true,
+  });
+
+  const statusCount = statusTotalsQuery[0];
+
+  return {
+    request: { dhEmi, cStat, limit, offset },
+    response: {
+      statusCount,
+      rows: resultRows,
+      count, // total de registros considerando o filtro de status → correta para paginação
+    },
+  };
 }
 
 export async function onAddNfe({cteId, chNFe}) {

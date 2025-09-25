@@ -130,9 +130,27 @@ export async function getStatement({companyIntegrationId, item}) {
 
     //console.log(orders1)
 
+    let balance = Number(json[0].BALANCE_AMOUNT)
+
+    console.log(json[0])
+
     for (let item of json) {
 
-        //const pack_id = orders1.filter((c) => c.id.toString() == item.ORDER_ID.toString())[0]?.pack_id
+        if (Number(item.NET_DEBIT_AMOUNT) == 0 && Number(item.NET_CREDIT_AMOUNT) == 0) {
+            continue
+        }
+
+        if (_.isEmpty(item.SOURCE_ID)) {
+            continue
+        }
+
+        if (item.DESCRIPTION == 'reserve_for_debt_payment') {
+            continue
+        }
+
+        if (item.DESCRIPTION == 'reserve_for_payout') {
+            continue
+        }
 
         if (item.ORDER_ID) {
             
@@ -144,13 +162,12 @@ export async function getStatement({companyIntegrationId, item}) {
                 item.ORDER_ID = result.pack_id
             }
 
-            //fs.writeFileSync(`C:\\Arquivos\\order-${item.ORDER_ID}.json`, JSON.stringify(order, null, 2), "utf-8");
-
             item.DESCRIPTION = result.status
 
         }
         
         let statementData = {}
+
          
         statementData.entryDate = item.DATE ? format(new Date(item.DATE), 'yyyy-MM-dd HH:mm:ss') : null
         statementData.entryType = item.DESCRIPTION
@@ -158,11 +175,14 @@ export async function getStatement({companyIntegrationId, item}) {
         statementData.reference = item.ORDER_ID?.toString()
         statementData.amount = parseFloat(item.GROSS_AMOUNT)
         statementData.fee = parseFloat(item.MP_FEE_AMOUNT)
-        //statementData.coupon = parseFloat(item.COUPON_AMOUNT);
         statementData.shipping = parseFloat(item.SHIPPING_FEE_AMOUNT)
-        statementData.debit = parseFloat(item.NET_DEBIT_AMOUNT) * -1
-        statementData.credit = parseFloat(item.NET_CREDIT_AMOUNT)
-        statementData.balance = parseFloat(item.BALANCE_AMOUNT)
+        statementData.debit = Number(item.NET_DEBIT_AMOUNT) * -1
+        statementData.credit = Number(item.NET_CREDIT_AMOUNT)
+        
+        balance += statementData.credit
+        balance += statementData.debit
+
+        statementData.balance = balance //parseFloat(item.BALANCE_AMOUNT)
 
         statements.push(statementData)
 

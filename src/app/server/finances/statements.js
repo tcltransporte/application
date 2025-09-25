@@ -72,63 +72,89 @@ export async function findOne({ statementId }) {
   const db = new AppContext()
 
   const statement = await db.Statement.findOne({
+    attributes: ['id'],
+    include: [
+      {
+        model: db.BankAccount,
+        as: 'bankAccount',
+        attributes: ['codigo_conta_bancaria'],
+      },
+      {
+        model: db.StatementData,
+        as: 'statementData',
+        where: {
+          sourceId: { [Sequelize.Op.ne]: '' }
+        },
+        required: false,
+        // ✅ Adicionado para garantir que a ordenação complexa funcione corretamente
+        separate: true, 
+        order: [
+          [Sequelize.literal('CASE WHEN [entryDate] IS NULL THEN 1 ELSE 0 END'), 'ASC'],
+          ['entryDate', 'ASC'],
+          ['reference', 'ASC'],
+          [{ model: db.StatementDataConciled, as: 'concileds' }, 'type', 'ASC']
+        ],
+        include: [
+          {
+            model: db.StatementDataConciled,
+            as: 'concileds',
+            attributes: ['id','type','amount','fee','discount','paymentId','receivementId','isConciled','message'],
+            include: [
+              {
+                model: db.FinancialMovementInstallment,
+                as: 'receivement',
+                attributes: ['codigo_movimento_detalhe','amount','observation'],
+                include: [
+                  {
+                    model: db.FinancialMovement,
+                    as: 'financialMovement',
+                    attributes: ['externalId'],
+                    include: [
+                      { model: db.Partner, as: 'partner', attributes: ['surname'] }
+                    ]
+                  }
+                ]
+              },
+              {
+                model: db.FinancialMovementInstallment,
+                as: 'payment',
+                attributes: ['codigo_movimento_detalhe','amount','observation'],
+                include: [
+                 {
+                    model: db.FinancialMovement,
+                    as: 'financialMovement',
+                    attributes: ['externalId'],
+                    include: [
+                     { model: db.Partner, as: 'partner', attributes: ['surname'] }
+                    ]
+                 }
+               ]
+              },
+              { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa','surname'] },
+              { model: db.FinancialCategory, as: 'category' },
+              {
+                model: db.BankAccount,
+                as: 'origin',
+                attributes: ['codigo_conta_bancaria','name','agency','number'],
+                include: [{ model: db.Bank, as: 'bank', attributes: ['id','name'] }]
+              },
+              {
+                model: db.BankAccount,
+                as: 'destination',
+                attributes: ['codigo_conta_bancaria','name','agency','number'],
+                include: [{ model: db.Bank, as: 'bank', attributes: ['id','name'] }]
+              }
+            ]
+          }
+        ]
+      }
+    ],
     where: { id: statementId }
   })
 
   if (!statement) return null
 
-  const statementData = await db.StatementData.findAll({
-    where: [{
-      statementId: statement.id,
-      sourceId: { [Sequelize.Op.ne]: '' }
-      //entryType: { [Sequelize.Op.in]: entryTypesArray }
-    }],
-    order: [
-      [Sequelize.literal('CASE WHEN [entryDate] IS NULL THEN 1 ELSE 0 END'), 'ASC'],
-      ['entryDate', 'ASC'],
-      ['reference', 'ASC'],
-      [{ model: db.StatementDataConciled, as: 'concileds' }, 'type', 'ASC']
-    ],
-    include: [
-      { model: db.StatementDataConciled, as: 'concileds', attributes: ['id', 'type', 'amount', 'fee', 'discount', 'paymentId', 'receivementId', 'isConciled', 'message'], include: [
-          { model: db.FinancialMovementInstallment, as: 'receivement', attributes: ['codigo_movimento_detalhe', 'amount', 'observation'], include: [
-            { model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'], include: [
-              { model: db.Partner, as: 'partner', attributes: ['surname'] }
-            ]}
-          ]},
-          { model: db.FinancialMovementInstallment, as: 'payment', attributes: ['codigo_movimento_detalhe', 'amount', 'observation'], include: [
-            { model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId'], include: [
-              { model: db.Partner, as: 'partner', attributes: ['surname'] }
-            ]}
-          ]},
-          { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname'] },
-          { model: db.FinancialCategory, as: 'category' },
-          { model: db.BankAccount, as: 'origin', attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'], include: [
-            { model: db.Bank, as: 'bank', attributes: ['id', 'name']}
-          ]},
-          { model: db.BankAccount, as: 'destination', attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'], include: [
-            { model: db.Bank, as: 'bank', attributes: ['id', 'name']}
-          ]}
-        ]
-      }
-    ]
-  });
-
-  let cleanData = statementData.map(data => data.get({ plain: true }))
-
-  cleanData = _.filter(cleanData, (c) => c.sourceId && c.description != 'reserve_for_debt_payment' && c.description != 'reserve_for_payout' && (parseFloat(c.credit) > 0 || parseFloat(c.debit) < 0))
-
-  const allEntryTypes = [
-    ...new Set(cleanData.map(data => data.entryType))
-  ]
-
-  const response = {
-    ...statement.get({ plain: true }),
-    statementData: cleanData,
-    allEntryTypes
-  }
-
-  return response;
+  return statement.get({ plain: true })
 
 }
 
@@ -190,7 +216,7 @@ export async function create(formData) {
             type: 2,
             partnerId: 159,
             categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
-            amount: parseFloat(statementData.fee)},
+            amount: Number(statementData.fee) * -1},
             {transaction}
           );
         }
@@ -201,11 +227,10 @@ export async function create(formData) {
             type: 2,
             partnerId: 159,
             categoryId: 34, //'4.25 - Fretes
-            amount: parseFloat(statementData.shipping)}, 
+            amount: Number(statementData.shipping) * -1}, 
             {transaction}
           );
         }
-
 
       }
 
@@ -216,8 +241,8 @@ export async function create(formData) {
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
             type: `transfer`,
-            originId: 1,
-            destinationId: 15,
+            originId: 15,
+            destinationId: 1,
             amount: item.credit,
           }, {transaction})
 
@@ -228,8 +253,8 @@ export async function create(formData) {
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
             type: `transfer`,
-            originId: 15,
-            destinationId: 1,
+            originId: 1,
+            destinationId: 15,
             amount: item.debit * -1,
           }, {transaction})
 
@@ -489,7 +514,7 @@ export async function concile({id}) {
               codigo_empresa_filial: 2,
             },
             //documentNumber: '12345',
-            amount: Number(item.amount) * -1,
+            amount: Number(item.amount),
             installment: 1,
             issueDate: item.statementData.entryDate,
             startDate: item.statementData.entryDate,

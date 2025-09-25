@@ -79,7 +79,6 @@ const EditInstallment = ({ open, onClose, installment, onSave }) => {
   );
 };
 
-
 // Componente InstallmentCard atualizado
 const InstallmentCard = ({ installment, loading, onOpenEditModal }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -91,7 +90,7 @@ const InstallmentCard = ({ installment, loading, onOpenEditModal }) => {
 
   const handleOpenMenu = (event) => {
     setAnchorEl(event.currentTarget);
-  };
+  }
 
   const handleCloseMenu = () => {
     setAnchorEl(null);

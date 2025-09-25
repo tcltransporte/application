@@ -2,7 +2,7 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { getTinyPayments } from "@/utils/integrations/tiny"
+import { getTinyReceivements } from "@/utils/integrations/tiny"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import _ from "lodash"
@@ -14,7 +14,7 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
   const session = await getServerSession(authOptions)
 
-  await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+  await getTinyReceivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
     
   const db = new AppContext()
 

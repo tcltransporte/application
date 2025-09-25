@@ -30,6 +30,11 @@ export class Partner {
     type: DataTypes.SMALLINT
   }
 
+  daysDeadlinePayment = {
+    field: 'diasPrazoPagamento',
+    type: DataTypes.NUMBER
+  }
+
   companyIntegrationId = {
     field: 'companyIntegrationId',
     type: DataTypes.UUIDV4

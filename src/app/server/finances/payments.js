@@ -395,7 +395,7 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
         id: payment.financialMovement.externalId,
         data: format(new Date(date), 'dd/MM/yyyy'),
         contaOrigem: bankAccount.name,
-        valorPago: amount * -1,
+        valorPago: amount,
         historico: `Integração:`
       }
     })
