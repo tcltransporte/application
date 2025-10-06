@@ -37,8 +37,6 @@ export async function getTinyPartner(search) {
         }
         const r = await response.json()
 
-        console.log(r.retorno.contatos)
-
         const externalIdsFromApi = _.map(r.retorno.contatos, item => _.get(item, 'contato.id'))
     
         const existingPartners = await db.Partner.findAll({
@@ -204,7 +202,7 @@ export async function getTinyPayments({ start, end }) {
       }
 
       await db.transaction(async (transaction) => {
-        // 1. Garantir que os parceiros existem
+        
         const partnerNames = _.uniq(contas.map((item) => item.conta.nome_cliente).filter(Boolean))
         const existingPartners = await db.Partner.findAll({
           where: { surname: partnerNames },
@@ -330,7 +328,6 @@ export async function getTinyReceivements({ start, end }) {
 
   const receivements = async ({ token, start, end, offset }) => {
     const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`
-    console.log(url)
     const res = await fetch(url)
     if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`)
     return await res.json()

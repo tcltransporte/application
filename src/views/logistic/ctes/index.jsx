@@ -43,7 +43,7 @@ import { downloadFile } from '@/utils/download'
 import { toast } from 'react-toastify'
 
 
-export const ImportDrawer = ({ open, onClose }) => {
+const ImportDrawer = ({ open, onClose }) => {
   
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -323,6 +323,150 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
   )
 }
 
+
+const Filter = ({ request: initialRequest, onApply }) => {
+
+  const [open, setOpen] = useState(false)
+
+  const openDrawer = () => setOpen(true)
+  const closeDrawer = () => setOpen(false)
+
+  return (
+    <>
+      <Button
+        variant="text"
+        startIcon={<i className="ri-equalizer-line" />}
+        onClick={openDrawer}
+      >
+        Filtros
+      </Button>
+
+      <Drawer
+        open={open}
+        anchor="right"
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+        sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
+        onClose={closeDrawer}
+      >
+        <div className="flex items-center justify-between pli-5 plb-4">
+          <Typography variant="h5">Filtros</Typography>
+          <IconButton size="small" onClick={closeDrawer}>
+            <i className="ri-close-line text-2xl" />
+          </IconButton>
+        </div>
+
+        <Divider />
+
+        <Formik
+          initialValues={{
+            company: initialRequest?.company || null,
+            documentNumber: initialRequest?.documentNumber || '',
+            receiver: initialRequest?.receiver || null,
+            category: initialRequest?.category || null,
+            observation: initialRequest?.observation || '',
+            status: initialRequest?.status || [],
+          }}
+          onSubmit={(values) => {
+            onApply(values)
+            closeDrawer()
+          }}
+        >
+          {({ values, setFieldValue, handleChange, handleSubmit, touched, errors }) => (
+            <Box component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+
+              <Field
+                as={AutoComplete}
+                name="company"
+                label="Filial"
+                text={(company) => company?.surname || ''}
+                onSearch={getCompany}
+                renderSuggestion={(item) => (
+                    <span>{item.surname}</span>
+                )}
+              />
+
+              <Field
+                as={TextField}
+                label='Nº Documento'
+                name='documentNumber'
+                error={Boolean(touched.description && errors.description)}
+                helperText={touched.description && errors.description}
+              />
+
+              <AutoComplete
+                name="receiver"
+                label="Beneficiário"
+                value={values.receiver}
+                text={(p) => p?.surname}
+                onChange={(val) => setFieldValue("receiver", val)}
+                onSearch={getPartner}
+              >
+                {(item) => <span>{item.surname}</span>}
+              </AutoComplete>
+
+              <AutoComplete
+                name="category"
+                label="Categoria"
+                value={values.category}
+                text={(category) => category?.description}
+                onChange={(category) => setFieldValue("category", category)}
+                onSearch={(search) => getFinancialCategory(search, 2)}
+              >
+                {(item) => <span>{item.description}</span>}
+              </AutoComplete>
+
+              <Field
+                as={TextField}
+                label='Observação'
+                name='observation'
+                error={Boolean(touched.observation && errors.observation)}
+                helperText={touched.observation && errors.observation}
+              />
+
+              <FormControl fullWidth variant="filled" size="small" sx={{ mt: 2 }}>
+                <InputLabel shrink>Status</InputLabel>
+                <Select
+                  multiple
+                  name="status"
+                  value={values.status}
+                  onChange={(e) => setFieldValue('status', e.target.value)}
+                  input={<FilledInput />}
+                  renderValue={(selected) =>
+                    selected
+                      .map((val) => statusOptions.find((o) => o.value === val)?.label)
+                      .filter(Boolean)
+                      .join(', ')
+                  }
+                >
+                  {statusOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value} dense>
+                      <Checkbox checked={values.status.includes(option.value)} />
+                      <ListItemText primary={option.label} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Box display="flex" justifyContent="flex-end" mt={4}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="success"
+                  startIcon={<i className="ri-check-line" />}
+                >
+                  Aplicar
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Formik>
+      </Drawer>
+    </>
+  )
+}
+
+
 export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
   const reportViewer = useRef()
@@ -457,11 +601,18 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
             <RangeFilter
               title="Emissão"
               initialDateRange={[
-                //new Date(installments.request?.dhEmi?.start),
-                //new Date(installments.request?.dhEmi?.end),
+                installments.request?.dhEmi?.start,
+                installments.request?.dhEmi?.end,
               ]}
               onChange={handlePeriodChange}
             />
+
+            <Filter request={installments.request} onApply={(request) => fetchCtes({
+              ...installments.request,
+              ...request,
+              offset: 0,
+            })} />
+
             <Button
               variant="outlined"
               startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}

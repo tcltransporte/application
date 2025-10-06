@@ -69,6 +69,10 @@
     </siteMapNode>
     -->
 
+    <siteMapNode title="Recursos humanos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
+      <siteMapNode title="e-Social" url="\logistic\trips" description="e-Social"/>
+    </siteMapNode>
+
     <siteMapNode title="Finanças" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
       <siteMapNode title="Caixa" url="\finances\cashier" description="Caixa"/>
       <!--<siteMapNode title="Caixa Fechamento" url="${URL}\Financeiro\ListaCaixaFechamento.aspx" description="Fechamento do caixa. Realiza o bloqueio do caixa para evitar lançamentos indevidos."/>-->
@@ -90,14 +94,16 @@
     </siteMapNode>
 
     <siteMapNode title="Expedição" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-truck-line">
-      <siteMapNode title="Conhecimentos" url="\expedition\ctes" description="Conhecimentos"/>
+      <siteMapNode title="Ordens de carga" url="\expedition\orders" description="Ordens de carga"/>
       <siteMapNode title="Romaneios" url="\expedition\shippiments" description="Romaneios"/>
+      <siteMapNode title="Conhecimentos" url="\expedition\ctes" description="Conhecimentos"/>
+      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
     </siteMapNode>
 
     <siteMapNode title="Logística" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
-      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
       <siteMapNode title="Andamento" url="\logistic\decrease" description="Viagens"/>
     </siteMapNode>
+    
 
     <!--
     <siteMapNode title="Fiscal" roles="Administrador,fiscal000, fiscal010, fiscal020, fiscal030, fiscal040, fiscal050,fiscal060,fiscal070,fiscal080, fiscal090,fiscal100,fiscal110,fiscal120,fiscal130,fiscal140,fiscal150,fiscal160,fiscal170,fiscal180,fiscal190,fiscal200 " icon="ri-bar-chart-box-line">

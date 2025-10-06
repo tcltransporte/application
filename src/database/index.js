@@ -175,6 +175,9 @@ export class AppContext extends Sequelize {
     this.User.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'userId', onDelete: 'CASCADE' })
     this.User.belongsTo(this.UserMember, { as: 'userMember', foreignKey: 'userId', targetKey: 'userId', onDelete: 'CASCADE' })
 
+    this.Nfe.belongsTo(this.Partner, {as: 'sender', foreignKey: 'IDRemetente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
+    this.Nfe.belongsTo(this.Partner, {as: 'destination', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
+
 
     this.Bank.addHook('afterFind', afterFind)
     this.BankAccount.addHook('afterFind', afterFind)

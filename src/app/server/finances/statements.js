@@ -438,7 +438,7 @@ export async function concile({id}) {
   const concileds = await db.StatementDataConciled.findAll({
     attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
     include: [
-      {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate'], include: [
+      {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate', 'sourceId', 'reference'], include: [
         {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
       ]},
       {model: db.BankAccount, as: 'origin', attributes: ['externalId']},
@@ -470,7 +470,7 @@ export async function concile({id}) {
             //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
             bankAccount: null,
             receiver: { codigo_pessoa: item.partnerId },
-            observation: 'teste',
+            observation: '',
             installments: [
               {
                 installment: 1,
@@ -494,7 +494,7 @@ export async function concile({id}) {
           date: item.statementData.entryDate,
           amount: item.amount,
           bankAccountId: item.statementData.statement.bankAccountId,
-          observation: ''
+          observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
         })
 
         await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
@@ -525,7 +525,7 @@ export async function concile({id}) {
             //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
             bankAccount: null,
             receiver: { codigo_pessoa: item.partnerId },
-            observation: 'teste',
+            observation: '',
             installments: [
               {
                 installment: 1,
@@ -549,7 +549,7 @@ export async function concile({id}) {
           date: item.statementData.entryDate,
           amount: item.amount,
           bankAccountId: item.statementData.statement.bankAccountId,
-          observation: ''
+          observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
         })
 
         await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
@@ -565,7 +565,8 @@ export async function concile({id}) {
         date: item.statementData.entryDate,
         amount: item.amount,
         originId: item.origin?.externalId,
-        destinationId: item.destination?.externalId
+        destinationId: item.destination?.externalId,
+        observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
       })
 
       await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})

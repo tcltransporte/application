@@ -169,7 +169,7 @@ export async function insert(formData) {
     /* TINY INTEGRAÇÃO */
     const historico = `` //`Integração: ${/*item.statementData.sourceId} | ${item.statementData.orderId} / ${item.receivement?.name ?? ''*/}`;
 
-    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname'], where: [{'codigo_pessoa': formData.receiver?.codigo_pessoa}]})
+    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname', 'externalId'], where: [{'codigo_pessoa': formData.receiver?.codigo_pessoa}]})
 
     const category = await db.FinancialCategory.findOne({attributes: ['id', 'description'], where: [{'id': formData.category?.id}]})
 
@@ -183,6 +183,7 @@ export async function insert(formData) {
         valorTaxas: 0,
         valorDesconto: 0,
         cliente: {
+          codigo: partner?.externalId,
           nome: partner?.surname
         },
         categoria: category?.description,
@@ -385,15 +386,17 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
     where: [{codigo_conta_bancaria: bankAccountId}]
   })
 
+  const conta = {
+    id: receivement.financialMovement.externalId,
+    data: format(new Date(date), 'dd/MM/yyyy'),
+    contaDestino: bankAccount.name,
+    valorPago: amount,
+    historico: observation
+  }
+
   const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
-      conta: {
-        id: receivement.financialMovement.externalId,
-        data: format(new Date(date), 'dd/MM/yyyy'),
-        contaOrigem: bankAccount.name,
-        valorPago: amount,
-        historico: `Integração:`
-      }
+      conta: conta
     })
   )}&formato=JSON`
 

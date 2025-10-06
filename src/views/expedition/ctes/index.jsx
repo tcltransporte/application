@@ -35,12 +35,14 @@ import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/
 
 import { styles } from '@/components/styles'
 import _ from 'lodash'
-import { Form, Formik } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import { getCtes, onAddNfe, onDacte, onDeleteNfe, onDownload } from '@/app/server/expedition/ctes/index.controller'
 import { format, parseISO } from 'date-fns'
 import { ReportViewer } from '@/components/ReportViewer'
 import { downloadFile } from '@/utils/download'
 import { toast } from 'react-toastify'
+import { AutoComplete } from '@/components/field'
+import { getCompany } from '@/utils/search'
 
 
 export const ImportDrawer = ({ open, onClose }) => {
@@ -335,6 +337,82 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
   )
 }
 
+
+const Filter = ({ request: initialRequest, onApply }) => {
+
+  const [open, setOpen] = useState(false)
+
+  const openDrawer = () => setOpen(true)
+  const closeDrawer = () => setOpen(false)
+
+  return (
+    <>
+      <Button
+        variant="text"
+        startIcon={<i className="ri-equalizer-line" />}
+        onClick={openDrawer}
+      >
+        Filtros
+      </Button>
+
+      <Drawer
+        open={open}
+        anchor="right"
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+        sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
+        onClose={closeDrawer}
+      >
+        <div className="flex items-center justify-between pli-5 plb-4">
+          <Typography variant="h5">Filtros</Typography>
+          <IconButton size="small" onClick={closeDrawer}>
+            <i className="ri-close-line text-2xl" />
+          </IconButton>
+        </div>
+
+        <Divider />
+
+        <Formik
+          initialValues={{
+            company: initialRequest?.company || null,
+          }}
+          onSubmit={(values) => {
+            onApply(values)
+            closeDrawer()
+          }}
+        >
+          {({ handleSubmit }) => (
+            <Box component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+
+              <Field
+                component={AutoComplete}
+                name="company"
+                label="Filial"
+                text={(company) => company?.surname || ''}
+                onSearch={getCompany}
+                renderSuggestion={(item) => (
+                    <span>{item.surname}</span>
+                )}
+              />
+
+              <Box display="flex" justifyContent="flex-end" mt={4}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="success"
+                  startIcon={<i className="ri-check-line" />}
+                >
+                  Aplicar
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Formik>
+      </Drawer>
+    </>
+  )
+}
+
 export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
   const reportViewer = useRef()
@@ -474,6 +552,13 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
               ]}
               onChange={handlePeriodChange}
             />
+            
+            <Filter request={installments.request} onApply={(request) => fetchCtes({
+              ...installments.request,
+              ...request,
+              offset: 0,
+            })} />
+            
             <Button
               variant="outlined"
               startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
@@ -504,8 +589,8 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
                     />
                   </TableCell>
                   <TableCell align="left" sx={{ width: 135 }}>Emissão</TableCell>
-                  <TableCell align="left" sx={{ width: 85 }}>Número</TableCell>
-                  <TableCell align="left" sx={{ width: 55 }}>Serie</TableCell>
+                  <TableCell align="left" sx={{ width: 70 }}>Número</TableCell>
+                  <TableCell align="left" sx={{ width: 45 }}>Serie</TableCell>
                   <TableCell sx={{ width: 320 }}>Chave de acesso</TableCell>
                   <TableCell>Remetente</TableCell>
                   <TableCell>Destinatário</TableCell>
@@ -557,7 +642,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
                         <TableCell
                           sx={{
                             fontFamily: 'monospace',
-                            letterSpacing: '-0.5px',
+                            letterSpacing: '-0.6px',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',

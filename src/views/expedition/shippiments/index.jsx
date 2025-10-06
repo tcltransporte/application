@@ -24,7 +24,7 @@ import {
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { RangeFilter } from '@/components/RangeFilter'
-import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/expedition/shippiments/index.controller'
+import * as shippiments from '@/app/server/expedition/shippiments/index.controller'
 
 import { styles } from '@/components/styles'
 import _ from 'lodash'
@@ -48,11 +48,12 @@ const CteDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
         return
       }
 
-      const cte = await onServerAddCte({ shippimentId, chCTe: trimmed })
+      const cte = await shippiments.addCte({ shippimentId, chCTe: trimmed })
 
       onAddCte?.({ id: cte.id, chCTe: trimmed })
 
       resetForm()
+
     } catch (error) {
       alert(error.message)
     } finally {
@@ -63,7 +64,7 @@ const CteDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
   const handleRemove = async (cte) => {
     try {
       setRemovingIds((prev) => new Set(prev).add(cte.id))
-      await onServerRemoveCte({ cteId: cte.id })
+      await shippiments.removeCte({ cteId: cte.id })
       onRemoveCte?.(cte)
     } catch (error) {
       alert(error.message)
@@ -193,7 +194,7 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
   const fetchPayments = async (request) => {
     try {
       setIsFetching(true)
-      const response = await getShippiments(request)
+      const response = await shippiments.findAll(request)
       setInstallments(response)
       setSelectedIds(new Set())
     } catch (error) {
@@ -301,15 +302,17 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
                     onChange={toggleSelectAll}
                   />
                 </TableCell>
-                <TableCell>Doc. Transporte</TableCell>
-                <TableCell>Remetente</TableCell>
-                <TableCell></TableCell>
+                <TableCell align="left" sx={{ width: 120 }}>Doc. Transporte</TableCell>
+                <TableCell align="left" sx={{ width: 360 }}>Remetente</TableCell>
+                <TableCell>Descrição</TableCell>
+                <TableCell align="left" sx={{ width: 300 }}>Produto Predominante</TableCell>
+                <TableCell align="center" sx={{ width: 60 }}></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isFetching ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={styles.tableCellLoader}>
+                  <TableCell colSpan={6} align="center" sx={styles.tableCellLoader}>
                     <CircularProgress size={30} />
                   </TableCell>
                 </TableRow>
@@ -333,9 +336,11 @@ export const ViewExpeditionShippiments = ({ initialPayments = [] }) => {
                           onChange={() => toggleSelect(id)}
                         />
                       </TableCell>
-                      <TableCell>{payment.documentNumber}</TableCell>
-                      <TableCell>{payment.sender?.surname}</TableCell>
-                      <TableCell align="right">
+                      <TableCell align="left" sx={{ width: 120 }}>{payment.documentNumber}</TableCell>
+                      <TableCell align="left" sx={{ width: 360 }}>{payment.sender?.surname}</TableCell>
+                      <TableCell>{payment.description}</TableCell>
+                      <TableCell align="left" sx={{ width: 300 }}>{payment.predominant}</TableCell>
+                      <TableCell align="center" sx={{ width: 60 }}>
                         <Badge
                           color="primary"
                           badgeContent={_.size(payment.ctes) || '0'}

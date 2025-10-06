@@ -9,6 +9,11 @@ export class Shippiment {
     type: Sequelize.BIGINT
   }
 
+  description = {
+    field: 'descricao',
+    type: Sequelize.STRING
+  }
+
   tripTravelId = {
     field: 'codigo_viagem',
     type: Sequelize.BIGINT

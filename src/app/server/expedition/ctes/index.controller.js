@@ -4,60 +4,55 @@ import { AppContext } from "@/database"
 import _ from "lodash"
 import { literal, Op, Sequelize } from "sequelize"
 
-export async function getCtes({ limit = 50, offset = 0, dhEmi, cStat }) {
+export async function getCtes({ company, dhEmi, cStat, limit = 50, offset = 0 }) {
 
-  console.log(dhEmi)
+  const db = new AppContext()
 
-  const db = new AppContext();
+  const where = []
 
-  // Filtro geral por período
-  const where = {};
   if (dhEmi?.start && dhEmi?.end) {
-    where.dhEmi = { [Op.between]: [dhEmi.start, dhEmi.end] };
+    where.push({dhEmi: { [Op.between]: [dhEmi.start, dhEmi.end] }})
+  }
+
+  if (company?.codigo_empresa_filial) {
+    where.push({
+      '$IDEmpresaFilial$': company.codigo_empresa_filial
+    })
   }
 
   // Filtro por status (opcional)
-  const statusFilter = {};
+  const statusFilter = [];
   if (cStat === "pending") {
-    statusFilter.cStat = { [Op.or]: { [Op.notIn]: [100, 101, 135], [Op.eq]: null } };
+    statusFilter.push({cStat: { [Op.or]: { [Op.notIn]: [100, 101, 135], [Op.eq]: null } }})
   } else if (cStat === "autorized") {
-    statusFilter.cStat = 100;
+    statusFilter.push({cStat: 100})
   } else if (cStat === "canceled") {
-    statusFilter.cStat = { [Op.in]: [101, 135] };
+    statusFilter.push({cStat: { [Op.in]: [101, 135] }})
   }
 
-  // 1️⃣ Contagem correta para paginação
-  const count = await db.Cte.count({ where: { ...where, ...statusFilter } });
+  const count = await db.Cte.count({ where: [ ...where, ...statusFilter ] });
 
-  // 2️⃣ Consulta paginada com includes
   const rows = await db.Cte.findAll({
-    where: { ...where, ...statusFilter },
+    where: [ ...where, ...statusFilter ],
     attributes: ["id", "dhEmi", "nCT", "serie", "chCTe", "cStat", "calculationBasis"],
     include: [
-      {
-        model: db.Shippiment,
-        as: "shippiment",
-        include: [{ model: db.Partner, as: "sender", attributes: ["codigo_pessoa", "cpfCnpj", "surname"] }],
+      { model: db.Shippiment, as: "shippiment", include:
+        [
+          { model: db.Partner, as: "sender", attributes: ["codigo_pessoa", "cpfCnpj", "surname"] }
+        ]
       },
       { model: db.Partner, as: "recipient", attributes: ["codigo_pessoa", "cpfCnpj", "surname"] },
-      {
-        model: db.CteNfe,
-        as: "nfes",
-        attributes: ["id", "nfeId"],
-        include: [{ model: db.Nfe, as: "nfe", attributes: ["codigo_nota", "chNFe"] }],
+      { model: db.CteNfe, as: "nfes", attributes: ["id", "nfeId"], include:
+        [
+          { model: db.Nfe, as: "nfe", attributes: ["codigo_nota", "chNFe"] }
+        ]
       },
     ],
-    order: [["dhEmi", "desc"]],
+    order: [["dhEmi", "desc"], ['nCT', 'desc']],
     limit,
     offset: offset * limit, // se offset for número da página
   });
 
-  const resultRows = rows.map(r => r.toJSON());
-
-  console.log(_.size(resultRows))
-  console.log(count)
-
-  // Contagem total por status dentro do período, ignorando filtro de status
   const statusTotalsQuery = await db.Cte.findAll({
     where,
     attributes: [
@@ -72,10 +67,10 @@ export async function getCtes({ limit = 50, offset = 0, dhEmi, cStat }) {
   const statusCount = statusTotalsQuery[0];
 
   return {
-    request: { dhEmi, cStat, limit, offset },
+    request: { company, dhEmi, cStat, limit, offset },
     response: {
       statusCount,
-      rows: resultRows,
+      rows: rows.map(r => r.toJSON()),
       count, // total de registros considerando o filtro de status → correta para paginação
     },
   };

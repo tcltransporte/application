@@ -99,8 +99,6 @@ export async function getStatements({companyIntegrationId}) {
 
 export async function getStatement({companyIntegrationId, item}) {
 
-    console.log(item)
-
     const token = await authorization({companyIntegrationId})
 
     const response = await fetch(`https://api.mercadopago.com/v1/account/release_report/${item.fileName}`, {
@@ -118,21 +116,21 @@ export async function getStatement({companyIntegrationId, item}) {
 
     const csvText = await response.text()
 
-    const json = await csv({ delimiter: ";" }).fromString(csvText);
-
-    //const jsonData = JSON.stringify(json, null, 2)
-
-    const statements = []
-
-    //const orders1 = await orders({companyIntegrationId: companyIntegrationId, start: format(addDays(new Date(item.begin), -15), "yyyy-MM-dd"), end: format(addDays(new Date(item.end), 15), "yyyy-MM-dd")})
-
-    //fs.writeFileSync(`C:\\Arquivos\\${item.fileName}.json`, JSON.stringify(orders1, null, 2), "utf-8");
-
-    //console.log(orders1)
+    let json = await csv({ delimiter: ";" }).fromString(csvText);
 
     let balance = Number(json[0].BALANCE_AMOUNT)
 
-    console.log(json[0])
+    // Ordena antes do for
+    json = _.orderBy(
+        json,
+        [
+            (item) => item.DATE ? new Date(item.DATE) : new Date(0), // primeiro por data
+            (item) => item.ORDER_ID?.toString() || ""               // depois por referência
+        ],
+        ["asc", "asc"] // ordem crescente para ambos
+    )
+
+    const statements = []
 
     for (let item of json) {
 
@@ -179,10 +177,10 @@ export async function getStatement({companyIntegrationId, item}) {
         statementData.debit = Number(item.NET_DEBIT_AMOUNT) * -1
         statementData.credit = Number(item.NET_CREDIT_AMOUNT)
         
-        balance += statementData.credit
         balance += statementData.debit
+        balance += statementData.credit
 
-        statementData.balance = balance //parseFloat(item.BALANCE_AMOUNT)
+        statementData.balance = balance
 
         statements.push(statementData)
 
