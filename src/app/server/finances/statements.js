@@ -7,7 +7,7 @@ import { fromZonedTime } from "date-fns-tz"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
-import { orders } from "../settings/integrations/plugins/index.controller"
+import { orders } from "../settings/integrations/plugins/mercado-livre.controller"
 import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 import * as payments from "@/app/server/finances/payments"
 import * as receivements from "@/app/server/finances/receivements"
@@ -89,6 +89,7 @@ export async function findOne({ statementId }) {
         // ✅ Adicionado para garantir que a ordenação complexa funcione corretamente
         separate: true, 
         order: [
+          ['sequence', 'ASC'],
           [Sequelize.literal('CASE WHEN [entryDate] IS NULL THEN 1 ELSE 0 END'), 'ASC'],
           ['entryDate', 'ASC'],
           ['reference', 'ASC'],
@@ -103,12 +104,12 @@ export async function findOne({ statementId }) {
               {
                 model: db.FinancialMovementInstallment,
                 as: 'receivement',
-                attributes: ['codigo_movimento_detalhe','amount','observation'],
+                attributes: ['codigo_movimento_detalhe','amount','observation', 'externalId'],
                 include: [
                   {
                     model: db.FinancialMovement,
                     as: 'financialMovement',
-                    attributes: ['externalId'],
+                    attributes: ['codigo_movimento'],
                     include: [
                       { model: db.Partner, as: 'partner', attributes: ['surname'] }
                     ]
@@ -118,12 +119,12 @@ export async function findOne({ statementId }) {
               {
                 model: db.FinancialMovementInstallment,
                 as: 'payment',
-                attributes: ['codigo_movimento_detalhe','amount','observation'],
+                attributes: ['codigo_movimento_detalhe','amount','observation', 'externalId'],
                 include: [
                  {
                     model: db.FinancialMovement,
                     as: 'financialMovement',
-                    attributes: ['externalId'],
+                    attributes: ['codigo_movimento'],
                     include: [
                      { model: db.Partner, as: 'partner', attributes: ['surname'] }
                     ]
@@ -183,9 +184,9 @@ export async function create(formData) {
 
     for (const item of formData.statement.statementData) {
 
-      const statementData = await db.StatementData.create({statementId: statement.id, ...item, extra: JSON.stringify(item.extra)}, {transaction})
+      const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
 
-      if (item.entryType == `paid`) {
+      if (item.entryType == `payment`) {
 
         const receivement = await db.FinancialMovementInstallment.findOne({
           attributes: ['codigo_movimento_detalhe', 'amount'],
@@ -208,13 +209,12 @@ export async function create(formData) {
           amount: receivement?.amount,
           receivementId: receivement?.codigo_movimento_detalhe,
         }, {transaction})
-
-          
+ 
         if (parseFloat(statementData.fee) < 0) {
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
             type: 2,
-            partnerId: 159,
+            partnerId: 5333,
             categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
             amount: Number(statementData.fee) * -1},
             {transaction}
@@ -225,7 +225,7 @@ export async function create(formData) {
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
             type: 2,
-            partnerId: 159,
+            partnerId: 5333,
             categoryId: 34, //'4.25 - Fretes
             amount: Number(statementData.shipping) * -1}, 
             {transaction}
@@ -458,16 +458,10 @@ export async function concile({id}) {
             company: {
               codigo_empresa_filial: 2,
             },
-            //documentNumber: '12345',
             amount: item.amount,
             installment: 1,
             issueDate: item.statementData.entryDate,
             startDate: item.statementData.entryDate,
-            //scheduledDate: null,
-            //interval: 'monthly',
-            //customDays: 30,
-            //centerCost: null,
-            //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
             bankAccount: null,
             receiver: { codigo_pessoa: item.partnerId },
             observation: '',
@@ -513,16 +507,10 @@ export async function concile({id}) {
             company: {
               codigo_empresa_filial: 2,
             },
-            //documentNumber: '12345',
             amount: Number(item.amount),
             installment: 1,
             issueDate: item.statementData.entryDate,
             startDate: item.statementData.entryDate,
-            //scheduledDate: null,
-            //interval: 'monthly',
-            //customDays: 30,
-            //centerCost: null,
-            //paymentMethod: { id: '63474FD3-425A-4321-835F-F7A7A6419BCE' },
             bankAccount: null,
             receiver: { codigo_pessoa: item.partnerId },
             observation: '',

@@ -37,6 +37,11 @@ export class StatementData {
     field: 'reference',
     type: DataTypes.STRING(20),
   }
+
+  description = {
+    field: 'description',
+    type: DataTypes.STRING(100),
+  }
   
   amount = {
     field: 'amount',
@@ -91,6 +96,11 @@ export class StatementData {
   extra = {
     field: 'extra',
     type: DataTypes.STRING(500)
+  }
+
+  sequence = {
+    field: 'sequence',
+    type: DataTypes.NUMBER
   }
 
 }

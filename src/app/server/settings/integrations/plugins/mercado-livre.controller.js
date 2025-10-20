@@ -3,7 +3,7 @@
 import { AppContext } from "@/database";
 import { format, fromZonedTime } from "date-fns-tz";
 import csv from 'csvtojson';
-import { addDays } from "date-fns";
+import { addDays, parse } from "date-fns";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/libs/auth";
 import _ from "lodash";
@@ -97,8 +97,39 @@ export async function getStatements({companyIntegrationId}) {
 
 }
 
-export async function getStatement({companyIntegrationId, item}) {
+function isEmptyJsonString(str) {
+  try {
+    const parsed = JSON.parse(str)
+    return (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed) &&
+      Object.keys(parsed).length === 0
+    )
+  } catch {
+    return false
+  }
+}
 
+export async function statement({companyIntegrationId, item, file}) {
+
+    const csvContent = await file.text()
+
+    // Quebra o CSV em linhas
+    const lines = csvContent.split('\n')
+
+    // Remove as 3 primeiras linhas
+    const dataLines = lines.slice(3).join('\n')
+
+    // Converte apenas essa parte em JSON
+    const accountStatement = await csv({ delimiter: ';' }).fromString(dataLines)
+
+    // Remove o último item (última linha)
+    //accountStatement.pop()
+
+    //console.log(accountStatement)
+
+    
     const token = await authorization({companyIntegrationId})
 
     const response = await fetch(`https://api.mercadopago.com/v1/account/release_report/${item.fileName}`, {
@@ -116,24 +147,55 @@ export async function getStatement({companyIntegrationId, item}) {
 
     const csvText = await response.text()
 
+    //const base64 = btoa(new TextEncoder().encode(csvText).reduce((data, byte) => data + String.fromCharCode(byte), ''))
+
+    //return base64
+
     let json = await csv({ delimiter: ";" }).fromString(csvText);
 
-    let balance = Number(json[0].BALANCE_AMOUNT)
-
     // Ordena antes do for
-    json = _.orderBy(
+    /*json = _.orderBy(
         json,
         [
             (item) => item.DATE ? new Date(item.DATE) : new Date(0), // primeiro por data
             (item) => item.ORDER_ID?.toString() || ""               // depois por referência
         ],
         ["asc", "asc"] // ordem crescente para ambos
-    )
+    )*/
 
     const statements = []
 
-    for (let item of json) {
+    let sequence = 1
 
+    for (let item of accountStatement) {
+
+        let reference
+
+        if (isEmptyJsonString(item)) {
+            continue
+        }
+
+        const liberations = _.filter(json, (c) => c.SOURCE_ID == item.REFERENCE_ID)
+
+        const liberation = liberations[0]
+
+        //console.log(liberation)
+
+        reference = liberation?.ORDER_ID?.toString()
+
+        console.log(liberation?.PACK_ID)
+
+        if (!_.isEmpty(liberation?.PACK_ID)) {
+            console.log('@'.repeat(10))
+            reference = liberation?.PACK_ID
+            console.log('@'.repeat(10))
+        }
+
+        //console.log(item)
+
+        //console.log('sourceId: ', item.DEBITS, liberation)
+
+        /*
         if (Number(item.NET_DEBIT_AMOUNT) == 0 && Number(item.NET_CREDIT_AMOUNT) == 0) {
             continue
         }
@@ -162,29 +224,46 @@ export async function getStatement({companyIntegrationId, item}) {
 
             item.DESCRIPTION = result.status
 
-        }
+        }*/
         
+        //console.log(item)
+
+        //console.log(liberation?.DATE, item.RELEASE_DATE)
+
         let statementData = {}
 
-         
-        statementData.entryDate = item.DATE ? format(new Date(item.DATE), 'yyyy-MM-dd HH:mm:ss') : null
-        statementData.entryType = item.DESCRIPTION
-        statementData.sourceId = item.SOURCE_ID?.toString()
-        statementData.reference = item.ORDER_ID?.toString()
-        statementData.amount = parseFloat(item.GROSS_AMOUNT)
-        statementData.fee = parseFloat(item.MP_FEE_AMOUNT)
-        statementData.shipping = parseFloat(item.SHIPPING_FEE_AMOUNT)
-        statementData.debit = Number(item.NET_DEBIT_AMOUNT) * -1
-        statementData.credit = Number(item.NET_CREDIT_AMOUNT)
-        
-        balance += statementData.debit
-        balance += statementData.credit
+        const entryDate = liberation?.DATE || item.RELEASE_DATE
+        const amount = parseFloat(item?.TRANSACTION_NET_AMOUNT.replace(/\./g, '').replace(',', '.'))
 
-        statementData.balance = balance
+        statementData.sequence = sequence
+        statementData.entryDate = entryDate ? format(liberation?.DATE ? new Date(entryDate) : parse(entryDate, 'dd-MM-yyyy', new Date()), 'yyyy-MM-dd HH:mm:ss') : null
+        statementData.entryType = liberation?.DESCRIPTION
+        statementData.sourceId = liberation?.SOURCE_ID?.toString()
+        statementData.reference = reference
+        statementData.description = item.TRANSACTION_TYPE
+        statementData.amount = parseFloat(liberation?.GROSS_AMOUNT ?? 0) ?? amount
+        statementData.fee = parseFloat(liberation?.MP_FEE_AMOUNT ?? 0)
+        statementData.shipping = parseFloat(liberation?.SHIPPING_FEE_AMOUNT ?? 0)
+
+        if (amount < 0) {
+            statementData.debit = amount
+            statementData.credit = 0
+        }
+
+        if (amount > 0) {
+            statementData.debit = 0
+            statementData.credit = amount
+        }
+        
+        statementData.balance = parseFloat(item.PARTIAL_BALANCE?.replace(/\./g, '').replace(',', '.'))
 
         statements.push(statementData)
 
+        sequence++
+
     }
+
+    console.log('fim')
 
     return statements
 

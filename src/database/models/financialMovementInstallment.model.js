@@ -58,6 +58,11 @@ export class FinancialMovementIntallment {
       }
   }
 
+  externalId = {
+      field: 'externalId',
+      type: DataTypes.STRING(15)
+  }
+
   status = {
     type: DataTypes.VIRTUAL,
     get() {

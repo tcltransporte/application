@@ -15,7 +15,7 @@ import {
 } from '@mui/material'
 //import { getStatement, getStatements } from './index.controller'
 import { format, fromZonedTime } from 'date-fns-tz'
-import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
+//import { getStatement, getStatements } from '@/app/server/settings/integrations/plugins/index.controller'
 import { IntegrationSuccess } from '../..'
 import { Field, Form, Formik } from 'formik'
 import { TextField } from '@/components/field'
@@ -35,8 +35,8 @@ export const Statement = ({ data, onChange }) => {
   const fetch = async ({ companyIntegrationId }) => {
     setLoading(true)
     try {
-      const statements = await getStatements({ companyIntegrationId })
-      setStatements(statements)
+      //const statements = await getStatements({ companyIntegrationId })
+      //setStatements(statements)
     } catch (err) {
       console.error('Erro ao carregar extratos:', err)
     } finally {
@@ -47,6 +47,7 @@ export const Statement = ({ data, onChange }) => {
   const handleRowClick = async (item) => {
     setRowLoading(item.sourceId)
     try {
+      /*
       const statementData = await getStatement({
         companyIntegrationId: data.companyIntegrationId,
         fileName: item.fileName
@@ -54,6 +55,7 @@ export const Statement = ({ data, onChange }) => {
       item.statementData = statementData
       setSelectedStatement(item)
       await onChange(item) // <- suporta async
+      */
     } catch (err) {
       console.error('Erro ao selecionar extrato:', err)
     } finally {

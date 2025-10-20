@@ -87,7 +87,11 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
 
   // --- Lógica de Pendência Centralizada ---
   const checkPendency = useCallback((data) => {
-    const concileds = data.concileds ?? [];
+
+    console.log(data)
+
+    const concileds = data.concileds ?? []
+
     if (concileds.length === 0) return true;
 
     const hasDivergent = _.some(concileds, (item) => {
@@ -95,7 +99,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         if (item.type === '2' && item.payment) return Number(item.amount) !== Number(item.payment?.amount);
         return false;
     });
-    if (hasDivergent) return true;
+    //if (hasDivergent) return true;
 
     // --- LÓGICA DE SOMA FINAL ---
     const sumConcileds = _.sumBy(concileds, (c) => {
@@ -114,8 +118,11 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           return 0;
       }
     });
+
+    console.log(sumConcileds.toFixed(2), data.amount)
     
     const amountMismatch = Number(sumConcileds.toFixed(2)) !== Number(data.entryAmount);
+
     if (amountMismatch) return true;
     
     return false;
@@ -329,8 +336,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                     disabled={totalItems === 0}
                   />
                 </TableCell>
-                <TableCell sx={{ width: 150 }}>ID</TableCell>
-                <TableCell sx={{ width: 140 }}>Data</TableCell>
+                <TableCell sx={{ width: 160 }}>Data</TableCell>
+                <TableCell sx={{ width: 140 }}>ID</TableCell>
                 <TableCell>Referência</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Total</TableCell>
                 <TableCell sx={{ width: 110 }} align="right">Taxa</TableCell>
@@ -341,7 +348,9 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             </TableHead>
             <TableBody ref={tableBodyRef}>
               {filteredDataList.map((data, index) => {
+
                 const hasError = _.size(_.filter(data.concileds, (item) => item.message != null)) >= 1;
+
                 const allConcileds = (data.concileds?.length > 0 && data.concileds.every(c => c.isConciled));
                 const showAlert = checkPendency(data);
                 const rowColor = hasError ? 'red' : (allConcileds ? '#155724' : 'inherit');
@@ -383,8 +392,12 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
                                 onChange={handleRowSelectAllClick}
                             />
                         </TableCell>
-                        <TableCell><Typography fontSize={12} color={rowColor}>{data.sourceId}</Typography></TableCell>
                         <TableCell><Typography fontSize={12} color={rowColor}>{data.entryDate ? format(new Date(data.entryDate), 'dd/MM/yyyy HH:mm') : ""}</Typography></TableCell>
+                        <TableCell>
+                          <Tooltip title={data.description} placement="right">
+                            <Typography fontSize={12} color={rowColor}>{data.sourceId}</Typography>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell><Typography fontSize={12} color={rowColor}>{data.reference}</Typography></TableCell>
                         <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.amount)}</Typography></TableCell>
                         <TableCell align="right"><Typography fontSize={12} color={rowColor}>{formatCurrency(data.fee)}</Typography></TableCell>

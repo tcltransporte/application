@@ -34,8 +34,12 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
 
   const handleSubmit = async (statement) => {
     try {
+
+      console.log(statement)
+
       await statements.create({statement: {...statement}, bankAccount})
       await onSubmit()
+      
     } catch (error) {
       console.log(error)
     }

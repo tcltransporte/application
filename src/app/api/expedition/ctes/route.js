@@ -33,6 +33,8 @@ export async function POST(req) {
         if (!json.cteProc || !json.cteProc.protCTe) {
           return
         }
+        
+        const emit = await db.Company.findOne({attributes: ['codigo_empresa_filial'], where: [{cpfCnpj: json.cteProc.CTe.infCte.emit.CNPJ || json.cteProc.CTe.infCte.emit.CPF}], transaction})
 
         let cte = await db.Cte.findOne({attributes: ['id'], where: [{chaveCT: json.cteProc.protCTe.infProt.chCTe}], transaction})
 
@@ -60,6 +62,8 @@ export async function POST(req) {
         }
 
         cte = {
+          
+          companyId: companyId,
 
           id: cte?.id,
 
@@ -111,9 +115,7 @@ export async function POST(req) {
 
         if (cte.id) {
 
-          //await db.Cte.update(cte, {where: [{id: cte.id}], transaction})
-
-          console.log(cte)
+          await db.Cte.update(cte, {where: [{id: cte.id}], transaction})
 
         } else {
 
@@ -126,15 +128,15 @@ export async function POST(req) {
             releaseDate: cte.dhEmi,
             issueDate: cte.dhEmi,
             categorieId: 1766,
-            createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+            createdAt: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
           }, {transaction})
 
           await db.FinancialMovementInstallment.create({
             observation: receivement.observation,
             installment: 1,
-            dueDate: format(addDays(cte.dhEmi, sender?.daysDeadlinePayment || 0),"yyyy-MM-dd"),
+            dueDate: format(addDays(cte.dhEmi, sender?.daysDeadlinePayment || 0), "yyyy-MM-dd"),
             amount: cte.valorAReceber,
-            createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            createdAt: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
           }, {transaction})
 
           cte.receivementId = receivement.id

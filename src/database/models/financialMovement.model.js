@@ -69,9 +69,4 @@ export class FinancialMovement {
         }
     }
 
-    externalId = {
-        field: 'externalId',
-        type: DataTypes.STRING(15)
-    }
-
 }

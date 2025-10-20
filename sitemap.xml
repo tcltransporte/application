@@ -2,6 +2,14 @@
 <siteMap>
   <siteMapNode url="${URL}\Default.aspx" title="Início" description="Página Inicial">
 
+  
+    <siteMapNode title="Cadastros" roles="" icon="ri-file-list-3-line">
+      <siteMapNode title="Produtos" url="\register\products" description="Produtos"/>
+      <siteMapNode title="Fornecedores" url="\register\suppliers" description="Fornecedores"/>
+      <siteMapNode title="Clientes" url="\register\customers" description="Clientes"/>
+      <siteMapNode title="Transportadoras" url="\register\carriers" description="Transportadoras"/>
+    </siteMapNode>
+
     <!--
     <siteMapNode title="Acerto" roles="Administrador, Acerto" icon="ri-check-double-line">
       <siteMapNode title="Acertos" url="${URL}\Acerto\EditaAcertoNovo.aspx" description="Inserir, Alterar, Excluir dados de Acertos"/>
@@ -69,7 +77,7 @@
     </siteMapNode>
     -->
 
-    <siteMapNode title="Recursos humanos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
+    <siteMapNode title="Recursos humanos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-user-star-line">
       <siteMapNode title="e-Social" url="\logistic\trips" description="e-Social"/>
     </siteMapNode>
 

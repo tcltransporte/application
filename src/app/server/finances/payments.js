@@ -302,10 +302,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
   const db = new AppContext()
 
   const payment = await db.FinancialMovementInstallment.findOne({
-    attributes: ['codigo_movimento_detalhe'],
-    include: [
-      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
-    ],
+    attributes: ['codigo_movimento_detalhe', 'externalId'],
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
@@ -313,7 +310,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
     companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
   })
 
-  const args1 = `[${payment.financialMovement.externalId},"P"]`
+  const args1 = `[${payment.externalId},"P"]`
 
   let data1 = `argsLength=${_.size(args1)}&args=${args1}`;
 
@@ -378,10 +375,7 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
   const db = new AppContext()
 
   const payment = await db.FinancialMovementInstallment.findOne({
-    attributes: ['codigo_movimento_detalhe'],
-    include: [
-      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['externalId']}
-    ],
+    attributes: ['codigo_movimento_detalhe', 'externalId'],
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
@@ -391,7 +385,7 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
   })
 
   const conta = {
-    id: payment.financialMovement.externalId,
+    id: payment.externalId,
     data: format(new Date(date), 'dd/MM/yyyy'),
     contaOrigem: bankAccount.name,
     valorPago: amount,
