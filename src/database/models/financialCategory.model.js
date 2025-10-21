@@ -14,6 +14,11 @@ export class FinancialCategory {
     type: DataTypes.INTEGER
   }
 
+  companyId = {
+    field: 'companyId',
+    type: DataTypes.TINYINT
+  }
+
   operation = {
     field: 'codigo_tipo_operacao',
     type: DataTypes.SMALLINT

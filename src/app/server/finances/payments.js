@@ -2,19 +2,18 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { getTinyPayments } from "@/utils/integrations/tiny"
+import * as sincronize from "@/app/server/sincronize"
 import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
-import { authentication } from "../settings/integrations/index.controller"
 import { ptBR } from "date-fns/locale"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
   const session = await getServerSession(authOptions)
 
-  await getTinyPayments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+  await sincronize.payments({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
     
   const db = new AppContext()
 

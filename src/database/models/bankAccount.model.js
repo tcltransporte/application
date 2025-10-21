@@ -44,6 +44,11 @@ export class BankAccount {
     type: DataTypes.DECIMAL
   }
 
+  statement = {
+    field: 'statement',
+    type: DataTypes.STRING(500)
+  }
+
   externalId = {
     field: 'externalId',
     type: DataTypes.STRING(25)

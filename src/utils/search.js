@@ -5,7 +5,9 @@ import { authOptions } from "@/libs/auth"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
-import { getTinyCategories, getTinyPartner } from "./integrations/tiny"
+//import { getTinyCategories, getTinyPartner } from "./integrations/tiny"
+
+import * as sincronize from '@/app/server/sincronize'
 
 
 export async function getCompany(search) {
@@ -82,7 +84,7 @@ export async function getPartner(search) {
 
     const session = await getServerSession(authOptions);
 
-    await getTinyPartner(search)
+    await sincronize.partners(search)
 
     const db = new AppContext();
 
@@ -114,7 +116,7 @@ export async function getFinancialCategory (search) {
 
     const where = []
 
-    //where.push({'$companyUsers.company.codigo_empresa$': session.company.companyBusinessId})
+    where.push({'$companyId$': session.company.codigo_empresa_filial})
 
     where.push({'$descricao$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
 

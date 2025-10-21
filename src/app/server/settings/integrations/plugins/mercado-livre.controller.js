@@ -177,18 +177,18 @@ export async function statement({companyIntegrationId, item, file}) {
 
         const liberations = _.filter(json, (c) => c.SOURCE_ID == item.REFERENCE_ID)
 
-        const liberation = liberations[0]
+        let liberation = liberations[0]
+
+        if (liberation?.DESCRIPTION == 'payment') {
+            liberation.DESCRIPTION = 'receivement'
+        }
 
         //console.log(liberation)
 
         reference = liberation?.ORDER_ID?.toString()
 
-        console.log(liberation?.PACK_ID)
-
         if (!_.isEmpty(liberation?.PACK_ID)) {
-            console.log('@'.repeat(10))
             reference = liberation?.PACK_ID
-            console.log('@'.repeat(10))
         }
 
         //console.log(item)
@@ -262,8 +262,6 @@ export async function statement({companyIntegrationId, item, file}) {
         sequence++
 
     }
-
-    console.log('fim')
 
     return statements
 

@@ -2,22 +2,22 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { getTinyCategories } from "@/utils/integrations/tiny"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
+import * as sincronize from '@/app/server/sincronize'
 
 export async function getCategories() {
 
   const session = await getServerSession(authOptions)
 
-  await getTinyCategories()
+  await sincronize.categories({ search: ''})
 
   const db = new AppContext()
 
   const where = []
 
-  where.push({'$idEmpresa$': session.company.companyBusiness.codigo_empresa})
+  where.push({'$companyId$': session.company.codigo_empresa_filial})
 
   const categories = await db.FinancialCategory.findAll({
     attributes: ['id', 'description', 'operation'],

@@ -8,10 +8,11 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import { Sequelize } from "sequelize"
 import { orders } from "../settings/integrations/plugins/mercado-livre.controller"
-import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
+//import { getTinyPayments, getTinyReceivements } from "@/utils/integrations/tiny"
 import * as payments from "@/app/server/finances/payments"
 import * as receivements from "@/app/server/finances/receivements"
-import { authentication } from "../settings/integrations/index.controller"
+//import { authentication } from "../settings/integrations/index.controller"
+import * as sincronize from "@/app/server/sincronize"
 
 export async function findAll({limit, offset, date}) {
 
@@ -167,8 +168,8 @@ export async function create(formData) {
 
   await db.transaction(async (transaction) => {
 
-    const begin = format(addDays(new Date(formData.statement.begin), -60), 'dd/MM/yyyy HH:mm')
-    const end = format(addDays(new Date(formData.statement.end), 30), 'dd/MM/yyyy HH:mm')
+    const begin = format(addDays(new Date(formData.statement.begin), -40), 'dd/MM/yyyy HH:mm')
+    const end = format(addDays(new Date(formData.statement.end), 20), 'dd/MM/yyyy HH:mm')
 
     await getTinyReceivements({start: begin, end: end})
 
@@ -182,11 +183,19 @@ export async function create(formData) {
         isActive: true
     }, {transaction})
 
+    const options = await db.BankAccount.findOne({attributes: ['statement'], where: [{codigo_conta_bancaria: formData.bankAccount?.codigo_conta_bancaria}]})
+
+    const settings = JSON.parse(options.statement)
+
+    console.log('@'.repeat(10))
+    console.log(settings)
+    console.log('@'.repeat(10))
+
     for (const item of formData.statement.statementData) {
 
       const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
 
-      if (item.entryType == `payment`) {
+      if (item.entryType == `receivement`) {
 
         const receivement = await db.FinancialMovementInstallment.findOne({
           attributes: ['codigo_movimento_detalhe', 'amount'],
@@ -201,39 +210,66 @@ export async function create(formData) {
           transaction
         })
         
+        if (receivement) {
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 1,
+            partnerId: receivement?.financialMovement?.partnerId,
+            categoryId: receivement?.financialMovement?.categoryId || settings?.receivement?.categoryId,
+            amount: receivement?.amount,
+            receivementId: receivement?.codigo_movimento_detalhe,
+          }, {transaction})
+  
+          if (parseFloat(statementData.fee) < 0) {
+            await db.StatementDataConciled.create({
+              statementDataId: statementData.id,
+              type: 2,
+              partnerId: settings?.fee?.partnerId,
+              categoryId: settings?.fee?.categoryId,
+              amount: Number(statementData.fee) * -1},
+              {transaction}
+            );
+          }
+
+          if (parseFloat(statementData.shipping) < 0) {
+            await db.StatementDataConciled.create({
+              statementDataId: statementData.id,
+              type: 2,
+              partnerId: settings?.shipping?.partnerId,
+              categoryId: settings?.shipping?.categoryId,
+              amount: Number(statementData.shipping) * -1}, 
+              {transaction}
+            );
+          }
+
+        }
+        
+      }
+
+      if (item.entryType == 'reserve_for_debt_payment') {
+
+        /*await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          action: 'payment',
+          type: 'reserve_for_debt_payment',
+          paymentCategorieId: '577aff8d-cfc4-43ec-8c09-25776e4e9de0', //'2.04 - Juros Sobre Empréstimos
+          amount: (parseFloat(statementData.debit))},
+          {transaction}
+        );*/
+
         await db.StatementDataConciled.create({
           statementDataId: statementData.id,
-          type: 1,
-          partnerId: receivement?.financialMovement?.partnerId,
-          categoryId: receivement?.financialMovement?.categoryId || 2,
-          amount: receivement?.amount,
-          receivementId: receivement?.codigo_movimento_detalhe,
-        }, {transaction})
- 
-        if (parseFloat(statementData.fee) < 0) {
-          await db.StatementDataConciled.create({
-            statementDataId: statementData.id,
-            type: 2,
-            partnerId: 5333,
-            categoryId: 21, //'2.05 - Taxas e Tarifas ecommerce
-            amount: Number(statementData.fee) * -1},
-            {transaction}
-          );
-        }
-
-        if (parseFloat(statementData.shipping) < 0) {
-          await db.StatementDataConciled.create({
-            statementDataId: statementData.id,
-            type: 2,
-            partnerId: 5333,
-            categoryId: 34, //'4.25 - Fretes
-            amount: Number(statementData.shipping) * -1}, 
-            {transaction}
-          );
-        }
+          type: 2,
+          partnerId: settings?.reserve_for_debt_payment?.partnerId,
+          categoryId: settings?.reserve_for_debt_payment?.categoryId,
+          amount: Number(statementData.debit) * -1},
+          {transaction}
+        );
 
       }
 
+      /*
       if (item.entryType == `cancelled`) {
 
         if (Number(item.credit) > 0) {
@@ -261,6 +297,7 @@ export async function create(formData) {
         }
 
       }
+      */
 
     }
 
@@ -549,7 +586,7 @@ export async function concile({id}) {
     }
 
     if (item.type == 'transfer') {
-      await transfer({
+      await sincronize.transfer({
         date: item.statementData.entryDate,
         amount: item.amount,
         originId: item.origin?.externalId,
@@ -620,55 +657,5 @@ export async function desconcile({id}) {
     }
    
   }
-
-}
-
-async function transfer({date, originId, destinationId, amount, observation = ''}) {
-
-  const auth = await authentication({
-    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
-  })
-
-  const args = `[{"data":"${format(date, 'dd/MM/yyyy')}","valor":"${amount.toString().replace('.', ',')}","idContaOrigem":"${originId}","idContaDestino":"${destinationId}","historicoTransferencia":"${observation}"}]`
-
-  const data = `argsLength=${args.length}&args=${args}`
-
-  const res = await fetch("https://erp.tiny.com.br/services/caixa.server/2/Caixa/salvarTransferencia", {
-    "headers": {
-      "accept": "application/json, text/javascript, */*; q=0.01",
-      "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "priority": "u=1, i",
-      "sec-ch-ua": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": "\"Windows\"",
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "x-custom-request-for": "XAJAX",
-      "x-requested-with": "XMLHttpRequest",
-      "x-user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-      "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
-      "Referer": "https://erp.tiny.com.br/caixa",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
-    },
-    "body": data, //"argsLength=149&timeInicio=1758132000767&versaoFront=3.80.38&pageTime=1758131952&pageLastPing=1758131959873&location=https%3A%2F%2Ferp.tiny.com.br%2Fcaixa&curRetry=0&args=%5B%7B%22data%22%3A%2217%2F09%2F2025%22%2C%22valor%22%3A%220%2C01%22%2C%22idContaOrigem%22%3A%22351099665%22%2C%22idContaDestino%22%3A%22351167825%22%2C%22historicoTransferencia%22%3A%22Transfer%C3%AAncia+entre+contas%22%7D%5D",
-    "method": "POST"
-  });
-
-  const r = await res.json()
-
-  if (r.response[0].cmd == 'rj') {
-      throw new Error(r.response[0]?.exc?.detail)
-  }
-
-}
-
-//excluir função - NÃO UTILIZADA
-export async function refresh() {
-
-  const r = await orders({companyIntegrationId: '00A649D7-C96A-47EB-BA71-87999EE16849', start: '2025-08-05', end: '2025-09-05'})
-
-  console.log(r)
 
 }

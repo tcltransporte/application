@@ -2,19 +2,19 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { getTinyReceivements } from "@/utils/integrations/tiny"
+import * as sincronize from "@/app/server/sincronize"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
-import { authentication } from "../settings/integrations/index.controller"
+import { authentication } from "../sincronize/tiny"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
   const session = await getServerSession(authOptions)
 
-  await getTinyReceivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+  await sincronize.receivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
     
   const db = new AppContext()
 
@@ -302,9 +302,9 @@ export async function desconcile({codigo_movimento_detalhe}) {
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
-  const auth = await authentication({
-    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
-  })
+  const options = await authentication()
+
+  console.log(options)
 
   const args1 = `[${receivement.externalId},"R"]`
 
@@ -317,7 +317,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "cookie": `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
         "origin": "https://erp.tiny.com.br",
         "referer": "https://erp.tiny.com.br/caixa",
         "x-custom-request-for": "XAJAX",
@@ -350,7 +350,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "cookie": `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
         "origin": "https://erp.tiny.com.br",
         "referer": "https://erp.tiny.com.br/caixa",
         "x-custom-request-for": "XAJAX",
