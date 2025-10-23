@@ -189,8 +189,8 @@ export async function create(formData) {
 
   db.transaction(async (transaction) => {
 
-    const begin = format(addDays(new Date(formData.statement.begin), 10), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
-    const end = format(addDays(new Date(formData.statement.end), 14), 'dd/MM/yyyy HH:mm') //Até 15 dias (Será analisado 5 dias)
+    const begin = format(addDays(new Date(formData.statement.begin), -15), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
+    const end = format(addDays(new Date(formData.statement.end), 15), 'dd/MM/yyyy HH:mm') //Até 15 dias (Será analisado 5 dias)
 
     await sincronize.receivements({start: begin, end: end})
 

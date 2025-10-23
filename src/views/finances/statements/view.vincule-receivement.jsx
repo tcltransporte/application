@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react'
 import { parseISO, format } from 'date-fns'
 import * as receivement2 from '@/app/server/finances/receivements' // This import caused an error and has been replaced with mock data.
 import _ from 'lodash'
+import { useSession } from 'next-auth/react'
 
 // Helper function for currency formatting (Unchanged)
 const formatCurrency = (value) => {
@@ -103,10 +104,13 @@ function ReceivementCard({ item, onConfirm, isConfirming }) {
 
 // --- MAIN COMPONENT (Updated) ---
 export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
+
+  const session = useSession()
+
   const [historico, setHistorico] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
-  const [payments, setPayments] = useState([])
+  const [payments, setPayments] = useState(null)
   const [loading, setLoading] = useState(false)
   const [confirmingId, setConfirmingId] = useState(null)
 
@@ -116,6 +120,7 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
     setLoading(true);
     try {
       const items = await receivement2.findAll({
+        company: session.data.company,
         limit: 50,
         offset: 0,
         dueDate: {
@@ -137,10 +142,10 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
       const today = getToday();
       setDataInicial(today);
       setDataFinal(today);
-      fetchData(today, today);
+      //fetchData(today, today);
     } else if (!open) {
       setHistorico('');
-      setPayments([]);
+      //setPayments([]);
     }
   }, [itemId, open]);
 
@@ -248,9 +253,13 @@ export function ViewVinculeReceivement({ open, onClose, itemId, onSelected }) {
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                 <CircularProgress />
               </Box>
+            ) : payments == null ? (
+              <Paper variant="outlined" sx={{p: 4, textAlign: 'center', backgroundColor: 'grey.50'}}>
+                <Typography color="text.secondary">Informe o filtro e aplique a busca</Typography>
+              </Paper>
             ) : (
-              _.size(payments.response?.rows) > 0 ? (
-                _.map(payments.response?.rows, (item) => (
+              _.size(payments?.response?.rows) > 0 ? (
+                _.map(payments?.response?.rows, (item) => (
                   <ReceivementCard
                     key={item.codigo_movimento_detalhe}
                     item={item}

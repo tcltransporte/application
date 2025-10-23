@@ -14,7 +14,7 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
   const session = await getServerSession(authOptions)
 
-  await sincronize.receivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy")})
+  await sincronize.receivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy"), situation: undefined})
     
   const db = new AppContext()
 

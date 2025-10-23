@@ -18,9 +18,9 @@ export async function payments({ start, end }) {
 
 }
 
-export async function receivements({ start, end }) {
+export async function receivements({ start, end, situation }) {
     
-    await tiny.receivements({ start, end })
+    await tiny.receivements({ start, end, situation })
 
 }
 

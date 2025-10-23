@@ -8,6 +8,7 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 
 import { chromium } from 'playwright';
+import { Op, Sequelize } from "sequelize"
 
 
 // 🔹 Controle de taxa Tiny API
@@ -89,8 +90,6 @@ export async function authentication() {
 
 export async function login({username, password}) {
     
-    console.log('fazendo login')
-
     const browser = await chromium.launch({
         headless: true,
         args: [
@@ -110,11 +109,9 @@ export async function login({username, password}) {
 
         await page.goto('https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth?client_id=tiny-webapp&redirect_uri=https://erp.tiny.com.br/login&scope=openid&response_type=code', { waitUntil: 'networkidle' });
 
-        console.log(username)
         await page.fill('#username', username);
         await page.click('//button[contains(text(),"Avançar")]');
 
-        console.log(password)
         await page.waitForSelector('#password', { state: 'visible', timeout: 10000 });
         await page.fill('#password', password);
 
@@ -135,11 +132,6 @@ export async function login({username, password}) {
         const cookies = await context.cookies();
         const tinySession = cookies.find(c => c.name === 'TINYSESSID')?.value
         const csrfToken = cookies.find(c => c.name === '_csrf_token')?.value
-
-        console.log(tinySession)
-        console.log(csrfToken)
-
-        console.log('login feito')
 
         return {
             tinySession,
@@ -234,8 +226,6 @@ export async function partners({search = " "}) {
     if (search == '') {
         search = " "
     }
-
-    console.log('@' + search + '@')
 
     const session = await getServerSession(authOptions);
     const db = new AppContext();
@@ -479,35 +469,32 @@ export async function payments({ start, end }) {
 
 export async function receivements({ start, end, situation = 'aberto' }) {
 
-  const options = await authentication() //JSON.parse(companyIntegration.dataValues.options);
+  const options = await authentication();
 
-  if (!options) return
+  if (!options) return;
 
-  await categories({ search: '' })
-  await partners({ search: '' })
+  await categories({ search: '' });
+  await partners({ search: '' });
 
-  const session = await getServerSession(authOptions)
-
+  const session = await getServerSession(authOptions);
   const db = new AppContext();
-
-  /*
-  const companyIntegration = await db.CompanyIntegration.findOne({
-    attributes: ["options"],
-    where: [
-      {
-        integrationId: "E6F39F15-5446-42A7-9AC4-A9A99E604F07",
-        companyId: session.company.codigo_empresa_filial,
-      },
-    ],
-  });
-
-  if (!companyIntegration) return;
-  */
 
   // Função auxiliar para paginação da API Tiny
   const receivements = async ({ token, start, end, offset, totalPages }) => {
-    console.log(`🔹 [${offset}/${totalPages || '?'}] Buscando pagína de contas`)
-    const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`;
+    console.log(`🔹 [${offset}/${totalPages || '?'}] Buscando página de contas`);
+
+    const params = new URLSearchParams({
+      token, // obrigatório
+      formato: 'json',
+    });
+
+    if (situation !== undefined) params.append('situacao', situation);
+    if (start !== undefined) params.append('data_ini_vencimento', start);
+    if (end !== undefined) params.append('data_fim_vencimento', end);
+    if (offset !== undefined) params.append('pagina', offset);
+
+    const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?${params.toString()}`;
+
     await rateLimitedFetch();
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`);
@@ -532,7 +519,6 @@ export async function receivements({ start, end, situation = 'aberto' }) {
   });
 
   const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1;
-
   let contas = [...(firstPage?.retorno?.contas || [])];
 
   if (totalPages > 1) {
@@ -543,7 +529,7 @@ export async function receivements({ start, end, situation = 'aberto' }) {
         start,
         end,
         offset: i,
-        totalPages
+        totalPages,
       });
       contas.push(...(response?.retorno?.contas || []));
     }
@@ -552,66 +538,82 @@ export async function receivements({ start, end, situation = 'aberto' }) {
   console.log(`✅ Total de contas encontradas: ${contas.length}`);
 
   // 🔹 2. Buscar detalhes (com controle de taxa)
-  const contasComDetalhe = []
+  const contasComDetalhe = [];
 
   for (let i = 0; i < contas.length; i++) {
+    const item = contas[i];
+    const id = item.conta.id;
 
-    const item = contas[i]
-    const id = item.conta.id
-
-    console.log(`🔹 [${i + 1}/${contas.length}] Buscando detalhe da conta ${id}`)
+    console.log(`🔹 [${i + 1}/${contas.length}] Buscando detalhe da conta ${id}`);
 
     try {
-
       const detail = await receivementDetails({
         token: options.token,
         id,
-      })
+      });
 
       const conta = {
         ...item,
         detail: detail?.retorno || {},
-      }
-
-      console.log(conta)
+      };
 
       contasComDetalhe.push(conta);
-      
+
     } catch (err) {
-      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message)
+      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message);
     }
   }
 
-  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`)
+  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`);
 
   // 🔹 3. Início da transação no banco
   await db.transaction(async (transaction) => {
-    // 🔹 Garantir que os parceiros existem
+
+    // 🔹 Garantir que os parceiros existem (CPF/CNPJ ou nome)
     const partnerData = _.uniqBy(
       contasComDetalhe
-        .map((item) => ({
-          cpfCnpj: String(_.get(item, "detail.conta.cliente.cpf_cnpj", "")).replace(/\D/g, ""),
-        }))
-        .filter((p) => p.cpfCnpj),
-      "cpfCnpj"
-    )
+        .map((item) => {
+          const cpfCnpj = String(_.get(item, "detail.conta.cliente.cpf_cnpj", "")).replace(/\D/g, "");
+          const nome = _.get(item, "conta.nome_cliente", "").trim();
+          return {
+            cpfCnpj: cpfCnpj || null,
+            nome: nome || null,
+          };
+        })
+        .filter((p) => p.cpfCnpj || p.nome), // mantém apenas registros válidos
+      (p) => p.cpfCnpj || p.nome // evita duplicidade
+    );
 
     const existingPartners = await db.Partner.findAll({
-      where: { cpfCnpj: partnerData.map((p) => p.cpfCnpj) },
+      where: {
+        companyId: session.company.codigo_empresa_filial,
+        [Op.or]: [
+          { cpfCnpj: partnerData.map((p) => p.cpfCnpj).filter(Boolean) },
+          { nome: partnerData.map((p) => p.nome).filter(Boolean) },
+        ],
+      },
       transaction,
-    })
+    });
 
-    const partnerMap = new Map(existingPartners.map((p) => [p.cpfCnpj, p]));
-
+    // 🔹 Criar mapa para lookup por CPF e nome
+    const partnerMap = new Map();
+    for (const p of existingPartners) {
+      if (p.cpfCnpj) partnerMap.set(p.cpfCnpj, p);
+      if (p.surname) partnerMap.set(p.surname.trim().toLowerCase(), p);
+    }
+    
     // 🔹 4. Montar lista completa de pagamentos
     const allPayments = contasComDetalhe.map((item) => {
-
       const id = item.conta.id;
       const detail = item.detail;
       const nro_documento = detail?.conta?.nro_documento?.split("/") || [];
-      const partner = partnerMap.get(
-        String(_.get(detail, "conta.cliente.cpf_cnpj", "")).replace(/\D/g, "")
-      )
+
+      const cpfCnpj = String(_.get(detail, "conta.cliente.cpf_cnpj", "")).replace(/\D/g, "");
+      const surname = _.get(detail, "conta.cliente.nome", "").trim();
+
+      const partner =
+        partnerMap.get(cpfCnpj) ||
+        partnerMap.get(surname.toLowerCase());
 
       return {
         externalId: id,
@@ -639,7 +641,7 @@ export async function receivements({ start, end, situation = 'aberto' }) {
     });
 
     const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]));
-    
+
     const toCreate = [];
     const toUpdate = [];
 
@@ -657,16 +659,13 @@ export async function receivements({ start, end, situation = 'aberto' }) {
       const categoryId = category?.dataValues.id || null;
 
       if (!existing) {
-        
         toCreate.push({
           ...receivement,
           type_operation: 1,
           companyId: session.company.codigo_empresa_filial,
           categoryId,
         });
-
       } else {
-
         const updatedFields = {
           documentNumber: receivement.documentNumber,
           amount: receivement.amount,
@@ -697,7 +696,9 @@ export async function receivements({ start, end, situation = 'aberto' }) {
     });
 
     // 🔹 6.1. Mapear documentNumber -> dueDate, externalId
-    const documentNumberMap = new Map(toCreate.map((m) => [m.documentNumber, { externalId: m.externalId, dueDate: m.dueDate }]));
+    const documentNumberMap = new Map(
+      toCreate.map((m) => [m.documentNumber, { externalId: m.externalId, dueDate: m.dueDate }])
+    );
 
     // 🔹 7. Atualizar existentes
     for (const updateData of toUpdate) {
@@ -709,28 +710,29 @@ export async function receivements({ start, end, situation = 'aberto' }) {
 
     // 🔹 8. Criar ou atualizar parcelas
     for (const movement of createdMovements) {
-
       if (!movement) continue;
 
-      const { dueDate, externalId } = documentNumberMap.get(movement.documentNumber) || {};
+      const { dueDate, externalId } =
+        documentNumberMap.get(movement.documentNumber) || {};
 
-      const [installment, created] = await db.FinancialMovementInstallment.findOrCreate({
-        where: { financialMovementId: movement.codigo_movimento, installment: 1 },
-        defaults: {
-          issueDate: movement.issueDate,
-          dueDate: dueDate,
-          amount: movement.amount,
-          observation: movement.observation,
-          externalId: externalId,
-        },
-        transaction,
-      });
+      const [installment, created] =
+        await db.FinancialMovementInstallment.findOrCreate({
+          where: {
+            financialMovementId: movement.codigo_movimento,
+            installment: 1,
+          },
+          defaults: {
+            issueDate: movement.issueDate,
+            dueDate: dueDate,
+            amount: movement.amount,
+            observation: movement.observation,
+            externalId: externalId,
+          },
+          transaction,
+        });
 
       if (!created) {
-        await installment.update(
-          { dueDate },
-          { transaction }
-        );
+        await installment.update({ dueDate }, { transaction });
       }
     }
   });
@@ -738,6 +740,7 @@ export async function receivements({ start, end, situation = 'aberto' }) {
   console.log("✅ Sincronização Tiny concluída com sucesso.");
 
 }
+
 
 export async function transfer({date, originId, destinationId, amount, observation = ''}) {
 
