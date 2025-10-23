@@ -84,7 +84,7 @@ export async function getPartner(search) {
 
     const session = await getServerSession(authOptions);
 
-    await sincronize.partners(search)
+    await sincronize.partners({search})
 
     const db = new AppContext();
 
@@ -110,7 +110,7 @@ export async function getFinancialCategory (search) {
 
     const session = await getServerSession(authOptions)
 
-    await getTinyCategories()
+    await sincronize.categories({search})
 
     const db = new AppContext()
 

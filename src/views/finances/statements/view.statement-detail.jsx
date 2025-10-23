@@ -99,7 +99,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         if (item.type === '2' && item.payment) return Number(item.amount) !== Number(item.payment?.amount);
         return false;
     });
-    //if (hasDivergent) return true;
+    
+    if (hasDivergent) return true;
 
     // --- LÓGICA DE SOMA FINAL ---
     const sumConcileds = _.sumBy(concileds, (c) => {
@@ -677,7 +678,7 @@ function ConciledItemRow({ item, onStartEdit, onDelete, onDesvincule, onViewDeta
             <TableCell colSpan={2}>
                 <Typography color={rowColor} fontSize={12}>
                     {(item.type === '1' || item.type === '2') && (<>{item.partner?.surname}<br />{item.category?.description}</>)}
-                    {item.type === 'transfer' && (<>{item.origin?.name}{item.origin?.agency && item.origin?.number ? ` - ${item.origin.agency} / ${item.origin.number}` : ""}<br />{item.destination?.name}{item.destination?.agency && item.destination?.number ? ` - ${item.destination.agency} / ${item.destination.number}` : ""}</>)}
+                    {item.type === 'transfer' && (<><b>Origem:</b> {item.origin?.name}{item.origin?.agency && item.origin?.number ? ` - ${item.origin.agency} / ${item.origin.number}` : ""}<br /><b>Destino:</b> {item.destination?.name}{item.destination?.agency && item.destination?.number ? ` - ${item.destination.agency} / ${item.destination.number}` : ""}</>)}
                 </Typography>
             </TableCell>
             <TableCell align="right"><Typography color={rowColor} fontSize={12}>{formatCurrency(item.amount)}</Typography></TableCell>
@@ -754,8 +755,8 @@ function ConciliationForm({ statementData, statementDataId, isSelected, initialV
                             <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Categoria" name="category" text={(category) => category?.description || ''} onSearch={(search) => getFinancialCategory(search)} renderSuggestion={(item) => (<span>{item.description}</span>)} />
                         </>)}
                         {(values.type === 'transfer') && (<>
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(bankAccount) => `${bankAccount.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(bankAccount) => `${bankAccount.name} - ${bankAccount.agency} / ${bankAccount.number}`} onSearch={getBankAccounts} renderSuggestion={(bankAccount) => (<span>{bankAccount.name} - {bankAccount.agency} / {bankAccount.number}</span>)} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={getBankAccounts} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={getBankAccounts} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
                         </>)}
                     </TableCell>
                     <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{ backgroundColor: '#fff' }} />}</TableCell>

@@ -51,15 +51,10 @@ export class Statement {
     }
   }
 
-  entryTypes = {
+  status = {
+    field: 'status',
     type: DataTypes.STRING,
-    get() {
-      const raw = this.getDataValue('entryTypes');
-      return raw ? raw.split(',') : [];
-    },
-    set(value) {
-      this.setDataValue('entryTypes', Array.isArray(value) ? value.join(',') : value);
-    }
+    
   }
 
   isActive = {

@@ -11,11 +11,16 @@ import fs from "fs";
 
 export async function authorization({companyIntegrationId}) {
 
+    const session = await getServerSession(authOptions)
+
     const db = new AppContext()
 
     const companyIntegration = await db.CompanyIntegration.findOne({
         attributes: ['id', 'options'],
-        where: [{id: companyIntegrationId}]
+        where: [
+            {companyId: session.company.codigo_empresa_filial},
+            {integrationId: '420E434C-CF7D-4834-B8A6-43F5D04E462A'},
+        ]
     })
 
     let options = JSON.parse(companyIntegration.options)
@@ -26,6 +31,8 @@ export async function authorization({companyIntegrationId}) {
     params.append('client_id', '4404783242240588')
     params.append('client_secret', 'XZKpfqhCIQjvnLk9DnRA4f7UHOs3OC5c')
     params.append('refresh_token', options.refresh_token)
+
+    console.log(options.refresh_token)
 
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
         method: 'POST',
@@ -42,7 +49,7 @@ export async function authorization({companyIntegrationId}) {
         throw new Error(`Erro na requisição: ${response.status}`)
     }
 
-    await db.CompanyIntegration.update({options: JSON.stringify({refresh_token: token.refresh_token})}, {where: [{id: companyIntegration.dataValues.id}]})
+    await db.CompanyIntegration.update({options: JSON.stringify({refresh_token: token.refresh_token})}, {where: [{id: companyIntegration.id}]})
 
     return token
 
@@ -151,7 +158,7 @@ export async function statement({companyIntegrationId, item, file}) {
 
     //return base64
 
-    let json = await csv({ delimiter: ";" }).fromString(csvText);
+    let json = await csv({ delimiter: "," }).fromString(csvText);
 
     // Ordena antes do for
     /*json = _.orderBy(
@@ -169,6 +176,9 @@ export async function statement({companyIntegrationId, item, file}) {
 
     for (let item of accountStatement) {
 
+        //console.log(item)
+
+
         let reference
 
         if (isEmptyJsonString(item)) {
@@ -177,13 +187,19 @@ export async function statement({companyIntegrationId, item, file}) {
 
         const liberations = _.filter(json, (c) => c.SOURCE_ID == item.REFERENCE_ID)
 
+        console.log(liberations)
+
         let liberation = liberations[0]
 
         if (liberation?.DESCRIPTION == 'payment') {
             liberation.DESCRIPTION = 'receivement'
         }
 
-        //console.log(liberation)
+        if (_.size(_.filter(liberations, (c) => c.DESCRIPTION == 'mediation')) > 0) {
+            liberation.DESCRIPTION = 'mediation'
+        }
+
+        console.log(liberation)
 
         reference = liberation?.ORDER_ID?.toString()
 
@@ -238,12 +254,13 @@ export async function statement({companyIntegrationId, item, file}) {
         statementData.sequence = sequence
         statementData.entryDate = entryDate ? format(liberation?.DATE ? new Date(entryDate) : parse(entryDate, 'dd-MM-yyyy', new Date()), 'yyyy-MM-dd HH:mm:ss') : null
         statementData.entryType = liberation?.DESCRIPTION
-        statementData.sourceId = liberation?.SOURCE_ID?.toString()
+        statementData.sourceId = item.REFERENCE_ID
         statementData.reference = reference
         statementData.description = item.TRANSACTION_TYPE
         statementData.amount = parseFloat(liberation?.GROSS_AMOUNT ?? 0) ?? amount
         statementData.fee = parseFloat(liberation?.MP_FEE_AMOUNT ?? 0)
         statementData.shipping = parseFloat(liberation?.SHIPPING_FEE_AMOUNT ?? 0)
+        statementData.extra = JSON.stringify(liberations)
 
         if (amount < 0) {
             statementData.debit = amount

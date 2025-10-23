@@ -3,7 +3,7 @@
 import { AppContext } from "@/database"
 
 import { authOptions } from "@/libs/auth"
-import { getTime } from "date-fns"
+import { format, getTime, parse } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 
@@ -11,11 +11,12 @@ import { chromium } from 'playwright';
 
 
 // 🔹 Controle de taxa Tiny API
-const MAX_REQUESTS_PER_SECOND = 1; // Ajuste conforme seu plano Tiny
-const DELAY_MS = 1000 / MAX_REQUESTS_PER_SECOND;
+const MAX_REQUESTS_PER_MINUTE = 60; // Exemplo: 60 chamadas por minuto
+const DELAY_MS = 60000 / MAX_REQUESTS_PER_MINUTE; // 60000 ms = 1 minuto
+
 let lastCallTime = 0;
 
-async function rateLimitedFetch() {
+export async function rateLimitedFetch() {
   const now = Date.now();
   const elapsed = now - lastCallTime;
 
@@ -24,7 +25,6 @@ async function rateLimitedFetch() {
   }
 
   lastCallTime = Date.now();
-
 }
 
 export async function authentication() {
@@ -47,6 +47,8 @@ export async function authentication() {
         const timestamp = getTime(new Date())
 
         const url = `https://erp.tiny.com.br/services/auth.services.php?a=ping&time=${timestamp}`
+
+        await rateLimitedFetch();
 
         const response = await fetch(url, {
             method: 'GET',
@@ -165,6 +167,8 @@ export async function categories({search = ' '}) {
       const args = `[{"queryKey":["conta.pagar.categorias.financeiras"],"signal":{"aborted":false,"onabort":null}}]`
       const data = `argsLength=${_.size(args)}&args=${encodeURIComponent(args)}`
 
+      await rateLimitedFetch();
+
       const response = await fetch(
         'https://erp.tiny.com.br/services/contas.pagar.server/2/CategoriaFinanceira%5CCategoriaFinanceira/obterOpcoesSelectCategorias',
         {
@@ -224,16 +228,19 @@ export async function categories({search = ' '}) {
   }
 }
 
-export async function partners(search = " ") {
+export async function partners({search = " "}) {
   try {
 
     if (search == '') {
         search = " "
     }
 
+    console.log('@' + search + '@')
+
     const session = await getServerSession(authOptions);
     const db = new AppContext();
 
+    /*
     const companyIntegration = await db.CompanyIntegration.findOne({
       attributes: ["options"],
       where: [
@@ -247,7 +254,10 @@ export async function partners(search = " ") {
     if (!companyIntegration) return;
 
     const options = JSON.parse(companyIntegration.options);
+    */
 
+    const options = await authentication()
+    
     let page = 1;
     let totalPages = 1;
 
@@ -467,14 +477,14 @@ export async function payments({ start, end }) {
   }
 }
 
-export async function receivements({ start, end }) {
+export async function receivements({ start, end, situation = 'aberto' }) {
 
   const options = await authentication() //JSON.parse(companyIntegration.dataValues.options);
 
   if (!options) return
 
   await categories({ search: '' })
-  //await getTinyPartner()
+  await partners({ search: '' })
 
   const session = await getServerSession(authOptions)
 
@@ -495,8 +505,8 @@ export async function receivements({ start, end }) {
   */
 
   // Função auxiliar para paginação da API Tiny
-  const receivements = async ({ token, start, end, offset }) => {
-    console.log(start, end)
+  const receivements = async ({ token, start, end, offset, totalPages }) => {
+    console.log(`🔹 [${offset}/${totalPages || '?'}] Buscando pagína de contas`)
     const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`;
     await rateLimitedFetch();
     const res = await fetch(url);
@@ -533,6 +543,7 @@ export async function receivements({ start, end }) {
         start,
         end,
         offset: i,
+        totalPages
       });
       contas.push(...(response?.retorno?.contas || []));
     }
@@ -541,30 +552,37 @@ export async function receivements({ start, end }) {
   console.log(`✅ Total de contas encontradas: ${contas.length}`);
 
   // 🔹 2. Buscar detalhes (com controle de taxa)
-  const contasComDetalhe = [];
+  const contasComDetalhe = []
 
   for (let i = 0; i < contas.length; i++) {
-    const item = contas[i];
-    const id = item.conta.id;
 
-    console.log(`🔹 [${i + 1}/${contas.length}] Buscando detalhe da conta ${id}`);
+    const item = contas[i]
+    const id = item.conta.id
+
+    console.log(`🔹 [${i + 1}/${contas.length}] Buscando detalhe da conta ${id}`)
 
     try {
+
       const detail = await receivementDetails({
         token: options.token,
         id,
-      });
+      })
 
-      contasComDetalhe.push({
+      const conta = {
         ...item,
         detail: detail?.retorno || {},
-      });
+      }
+
+      console.log(conta)
+
+      contasComDetalhe.push(conta);
+      
     } catch (err) {
-      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message);
+      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message)
     }
   }
 
-  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`);
+  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`)
 
   // 🔹 3. Início da transação no banco
   await db.transaction(async (transaction) => {
@@ -576,23 +594,24 @@ export async function receivements({ start, end }) {
         }))
         .filter((p) => p.cpfCnpj),
       "cpfCnpj"
-    );
+    )
 
     const existingPartners = await db.Partner.findAll({
       where: { cpfCnpj: partnerData.map((p) => p.cpfCnpj) },
       transaction,
-    });
+    })
 
     const partnerMap = new Map(existingPartners.map((p) => [p.cpfCnpj, p]));
 
     // 🔹 4. Montar lista completa de pagamentos
     const allPayments = contasComDetalhe.map((item) => {
+
       const id = item.conta.id;
       const detail = item.detail;
-      const nro_documento = detail.conta?.nro_documento?.split("/") || [];
+      const nro_documento = detail?.conta?.nro_documento?.split("/") || [];
       const partner = partnerMap.get(
         String(_.get(detail, "conta.cliente.cpf_cnpj", "")).replace(/\D/g, "")
-      );
+      )
 
       return {
         externalId: id,
@@ -727,6 +746,8 @@ export async function transfer({date, originId, destinationId, amount, observati
   const args = `[{"data":"${format(date, 'dd/MM/yyyy')}","valor":"${amount.toString().replace('.', ',')}","idContaOrigem":"${originId}","idContaDestino":"${destinationId}","historicoTransferencia":"${observation}"}]`
 
   const data = `argsLength=${args.length}&args=${args}`
+
+  await rateLimitedFetch();
 
   const res = await fetch("https://erp.tiny.com.br/services/caixa.server/2/Caixa/salvarTransferencia", {
     "headers": {

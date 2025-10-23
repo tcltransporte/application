@@ -175,7 +175,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                         </TableCell>
                         <TableCell>{format(statement.begin, 'dd/MM/yyyy HH:mm')}</TableCell>
                         <TableCell>{format(statement.end, 'dd/MM/yyyy HH:mm')}</TableCell>
-                        <TableCell>{statement.isActive ? 'Pendente' : 'Excluído'}</TableCell>
+                        <TableCell>{statement.status == 'pending' ? 'Pendente' : 'Completado'}</TableCell>
                         <TableCell align="center">
                           <Box className="row-actions">
                               <Tooltip title="Editar">

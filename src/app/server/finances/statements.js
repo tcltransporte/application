@@ -84,7 +84,7 @@ export async function findOne({ statementId }) {
         model: db.StatementData,
         as: 'statementData',
         where: {
-          sourceId: { [Sequelize.Op.ne]: '' }
+          //sourceId: { [Sequelize.Op.ne]: '' }
         },
         required: false,
         // ✅ Adicionado para garantir que a ordenação complexa funcione corretamente
@@ -156,7 +156,11 @@ export async function findOne({ statementId }) {
 
   if (!statement) return null
 
-  return statement.get({ plain: true })
+  const ret = statement.get({ plain: true })
+
+  console.log(ret)
+
+  return ret
 
 }
 
@@ -166,32 +170,37 @@ export async function create(formData) {
 
   const db = new AppContext()
 
+  let statement
+
   await db.transaction(async (transaction) => {
 
-    const begin = format(addDays(new Date(formData.statement.begin), -40), 'dd/MM/yyyy HH:mm')
-    const end = format(addDays(new Date(formData.statement.end), 20), 'dd/MM/yyyy HH:mm')
-
-    await getTinyReceivements({start: begin, end: end})
-
-    const statement = await db.Statement.create({
+    statement = await db.Statement.create({
         companyId: session.company.codigo_empresa_filial,
         sourceId: formData.statement.sourceId,
         bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
         begin: format(fromZonedTime(formData.statement.begin, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
         end: format(fromZonedTime(formData.statement.end, Intl.DateTimeFormat().resolvedOptions().timeZone),'yyyy-MM-dd HH:mm'),
         //archiveId: archive.id,
+        status: 'pending',
         isActive: true
     }, {transaction})
+
+  })
+
+  db.transaction(async (transaction) => {
+
+    const begin = format(addDays(new Date(formData.statement.begin), 10), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
+    const end = format(addDays(new Date(formData.statement.end), 14), 'dd/MM/yyyy HH:mm') //Até 15 dias (Será analisado 5 dias)
+
+    await sincronize.receivements({start: begin, end: end})
 
     const options = await db.BankAccount.findOne({attributes: ['statement'], where: [{codigo_conta_bancaria: formData.bankAccount?.codigo_conta_bancaria}]})
 
     const settings = JSON.parse(options.statement)
 
-    console.log('@'.repeat(10))
-    console.log(settings)
-    console.log('@'.repeat(10))
-
     for (const item of formData.statement.statementData) {
+
+      console.log(item)
 
       const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
 
@@ -269,6 +278,34 @@ export async function create(formData) {
 
       }
 
+      if (item.entryType == 'mediation') {
+
+        let originId = undefined;
+        let destinationId = undefined;
+        let amount = 0;
+
+        if (parseFloat(statementData.debit) < 0) {
+          originId = settings?.mediation?.originId;
+          destinationId = settings?.mediation?.destinationId;
+          amount = parseFloat(statementData.debit) * -1;
+        }
+
+        if (parseFloat(statementData.credit) > 0) {
+          originId = settings?.mediation?.destinationId;
+          destinationId = settings?.mediation?.originId;
+          amount = parseFloat(statementData.credit);
+        }
+
+        await db.StatementDataConciled.create({
+          statementDataId: statementData.id,
+          type: 'transfer',
+          originId,
+          destinationId,
+          amount: amount}, {transaction}
+        );
+          
+      }
+
       /*
       if (item.entryType == `cancelled`) {
 
@@ -300,6 +337,8 @@ export async function create(formData) {
       */
 
     }
+
+    await db.Statement.update({status: 'completed'}, { where: [{id: statement.id}], transaction })
 
   })
 

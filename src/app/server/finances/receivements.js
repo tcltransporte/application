@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
-import { authentication } from "../sincronize/tiny"
+import { authentication, rateLimitedFetch } from "../sincronize/tiny"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
@@ -191,6 +191,8 @@ export async function insert(formData) {
       }
     }
 
+    await rateLimitedFetch()
+
     const url = `https://api.tiny.com.br/api2/conta.receber.incluir.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
 
     const response = await fetch(url, {
@@ -304,11 +306,11 @@ export async function desconcile({codigo_movimento_detalhe}) {
 
   const options = await authentication()
 
-  console.log(options)
-
   const args1 = `[${receivement.externalId},"R"]`
 
   let data1 = `argsLength=${_.size(args1)}&args=${args1}`;
+
+  await rateLimitedFetch()
 
   const response1 = await fetch(
     "https://erp.tiny.com.br/services/contas.receber.server/1/iniciarEstornoDaConta",
@@ -342,6 +344,8 @@ export async function desconcile({codigo_movimento_detalhe}) {
   const args2 = `[["${bordero.response[0]?.args[1][0]?.idBordero}"],false]`
 
   let data2 = `argsLength=${_.size(args2)}&args=${args2}`
+
+  await rateLimitedFetch()
 
   const response2 = await fetch(
     "https://erp.tiny.com.br/services/contas.receber.server/1/excluirBorderos",
@@ -387,6 +391,8 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
     valorPago: amount,
     historico: observation
   }
+
+  await rateLimitedFetch()
 
   const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
