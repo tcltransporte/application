@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import styled from 'styled-components'
 import { IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material'
+
+// --- Styled Components (sem alteração) ---
 
 const AutocompleteContainer = styled.div`
   position: relative;
@@ -36,239 +38,313 @@ const Nothing = styled.div`
   color: #888;
 `
 
+// --- Hook de Debounce (sem alteração) ---
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]); 
+
+  return debouncedValue;
+}
+
+
+// --- Componente Principal ---
+
 export const AutoComplete = (props) => {
-  
+  // --- Refs ---
   const ref = useRef()
   const inputRef = useRef()
   const selectedItemRef = useRef()
   const abortControllerRef = useRef(null)
-  // Esta flag é a chave para diferenciar um "limpar" de uma "digitação"
-  const isClearingRef = useRef(false) 
+  const isClearingRef = useRef(false)
+  const isInitialMount = useRef(true);
 
+  // --- Props ---
+  const { 
+    field, 
+    form, 
+    text, 
+    onSearch, 
+    onChange, 
+    children, 
+    renderSuggestion, 
+    ...rest 
+  } = props
+  
+  const value = field?.value || props.value
+  const name = field?.name || props.name
+
+  // --- Lógica de Erro (Formik) ---
   const rawError =
-    (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0)
-      ? props.form?.errors?.[props.field?.name]
+    (form?.touched?.[name] || form?.submitCount > 0)
+      ? form?.errors?.[name]
       : undefined
 
   const errorMessage =
-    rawError && rawError !== `${props.field?.name} is a required field`
+    rawError && rawError !== `${name} is a required field`
       ? rawError
       : undefined
 
   const showError = Boolean(rawError)
 
-  const [state, setState] = useState({
-    loading: false,
-    nothing: false,
-    data: [],
-    query: '',
-    selectedIndex: -1,
-    boxPosition: null,
-  })
+  // --- Estado ---
+  const [query, setQuery] = useState('')
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [nothing, setNothing] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [boxPosition, setBoxPosition] = useState(null)
+  
+  // --- Debounce ---
+  const debouncedQuery = useDebounce(query, 300);
+  
+  // --- Variáveis Derivadas ---
+  const valueText = value ? text(value) : query
+  const isBoxOpen = data.length > 0 || nothing
 
-  const updateBoxPosition = () => {
+  // --- Handlers (Memoizados com useCallback) ---
+
+  const updateBoxPosition = useCallback(() => {
     const rect = ref.current?.getBoundingClientRect()
     if (rect) {
-      setState((prev) => ({
-        ...prev,
-        boxPosition: {
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-        },
-      }))
+      setBoxPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      })
     }
-  }
+  }, [])
 
-  // Esta função é chamada ao DIGITAR
-  const handleInputChange = async (e) => {
+  /**
+   * Chamado ao digitar no input (onChange)
+   */
+  const handleInputChange = useCallback((e) => {
+    if (isClearingRef.current) return
+    if (value) return
+
+    const newQuery = e.target.value
+    setQuery(newQuery)
+    
+    // 👇 *** MUDANÇA 1: Ativa o loading IMEDIATAMENTE ***
+    setLoading(true)
+    
+  }, [value]) 
+
+  /**
+   * Chamado ao clicar no (X) para limpar
+   */
+  const handleClear = useCallback((e) => {
+    e.preventDefault() 
+    isClearingRef.current = true // ATIVA A FLAG
+
+    if (form?.setFieldValue) {
+      form.setFieldValue(name, null)
+    }
+    if (onChange) {
+      onChange(null)
+    }
+
+    setQuery('')
+    setData([])
+    setNothing(false)
+    setLoading(false) // Desliga o loading imediatamente
+    setSelectedIndex(-1)
+    inputRef.current?.focus()
+    
+  }, [form, name, onChange])
+
+  /**
+   * Chamado ao clicar na (Lupa) para buscar (IMEDIATO)
+   */
+  const handleSearch = useCallback(async (e) => {
+    e.preventDefault()
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     try {
-      // 1. Verifica se o 'clear' foi acionado. Se sim, para tudo.
-      if (isClearingRef.current) {
-        return 
-      }
+      setLoading(true) // Ativa o loading
+      setNothing(false)
+      setSelectedIndex(0)
 
-      // 2. Se um valor já está selecionado, não faz busca
-      if (props.value || props.field?.value) return
+      const resultData = await onSearch(query, controller.signal) 
 
-      const query = e?.target?.value
+      setData(resultData)
+      setNothing(resultData.length === 0)
+      setLoading(false) // Desliga o loading no sucesso
 
-      updateBoxPosition()
-
-      // 3. Aborta busca anterior
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      // 4. Cria novo controller (AQUI ESTAVA O ERRO DE DIGITAÇÃO)
-      const controller = new AbortController() 
-      abortControllerRef.current = controller
-
-      setState((prev) => ({
-        ...prev,
-        query: query || '', 
-        selectedIndex: 0,
-        loading: true,
-        nothing: false,
-      }))
-
-      // 5. FAZ A BUSCA (inclusive com string vazia, se o usuário apagar)
-      const data = await props.onSearch(query || '', controller.signal)
-
-      setState((prev) => ({
-        ...prev,
-        data,
-        nothing: data.length === 0,
-        loading: false,
-      }))
     } catch (error) {
-      if (error.name === 'AbortError') {
-        return // requisição cancelada — ignora
-      }
+      if (error.name === 'AbortError') return
       console.error(error)
-      setState((prev) => ({ ...prev, loading: false }))
+      setLoading(false) // Desliga o loading no erro
     }
-  }
 
-  const handleKeyDown = (e) => {
-    const { selectedIndex, data, nothing } = state
+    inputRef.current?.focus()
+  }, [onSearch, query]) 
+
+  const handleSuggestionClick = useCallback((item) => {
+    if (form?.setFieldValue) {
+      form.setFieldValue(name, item)
+    }
+    if (onChange) {
+      onChange(item)
+    }
+
+    setQuery('')
+    setData([])
+    setNothing(false)
+    setLoading(false) // Desliga o loading ao selecionar
+    setSelectedIndex(-1)
+    inputRef.current?.focus()
+  }, [form, name, onChange])
+
+  const handleKeyDown = useCallback((e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setState((prev) => ({
-        ...prev,
-        selectedIndex: Math.min(prev.selectedIndex + 1, data.length - 1),
-      }))
+      setSelectedIndex(prev => Math.min(prev + 1, data.length - 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setState((prev) => ({
-        ...prev,
-        selectedIndex: Math.max(prev.selectedIndex - 1, 0),
-      }))
+      setSelectedIndex(prev => Math.max(prev - 1, 0))
     } else if (e.key === 'Enter' && selectedIndex !== -1 && data[selectedIndex]) {
       e.preventDefault()
       handleSuggestionClick(data[selectedIndex])
     } else if (e.key === 'Escape') {
-      if (data.length > 0 || nothing) {
+      if (isBoxOpen) {
         e.preventDefault()
-        setState((prev) => ({ ...prev, data: [], nothing: false }))
+        setData([])
+        setNothing(false)
+        setLoading(false) // Desliga o loading ao pressionar ESC
       }
     }
-  }
+  }, [data, selectedIndex, isBoxOpen, handleSuggestionClick])
 
-  const handleSuggestionClick = (item) => {
-    if (props.form?.setFieldValue) {
-      props.form.setFieldValue(props.field?.name, item)
-    }
-    if (props.onChange) {
-      props.onChange(item)
-    }
-
-    setState((prev) => ({ ...prev, query: '', data: [], nothing: false }))
-    inputRef.current?.focus()
-  }
-
-  const handleClickOutside = (event) => {
+  const handleClickOutside = useCallback((event) => {
     if (!ref.current?.contains(event.target)) {
-      setState((prev) => ({ ...prev, data: [], nothing: false }))
+      setData([])
+      setNothing(false)
+      // Não desliga o loading aqui, a busca pode estar em andamento
     }
-  }
+  }, [])
 
-  // Esta função é chamada ao CLICAR NO (X)
-  const handleClear = () => {
-    // 1. ATIVA A FLAG
-    isClearingRef.current = true 
 
-    // 2. Limpa os valores (isso vai disparar o 'onChange' várias vezes)
-    if (props.form?.setFieldValue) {
-      props.form.setFieldValue(props.field?.name, null)
-    }
-    if (props.onChange) {
-      props.onChange(null)
-    }
-
-    // 3. Limpa o estado interno (query, dados, etc.)
-    setState((prev) => ({ ...prev, query: '', data: [], nothing: false, loading: false }))
-    inputRef.current?.focus()
-
-    // 4. DESATIVA A FLAG (só depois que todos os 'onChange' já rodaram)
-    // O setTimeout(0) joga esta função para o final da fila de eventos,
-    // garantindo que o handleInputChange veja 'isClearingRef.current = true'
-    setTimeout(() => {
-      isClearingRef.current = false
-    }, 0)
-  }
-
-  // Esta função é chamada ao CLICAR NA LUPA
-  const handleSearch = async () => {
-    const query = state.query 
-    
-    try {
-      updateBoxPosition()
-
+  // --- Efeitos (useEffect) ---
+  
+  /**
+   * 👇 *** MUDANÇA 2: useEffect da BUSCA COM DEBOUNCE ***
+   */
+  useEffect(() => {
+    const doSearch = async (searchQuery) => {
       if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+        abortControllerRef.current.abort();
       }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-      const controller = new AbortController()
-      abortControllerRef.current = controller
+      // setLoading(true); // 👈 REMOVIDO DAQUI
+      setNothing(false);
+      setSelectedIndex(0);
+      updateBoxPosition();
 
-      setState((prev) => ({
-        ...prev,
-        query,
-        selectedIndex: 0,
-        loading: true,
-        nothing: false,
-      }))
-
-      // Chama o onSearch diretamente
-      const data = await props.onSearch(query, controller.signal) 
-
-      setState((prev) => ({
-        ...prev,
-        data,
-        nothing: data.length === 0,
-        loading: false,
-      }))
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        return
+      try {
+        const resultData = await onSearch(searchQuery || '', controller.signal);
+        
+        if (!controller.signal.aborted) {
+          setData(resultData);
+          setNothing(resultData.length === 0);
+          setLoading(false); // Desliga o loading no sucesso
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error(error);
+          setLoading(false); // Desliga o loading no erro
+        }
+        // Se for AbortError, não faz nada, pois o loading
+        // será controlado pela *próxima* busca.
       }
-      console.error(error)
-      setState((prev) => ({ ...prev, loading: false }))
+    };
+
+    // 1. Se um valor foi selecionado, para o loading e não busca
+    if (value) {
+      setLoading(false)
+      return;
     }
 
-    inputRef.current?.focus()
-  }
+    // 2. Se foi um 'clear' ou 'blur', para o loading e não busca
+    if (isClearingRef.current) {
+      isClearingRef.current = false; 
+      setLoading(false)
+      return; 
+    }
+    
+    // 3. Pula a busca (e para o loading) na montagem inicial
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      setLoading(false)
+      return;
+    }
 
+    // 4. Se chegamos aqui, é uma digitação real. BUSCA.
+    doSearch(debouncedQuery);
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [debouncedQuery, value, onSearch, updateBoxPosition]); 
+
+
+  /**
+   * Efeito para fechar ao clicar fora
+   */
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [handleClickOutside])
 
+  /**
+   * Efeito para rolar a sugestão selecionada para a vista
+   */
   useEffect(() => {
     if (selectedItemRef.current) {
       selectedItemRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
-  }, [state.selectedIndex])
+  }, [selectedIndex]) 
 
-  const { query, data, selectedIndex, loading, nothing, boxPosition } = state
+  /**
+   * Efeito para gerenciar a posição do Portal
+   */
+  useEffect(() => {
+    if (isBoxOpen) {
+      updateBoxPosition() 
+      window.addEventListener('scroll', updateBoxPosition, true)
+      window.addEventListener('resize', updateBoxPosition)
+      
+      return () => {
+        window.removeEventListener('scroll', updateBoxPosition, true)
+        window.removeEventListener('resize', updateBoxPosition)
+      }
+    } else {
+      setBoxPosition(null) 
+    }
+  }, [isBoxOpen, updateBoxPosition]) 
 
-  const fieldName = props.field?.name
-  const form = props.form
 
-  const helperText =
-    rawError && rawError !== `${fieldName} is a required field` ? rawError : ''
-  const error = Boolean(rawError)
+  // --- Renderização ---
 
-  const valueText = props.field
-    ? props.field.value
-      ? props.text(props.field.value)
-      : query
-    : props.value
-    ? props.text(props.value)
-    : query
-
-  const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
+  const suggestionsContent = isBoxOpen && boxPosition && (
     <SuggestionsBox
       style={{
         top: boxPosition.top,
@@ -278,24 +354,25 @@ export const AutoComplete = (props) => {
     >
       {data.map((item, index) => (
         <Suggestion
-          key={index}
+          key={index} 
           ref={index === selectedIndex ? selectedItemRef : null}
           className={index === selectedIndex ? 'selected' : ''}
-          onMouseDown={(e) => {
+          onMouseDown={(e) => { 
             e.preventDefault()
             handleSuggestionClick(item)
           }}
         >
-          {typeof props.children === 'function'
-            ? props.children(item)
-            : props.renderSuggestion(item)}
+          {typeof children === 'function'
+            ? children(item)
+            : renderSuggestion(item)}
         </Suggestion>
       ))}
       {nothing && (
         <Nothing
           onMouseDown={(e) => {
             e.preventDefault()
-            setState((prev) => ({ ...prev, data: [], nothing: false }))
+            setData([])
+            setNothing(false)
           }}
         >
           Nenhum resultado encontrado!
@@ -307,46 +384,53 @@ export const AutoComplete = (props) => {
   return (
     <AutocompleteContainer ref={ref}>
       <MuiTextField
+        {...rest} 
         autoComplete="off"
         size={props.size ?? 'small'}
-        inputRef={inputRef}
-        name={fieldName ?? props.name}
-        label={props.label}
         variant={props.variant ?? 'filled'}
+        inputRef={inputRef}
+        name={name}
         value={valueText}
-        onChange={handleInputChange}
+        onChange={handleInputChange} 
+        // 👇 *** MUDANÇA 3: onBlur agora também desliga o loading ***
         onBlur={(e) => {
-          props.field?.onBlur(e)
-          if (!props.value && query) setState((prev) => ({ ...prev, query: '' }))
+          field?.onBlur(e) 
+          if (!value && query) {
+            isClearingRef.current = true; 
+            setQuery(''); 
+            setLoading(false); // Desliga o loading
+          }
+          setData([])
         }}
         onKeyDown={handleKeyDown}
-        placeholder={props.placeholder}
         fullWidth
         error={showError}
         helperText={errorMessage}
         InputProps={{
+          ...rest.InputProps, 
           endAdornment: (
             <InputAdornment position="end">
               {loading ? (
                 <IconButton tabIndex={-1} size="small" edge="end" disabled>
                   <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
                 </IconButton>
-              ) : valueText ? (
+              ) : valueText ? ( 
                 <IconButton
                   tabIndex={-1}
                   size="small"
                   edge="end"
-                  onClick={handleClear}
+                  onMouseDown={handleClear} 
                   disabled={props.disabled}
                 >
                   <i className="ri-close-line" style={{ fontSize: 20 }} />
                 </IconButton>
-              ) : (
+              ) : ( 
                 <IconButton
                   tabIndex={-1}
                   size="small"
                   edge="end"
-                  onClick={handleSearch}
+                  onMouseDown={handleSearch} 
+                  disabled={props.disabled}
                 >
                   <i className="ri-search-line" style={{ fontSize: 20 }} />
                 </IconButton>
@@ -354,10 +438,9 @@ export const AutoComplete = (props) => {
             </InputAdornment>
           ),
         }}
-        disabled={props.disabled}
       />
 
-      {ReactDOM.createPortal(suggestionsContent, document.body)}
+      {suggestionsContent && ReactDOM.createPortal(suggestionsContent, document.body)}
     </AutocompleteContainer>
   )
 }

@@ -7,7 +7,7 @@ import {
   Radio
 } from '@mui/material'
 import { AutoComplete } from '@/components/field/AutoComplete'
-import { getBankAccounts } from '@/utils/search'
+import * as search from '@/utils/search'
 import { PluginRenderer } from '@/views/settings/integrations/plugins'
 import * as statements from '@/app/server/finances/statements'
 import _ from 'lodash'
@@ -98,7 +98,7 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
           label="Conta bancária"
           value={bankAccount}
           text={(bankAccount) => `${bankAccount.name} - ${bankAccount.agency} / ${bankAccount.number}`}
-          onSearch={getBankAccounts}
+          onSearch={search.bankAccount}
           renderSuggestion={(bankAccount) => (
             <div className="flex items-start space-x-2">
               {bankAccount.bank?.icon && (

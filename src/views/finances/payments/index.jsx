@@ -12,7 +12,7 @@ import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { ViewPaymentInstallment } from './view.payment-installment'
 import { format, parseISO } from 'date-fns'
-import { getCompany, getFinancialCategory, getPartner, getPaymentMethod } from '@/utils/search'
+import * as search from '@/utils/search'
 import { Field, Formik } from 'formik'
 import { AutoComplete, SelectField, TextField } from '@/components/field'
 
@@ -77,7 +77,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 name="company"
                 label="Filial"
                 text={(company) => company?.surname || ''}
-                onSearch={getCompany}
+                onSearch={search.company}
                 renderSuggestion={(item) => (
                     <span>{item.surname}</span>
                 )}
@@ -97,7 +97,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 value={values.receiver}
                 text={(p) => p?.surname}
                 onChange={(val) => setFieldValue("receiver", val)}
-                onSearch={getPartner}
+                onSearch={search.partner}
               >
                 {(item) => <span>{item.surname}</span>}
               </AutoComplete>
@@ -108,7 +108,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 value={values.category}
                 text={(category) => category?.description}
                 onChange={(category) => setFieldValue("category", category)}
-                onSearch={(search) => getFinancialCategory(search, 2)}
+                onSearch={(query) => search.financialCategory(query, 2)}
               >
                 {(item) => <span>{item.description}</span>}
               </AutoComplete>

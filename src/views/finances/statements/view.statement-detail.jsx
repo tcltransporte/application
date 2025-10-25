@@ -13,7 +13,7 @@ import _ from 'lodash'
 
 // --- Importações de Componentes e Funções de Serviço (VERIFIQUE ESTES CAMINHOS) ---
 import { AutoComplete } from '@/components/field/AutoComplete'
-import { getBankAccounts, getFinancialCategory, getPartner, getUser } from '@/utils/search'
+import * as search from '@/utils/search'
 import { ViewVinculePayment } from './view.vincule-payment'
 import { ViewVinculeReceivement } from './view.vincule-receivement'
 import * as statements from '@/app/server/finances/statements'
@@ -751,12 +751,12 @@ function ConciliationForm({ statementData, statementDataId, isSelected, initialV
                     </TableCell>
                     <TableCell sx={{ p: 1 }} colSpan={2}>
                         {(values.type === '1' || values.type === '2') && (<>
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Cliente" name="partner" text={(partner) => partner?.surname} onSearch={getPartner} renderSuggestion={(item) => (<span>{item.surname}</span>)} />
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Categoria" name="category" text={(category) => category?.description || ''} onSearch={(search) => getFinancialCategory(search)} renderSuggestion={(item) => (<span>{item.description}</span>)} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Cliente" name="partner" text={(partner) => partner?.surname} onSearch={search.partner} renderSuggestion={(item) => (<span>{item.surname}</span>)} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Categoria" name="category" text={(category) => category?.description || ''} onSearch={(value) => search.financialCategory(value)} renderSuggestion={(item) => (<span>{item.description}</span>)} />
                         </>)}
                         {(values.type === 'transfer') && (<>
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={getBankAccounts} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
-                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={getBankAccounts} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Origem" name="origin" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={search.bankAccount} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
+                            <Field variant="outlined" sx={{ backgroundColor: '#fff' }} component={AutoComplete} placeholder="Destino" name="destination" text={(b) => b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''} onSearch={search.bankAccount} renderSuggestion={(b) => <span>{b ? `${b.name}${b.agency ? ` - ${b.agency}` : ''}${b.number ? ` / ${b.number}` : ''}` : ''}</span>} />
                         </>)}
                     </TableCell>
                     <TableCell sx={{ p: 1 }} align="right">{values.type && <Field component={NumericField} variant="outlined" placeholder="Valor" name="amount" type="text" sx={{ backgroundColor: '#fff' }} />}</TableCell>
