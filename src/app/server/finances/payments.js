@@ -8,6 +8,7 @@ import _ from "lodash"
 import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
 import { ptBR } from "date-fns/locale"
+import { authentication } from "../sincronize/tiny"
 
 export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
 
@@ -124,8 +125,6 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
 export async function findOne({ installmentId }) {
 
-    const session = await getServerSession(authOptions)
-
     const db = new AppContext()
 
     const payment = await db.FinancialMovementInstallment.findOne({
@@ -155,11 +154,23 @@ export async function findOne({ installmentId }) {
 
 export async function insert(formData) {
 
+  const session = await getServerSession(authOptions)
+
   if (_.isEmpty(formData.documentNumber)) {
     formData.documentNumber = Math.floor(100000000 + Math.random() * 900000000)
   }
-
+  
   const db = new AppContext()
+
+  const companyIntegration = await db.CompanyIntegration.findOne({
+      attributes: ['id', 'options'],
+      where: [
+          {companyId: session.company.codigo_empresa_filial},
+          {integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07'}
+      ]
+  })
+
+  const options = JSON.parse(companyIntegration.options)
 
   let installment2
 
@@ -190,7 +201,7 @@ export async function insert(formData) {
       }
     }
 
-    const url = `https://api.tiny.com.br/api2/conta.pagar.incluir.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
+    const url = `https://api.tiny.com.br/api2/conta.pagar.incluir.php?token=${options.token}&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -202,27 +213,15 @@ export async function insert(formData) {
 
     const incluir = await response.json();
 
-    if (incluir?.retorno?.status === 'Erro') {
-      throw new Error(incluir?.retorno?.registros[0].registro?.erros[0].erro)
-      //console.log('suspeita 1');
-      //await db.StatementDataConciled.update(
-      //  { message: incluir.retorno.registros[0].registro.erros[0].erro },
-      //  { where: [{ id: item.id }], transaction }
-      //);
-      //return;
+    if (incluir?.retorno?.status !== 'OK') {
+      throw new Error(`Erro incluir conta tiny: ${incluir?.retorno?.registros[0].registro?.erros[0].erro}`)
     }
 
-    let paymentExternal
-
-    if (incluir?.retorno?.status === 'OK') {
-      paymentExternal = {
-        name: formData.name,
-        sourceId: incluir.retorno.registros[0].registro.id,
-        amount: parseFloat(formData?.amount),
-        description: historico,
-      };
-      console.log(paymentExternal)
-    }
+    const paymentExternal = {
+      sourceId: incluir.retorno.registros[0].registro.id,
+      amount: parseFloat(formData?.amount),
+      description: historico,
+    };
     /* TINY INTEGRAÇÃO */
 
     const movement = await db.FinancialMovement.create({
@@ -232,8 +231,7 @@ export async function insert(formData) {
         centerCostId: formData.centerCost?.id,
         categoryId: formData.category?.id,
         partnerId: formData.receiver?.codigo_pessoa,
-        observation: formData.observation,
-        externalId: paymentExternal.sourceId
+        observation: formData.observation
     }, {transaction})
 
     let installment = 1
@@ -248,11 +246,12 @@ export async function insert(formData) {
         }
 
         installment2 = await db.FinancialMovementInstallment.create({
-            ...item,
-            financialMovementId: movement.codigo_movimento,
-            paymentMethodId: formData.paymentMethod?.id,
-            bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
-            observation
+          ...item,
+          financialMovementId: movement.codigo_movimento,
+          paymentMethodId: formData.paymentMethod?.id,
+          bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
+          observation,
+          externalId: paymentExternal.sourceId
         }, {transaction})
 
         //movement.dataValues.installments.push(installment2)
@@ -391,8 +390,6 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
     historico: observation
   }
   
-  console.log(conta)
-
   const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
     JSON.stringify({
       conta: conta

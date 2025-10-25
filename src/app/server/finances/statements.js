@@ -158,8 +158,6 @@ export async function findOne({ statementId }) {
 
   const ret = statement.get({ plain: true })
 
-  console.log(ret)
-
   return ret
 
 }
@@ -199,8 +197,6 @@ export async function create(formData) {
     const settings = JSON.parse(options.statement)
 
     for (const item of formData.statement.statementData) {
-
-      console.log(item)
 
       const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
 
@@ -577,6 +573,8 @@ export async function concile({id}) {
     if (item.type == 2) {
       try {
 
+        console.log('payment')
+
         if (!item.paymentId) {
 
           const installment = await payments.insert({
@@ -613,11 +611,10 @@ export async function concile({id}) {
           date: item.statementData.entryDate,
           amount: item.amount,
           bankAccountId: item.statementData.statement.bankAccountId,
-          observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
+          observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference || ''}`
         })
 
         await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
-      
 
       } catch (error) {
         await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
@@ -630,7 +627,7 @@ export async function concile({id}) {
         amount: item.amount,
         originId: item.origin?.externalId,
         destinationId: item.destination?.externalId,
-        observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
+        observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference || ''}`
       })
 
       await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})

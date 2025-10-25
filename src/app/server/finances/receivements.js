@@ -125,8 +125,6 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
 export async function findOne({ installmentId }) {
 
-    const session = await getServerSession(authOptions)
-
     const db = new AppContext()
 
     const payment = await db.FinancialMovementInstallment.findOne({
@@ -156,11 +154,23 @@ export async function findOne({ installmentId }) {
 
 export async function insert(formData) {
   
+  const session = await getServerSession(authOptions)
+
   if (_.isEmpty(formData.documentNumber)) {
     formData.documentNumber = Math.floor(100000000 + Math.random() * 900000000)
   }
 
   const db = new AppContext()
+
+  const companyIntegration = await db.CompanyIntegration.findOne({
+      attributes: ['id', 'options'],
+      where: [
+          {companyId: session.company.codigo_empresa_filial},
+          {integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07'}
+      ]
+  })
+
+  const options = JSON.parse(companyIntegration.options)
 
   let installment2
 
@@ -193,7 +203,7 @@ export async function insert(formData) {
 
     await rateLimitedFetch()
 
-    const url = `https://api.tiny.com.br/api2/conta.receber.incluir.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
+    const url = `https://api.tiny.com.br/api2/conta.receber.incluir.php?token=${options.token}&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -205,26 +215,14 @@ export async function insert(formData) {
 
     const incluir = await response.json()
 
-    if (incluir?.retorno?.status === 'Erro') {
-      throw new Error(incluir?.retorno?.registros[0].registro?.erros[0].erro)
-      console.log(`ERROR`)
-      //console.log('suspeita 1');
-      //await db.StatementDataConciled.update(
-      //  { message: incluir.retorno.registros[0].registro.erros[0].erro },
-      //  { where: [{ id: item.id }], transaction }
-      //);
-      //return;
+    if (incluir?.retorno?.status !== 'OK') {
+      throw new Error(`Erro incluir conta tiny: ${incluir?.retorno?.registros[0].registro?.erros[0].erro}`)
     }
 
-    let receivementExternal
-
-    if (incluir?.retorno?.status === 'OK') {
-      receivementExternal = {
-        name: formData.name,
-        sourceId: incluir.retorno.registros[0].registro.id,
-        amount: parseFloat(formData?.amount),
-        description: historico,
-      }
+    const receivementExternal = {
+      sourceId: incluir.retorno.registros[0].registro.id,
+      amount: parseFloat(formData?.amount),
+      description: historico,
     }
     /* TINY INTEGRAÇÃO */
 
@@ -235,8 +233,7 @@ export async function insert(formData) {
         centerCostId: formData.centerCost?.id,
         categoryId: formData.category?.id,
         partnerId: formData.receiver?.codigo_pessoa,
-        observation: formData.observation,
-        externalId: receivementExternal.sourceId
+        observation: formData.observation
     }, {transaction})
 
     let installment = 1
@@ -253,7 +250,8 @@ export async function insert(formData) {
             financialMovementId: movement.codigo_movimento,
             paymentMethodId: formData.paymentMethod?.id,
             bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
-            observation
+            observation,
+            externalId: receivementExternal.sourceId
         }, {transaction})
 
         installment++

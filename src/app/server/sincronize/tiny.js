@@ -227,86 +227,74 @@ export async function partners({search = " "}) {
         search = " "
     }
 
-    const session = await getServerSession(authOptions);
-    const db = new AppContext();
-
-    /*
-    const companyIntegration = await db.CompanyIntegration.findOne({
-      attributes: ["options"],
-      where: [
-        {
-          integrationId: "E6F39F15-5446-42A7-9AC4-A9A99E604F07",
-          companyId: session.company.codigo_empresa_filial,
-        },
-      ],
-    });
-
-    if (!companyIntegration) return;
-
-    const options = JSON.parse(companyIntegration.options);
-    */
+    const session = await getServerSession(authOptions)
 
     const options = await authentication()
     
-    let page = 1;
-    let totalPages = 1;
+    const db = new AppContext()
+    
+    await db.transaction(async (transaction) => {
 
-    do {
-      
-      const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${options.token}&formato=json&pesquisa=${encodeURIComponent(search)}&pagina=${page}`;
+      let page = 1
+      let totalPages = 1
 
-      console.log(`🔹 Buscando página ${page} de contatos`);
+      do {
 
-      await rateLimitedFetch();
+        const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${options.token}&formato=json&pesquisa=${encodeURIComponent(search)}&pagina=${page}`;
 
-      const res = await fetch(url, options);
+        console.log(`🔹 Buscando página ${page} de contatos`)
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+        await rateLimitedFetch()
 
-      const r = await res.json();
-      
-      if (r?.retorno.status === "Erro") {
-        throw new Error(r.retorno.erros[0].erro);
-      }
+        const res = await fetch(url, options)
 
-      totalPages = Number(r.retorno.numero_paginas) || 1;
-
-      await db.transaction(async (transaction) => {
-        const externalIdsFromApi = _.map(
-          r.retorno.contatos,
-          (item) => _.get(item, "contato.id")
-        );
-
-        const existingPartners = await db.Partner.findAll({
-          where: { externalId: externalIdsFromApi },
-          transaction,
-          attributes: ["externalId"],
-        });
-
-        const existingExternalIds = existingPartners.map((p) => p.externalId);
-
-        const newPartners = _(r.retorno.contatos)
-          .filter((item) => !_.includes(existingExternalIds, _.get(item, "contato.id")))
-          .map((item) => ({
-            companyId: session.company.codigo_empresa_filial,
-            externalId: _.get(item, "contato.id"),
-            surname: String(_.get(item, "contato.nome")),
-            cpfCnpj: String(_.get(item, "contato.cpf_cnpj", "")).replace(/\D/g, ""),
-            isActive: _.get(item, "contato.situacao") == 'Ativo' ? 1 : 0
-          }))
-          .value();
-
-        if (newPartners.length > 0) {
-          await db.Partner.bulkCreate(newPartners, { transaction });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
         }
-      });
 
-      page++;
-    } while (page <= totalPages);
+        const r = await res.json();
+        
+        if (r?.retorno.status === "Erro") {
+          throw new Error(r.retorno.erros[0].erro);
+        }
+
+        totalPages = Number(r.retorno.numero_paginas) || 1;
+
+          const externalIdsFromApi = _.map(
+            r.retorno.contatos,
+            (item) => _.get(item, "contato.id")
+          );
+
+          const existingPartners = await db.Partner.findAll({
+            where: { externalId: externalIdsFromApi },
+            transaction,
+            attributes: ["externalId"],
+          });
+
+          const existingExternalIds = existingPartners.map((p) => p.externalId);
+
+          const newPartners = _(r.retorno.contatos)
+            .filter((item) => !_.includes(existingExternalIds, _.get(item, "contato.id")))
+            .map((item) => ({
+              companyId: session.company.codigo_empresa_filial,
+              externalId: _.get(item, "contato.id"),
+              surname: String(_.get(item, "contato.nome")),
+              cpfCnpj: String(_.get(item, "contato.cpf_cnpj", "")).replace(/\D/g, ""),
+              isActive: _.get(item, "contato.situacao") == 'Ativo' ? 1 : 0
+            }))
+            .value();
+
+          if (newPartners.length > 0) {
+            await db.Partner.bulkCreate(newPartners, { transaction });
+          }
+
+        page++;
+      } while (page <= totalPages);
+
+    });
 
     console.log("✅ Sincronização de parceiros concluída");
+
   } catch (error) {
     console.error("Erro em getTinyPartner:", error.message);
     throw error
@@ -474,7 +462,7 @@ export async function receivements({ start, end, situation = 'aberto' }) {
   if (!options) return;
 
   await categories({ search: '' });
-  await partners({ search: '' });
+  //await partners({ search: '' });
 
   const session = await getServerSession(authOptions);
   const db = new AppContext();

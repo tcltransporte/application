@@ -1,16 +1,4 @@
-'use server'
-
-import { AppContext } from "@/database"
-import { authOptions } from "@/libs/auth"
-import _ from "lodash"
-import { getServerSession } from "next-auth"
-import { Sequelize } from "sequelize"
-//import { getTinyCategories, getTinyPartner } from "./integrations/tiny"
-
-import * as sincronize from '@/app/server/sincronize'
-
-
-export async function getCompany(search) {
+export async function company(search) {
 
   const session = await getServerSession(authOptions);
 
@@ -33,7 +21,7 @@ export async function getCompany(search) {
 
 }
 
-export async function getUser (search) {
+export async function user (search) {
     
     const session = await getServerSession(authOptions)
 
@@ -80,61 +68,41 @@ export async function getUser (search) {
     
 }
 
-export async function getPartner(search) {
+export async function partner(search, signal) {
 
-    const session = await getServerSession(authOptions);
-
-    await sincronize.partners({search})
-
-    const db = new AppContext();
-
-    const where = []
-
-    where.push({ '$nome$': { [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
-
-    where.push({ '$companyId$': session.company.codigo_empresa_filial })
-
-    const partners = await db.Partner.findAll({
-        attributes: ['codigo_pessoa', 'surname'],
-        order: [['surname', 'asc']],
-        where: where,
-        limit: 20,
-        offset: 0,
-    });
-
-    return partners.map((item) => item.get({ plain: true }));
-
-}
-
-export async function getFinancialCategory (search) {
-
-    const session = await getServerSession(authOptions)
-
-    await sincronize.categories({search})
-
-    const db = new AppContext()
-
-    const where = []
-
-    where.push({'$companyId$': session.company.codigo_empresa_filial})
-
-    where.push({'$descricao$': {[Sequelize.Op.like]: `%${search.replace(' ', "%").toUpperCase()}%`}})
-
-    //where.push({'$codigo_tipo_operacao$': operation})
-
-    const financialCategories = await db.FinancialCategory.findAll({
-        attributes: ['id', 'description'],
-        where,
-        order: [['description', 'asc']],
-        limit: 20,
-        offset: 0,
+    const response = await fetch('/api/search/partner', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ search }),
+        signal
     })
 
-    return _.map(financialCategories, (item) => item.get({ plain: true }))
-    
+    const data = await response.json()
+
+    return data
+
 }
 
-export async function getBanks (search) {
+export async function financialCategory(search, signal) {
+
+    const response = await fetch('/api/search/financial-category', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ search }),
+        signal
+    })
+
+    const data = await response.json()
+
+    return data
+
+}
+
+export async function bank(search) {
     
     const session = await getServerSession(authOptions)
 
@@ -154,39 +122,24 @@ export async function getBanks (search) {
     
 }
 
+export async function bankAccount(search, signal) {
 
-export async function getBankAccounts (search) {
-    
-    const session = await getServerSession(authOptions)
-
-    const db = new AppContext()
-
-    const where = []
-
-    where.push({'$CodigoEmpresaFilial$': session.company.codigo_empresa_filial})
-
-    where.push({ agencia: { [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
-
-    const bankAccounts = await db.BankAccount.findAll({
-        attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'],
-        include: [
-            {model: db.Bank, as: 'bank', attributes: ['id', 'name']},
-            {model: db.BankAccountIntegration, as: 'bankAccountIntegrations', attributes: ['id', 'typeBankAccountIntegrationId'], include: [
-                {model: db.CompanyIntegration, as: 'companyIntegration', attributes: ['id', 'integrationId']}
-            ]}
-        ],
-        where,
-        order: [['agency', 'asc']],
-        limit: 20,
-        offset: 0,
+    const response = await fetch('/api/search/bank-account', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ search }),
+        signal
     })
 
-    return _.map(bankAccounts, (user) => user.get({ plain: true }))
-    
+    const data = await response.json()
+
+    return data
+
 }
 
-
-export async function getCenterCost (search) {
+export async function centerCost(search) {
 
     const session = await getServerSession(authOptions)
 
@@ -208,7 +161,7 @@ export async function getCenterCost (search) {
     
 }
 
-export async function getPaymentMethod (search) {
+export async function paymentMethod(search) {
     
     const session = await getServerSession(authOptions)
 

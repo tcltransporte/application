@@ -41,10 +41,20 @@ export const AutoComplete = (props) => {
   const ref = useRef()
   const inputRef = useRef()
   const selectedItemRef = useRef()
+  const abortControllerRef = useRef(null)
+  // Esta flag é a chave para diferenciar um "limpar" de uma "digitação"
+  const isClearingRef = useRef(false) 
 
-  
-  const rawError = (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0) ? props.form?.errors?.[props.field?.name] : undefined
-  const errorMessage = rawError && rawError !== `${props.field?.name} is a required field` ? rawError : undefined
+  const rawError =
+    (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0)
+      ? props.form?.errors?.[props.field?.name]
+      : undefined
+
+  const errorMessage =
+    rawError && rawError !== `${props.field?.name} is a required field`
+      ? rawError
+      : undefined
+
   const showError = Boolean(rawError)
 
   const [state, setState] = useState({
@@ -53,58 +63,70 @@ export const AutoComplete = (props) => {
     data: [],
     query: '',
     selectedIndex: -1,
-    boxPosition: null
+    boxPosition: null,
   })
 
   const updateBoxPosition = () => {
     const rect = ref.current?.getBoundingClientRect()
     if (rect) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         boxPosition: {
           top: rect.bottom + window.scrollY,
           left: rect.left + window.scrollX,
-          width: rect.width
-        }
+          width: rect.width,
+        },
       }))
     }
   }
 
-  const requestIdRef = useRef(0)
-
+  // Esta função é chamada ao DIGITAR
   const handleInputChange = async (e) => {
     try {
+      // 1. Verifica se o 'clear' foi acionado. Se sim, para tudo.
+      if (isClearingRef.current) {
+        return 
+      }
+
+      // 2. Se um valor já está selecionado, não faz busca
       if (props.value || props.field?.value) return
 
       const query = e?.target?.value
+
       updateBoxPosition()
 
-      const currentRequestId = ++requestIdRef.current
+      // 3. Aborta busca anterior
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
 
-      setState(prev => ({
+      // 4. Cria novo controller (AQUI ESTAVA O ERRO DE DIGITAÇÃO)
+      const controller = new AbortController() 
+      abortControllerRef.current = controller
+
+      setState((prev) => ({
         ...prev,
-        query,
+        query: query || '', 
         selectedIndex: 0,
         loading: true,
-        nothing: false
+        nothing: false,
       }))
 
-      const data = await props.onSearch(query)
+      // 5. FAZ A BUSCA (inclusive com string vazia, se o usuário apagar)
+      const data = await props.onSearch(query || '', controller.signal)
 
-      // só aplica se for a requisição mais recente
-      if (currentRequestId === requestIdRef.current) {
-        setState(prev => ({
-          ...prev,
-          data,
-          nothing: data.length === 0,
-          loading: false
-        }))
-      }
+      setState((prev) => ({
+        ...prev,
+        data,
+        nothing: data.length === 0,
+        loading: false,
+      }))
     } catch (error) {
-      console.error(error)
-      if (currentRequestId === requestIdRef.current) {
-        setState(prev => ({ ...prev, loading: false }))
+      if (error.name === 'AbortError') {
+        return // requisição cancelada — ignora
       }
+      console.error(error)
+      setState((prev) => ({ ...prev, loading: false }))
     }
   }
 
@@ -112,15 +134,15 @@ export const AutoComplete = (props) => {
     const { selectedIndex, data, nothing } = state
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        selectedIndex: Math.min(prev.selectedIndex + 1, data.length - 1)
+        selectedIndex: Math.min(prev.selectedIndex + 1, data.length - 1),
       }))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        selectedIndex: Math.max(prev.selectedIndex - 1, 0)
+        selectedIndex: Math.max(prev.selectedIndex - 1, 0),
       }))
     } else if (e.key === 'Enter' && selectedIndex !== -1 && data[selectedIndex]) {
       e.preventDefault()
@@ -128,7 +150,7 @@ export const AutoComplete = (props) => {
     } else if (e.key === 'Escape') {
       if (data.length > 0 || nothing) {
         e.preventDefault()
-        setState(prev => ({ ...prev, data: [], nothing: false }))
+        setState((prev) => ({ ...prev, data: [], nothing: false }))
       }
     }
   }
@@ -137,34 +159,84 @@ export const AutoComplete = (props) => {
     if (props.form?.setFieldValue) {
       props.form.setFieldValue(props.field?.name, item)
     }
-
     if (props.onChange) {
       props.onChange(item)
     }
 
-    setState(prev => ({ ...prev, query: '', data: [], nothing: false }))
+    setState((prev) => ({ ...prev, query: '', data: [], nothing: false }))
     inputRef.current?.focus()
   }
 
   const handleClickOutside = (event) => {
     if (!ref.current?.contains(event.target)) {
-      setState(prev => ({ ...prev, data: [], nothing: false }))
+      setState((prev) => ({ ...prev, data: [], nothing: false }))
     }
   }
 
+  // Esta função é chamada ao CLICAR NO (X)
   const handleClear = () => {
+    // 1. ATIVA A FLAG
+    isClearingRef.current = true 
+
+    // 2. Limpa os valores (isso vai disparar o 'onChange' várias vezes)
     if (props.form?.setFieldValue) {
       props.form.setFieldValue(props.field?.name, null)
     }
     if (props.onChange) {
       props.onChange(null)
     }
-    setState(prev => ({ ...prev, query: '' }))
+
+    // 3. Limpa o estado interno (query, dados, etc.)
+    setState((prev) => ({ ...prev, query: '', data: [], nothing: false, loading: false }))
     inputRef.current?.focus()
+
+    // 4. DESATIVA A FLAG (só depois que todos os 'onChange' já rodaram)
+    // O setTimeout(0) joga esta função para o final da fila de eventos,
+    // garantindo que o handleInputChange veja 'isClearingRef.current = true'
+    setTimeout(() => {
+      isClearingRef.current = false
+    }, 0)
   }
 
+  // Esta função é chamada ao CLICAR NA LUPA
   const handleSearch = async () => {
-    await handleInputChange({ target: { value: state.query } })
+    const query = state.query 
+    
+    try {
+      updateBoxPosition()
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
+      setState((prev) => ({
+        ...prev,
+        query,
+        selectedIndex: 0,
+        loading: true,
+        nothing: false,
+      }))
+
+      // Chama o onSearch diretamente
+      const data = await props.onSearch(query, controller.signal) 
+
+      setState((prev) => ({
+        ...prev,
+        data,
+        nothing: data.length === 0,
+        loading: false,
+      }))
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        return
+      }
+      console.error(error)
+      setState((prev) => ({ ...prev, loading: false }))
+    }
+
     inputRef.current?.focus()
   }
 
@@ -183,32 +255,49 @@ export const AutoComplete = (props) => {
 
   const fieldName = props.field?.name
   const form = props.form
-  
-  const helperText = rawError && rawError !== `${fieldName} is a required field` ? rawError : ''
+
+  const helperText =
+    rawError && rawError !== `${fieldName} is a required field` ? rawError : ''
   const error = Boolean(rawError)
 
   const valueText = props.field
-    ? props.field.value ? props.text(props.field.value) : query
-    : props.value ? props.text(props.value) : query
+    ? props.field.value
+      ? props.text(props.field.value)
+      : query
+    : props.value
+    ? props.text(props.value)
+    : query
 
   const suggestionsContent = (data.length > 0 || nothing) && boxPosition && (
-    <SuggestionsBox style={{
-      top: boxPosition.top,
-      left: boxPosition.left,
-      width: boxPosition.width
-    }}>
+    <SuggestionsBox
+      style={{
+        top: boxPosition.top,
+        left: boxPosition.left,
+        width: boxPosition.width,
+      }}
+    >
       {data.map((item, index) => (
         <Suggestion
           key={index}
           ref={index === selectedIndex ? selectedItemRef : null}
           className={index === selectedIndex ? 'selected' : ''}
-          onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(item) }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            handleSuggestionClick(item)
+          }}
         >
-          {typeof props.children === 'function' ? props.children(item) : props.renderSuggestion(item)}
+          {typeof props.children === 'function'
+            ? props.children(item)
+            : props.renderSuggestion(item)}
         </Suggestion>
       ))}
       {nothing && (
-        <Nothing onMouseDown={(e) => { e.preventDefault(); setState(prev => ({ ...prev, data: [], nothing: false })) }}>
+        <Nothing
+          onMouseDown={(e) => {
+            e.preventDefault()
+            setState((prev) => ({ ...prev, data: [], nothing: false }))
+          }}
+        >
           Nenhum resultado encontrado!
         </Nothing>
       )}
@@ -228,7 +317,7 @@ export const AutoComplete = (props) => {
         onChange={handleInputChange}
         onBlur={(e) => {
           props.field?.onBlur(e)
-          if (!props.value && query) setState(prev => ({ ...prev, query: '' }))
+          if (!props.value && query) setState((prev) => ({ ...prev, query: '' }))
         }}
         onKeyDown={handleKeyDown}
         placeholder={props.placeholder}
@@ -242,17 +331,28 @@ export const AutoComplete = (props) => {
                 <IconButton tabIndex={-1} size="small" edge="end" disabled>
                   <i className="ri-loader-4-line spin" style={{ fontSize: 20 }} />
                 </IconButton>
-              ) : (valueText ? (
-                <IconButton tabIndex={-1} size="small" edge="end" onClick={handleClear} disabled={props.disabled}>
+              ) : valueText ? (
+                <IconButton
+                  tabIndex={-1}
+                  size="small"
+                  edge="end"
+                  onClick={handleClear}
+                  disabled={props.disabled}
+                >
                   <i className="ri-close-line" style={{ fontSize: 20 }} />
                 </IconButton>
               ) : (
-                <IconButton tabIndex={-1} size="small" edge="end" onClick={handleSearch}>
+                <IconButton
+                  tabIndex={-1}
+                  size="small"
+                  edge="end"
+                  onClick={handleSearch}
+                >
                   <i className="ri-search-line" style={{ fontSize: 20 }} />
                 </IconButton>
-              ))}
+              )}
             </InputAdornment>
-          )
+          ),
         }}
         disabled={props.disabled}
       />
