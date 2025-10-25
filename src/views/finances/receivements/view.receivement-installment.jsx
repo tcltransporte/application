@@ -6,7 +6,7 @@ import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { Backdrop, CircularProgress } from "@mui/material";
 import { styles } from "@/components/styles";
-import * as payments from "@/app/server/finances/payments";
+import * as receivements from "@/app/server/finances/receivements";
 import * as search from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
@@ -17,14 +17,14 @@ import { BackdropLoading } from "@/components/BackdropLoading";
 
 const FIELD_SIZE = {
 
-	documentNumber: 2.1,
-	issueDate: 2,
+  documentNumber: 2.1,
+  issueDate: 2,
   dueDate: 2,
   scheduledDate: 2,
-	amount: 2,
-	installments: 1.9,
+  amount: 2,
+  installments: 1.9,
 
-  receiver: 5.1,
+  payer: 5.1,
   method: 3,
   bankAccount: 3.9,
 
@@ -45,7 +45,7 @@ const INTERVAL_OPTIONS = [
   { label: 'Personalizado', value: 'custom' }
 ];
 
-export const ViewPaymentInstallment = ({ installmentId, onClose }) => {
+export const ViewReceivementInstallment = ({ installmentId, onClose }) => {
 
   return installmentId === null ? <NewInstallment installmentId={installmentId} onClose={onClose} /> : <EditInstallment installmentId={installmentId} onClose={onClose} />
 
@@ -68,7 +68,7 @@ const NewInstallment = ({ installmentId, onClose }) => {
     centerCost: null,
     paymentMethod: null,
     bankAccount: null,
-    receiver: null,
+    payer: null,
     observation: '',
     installments: [],
   }
@@ -97,10 +97,10 @@ const NewInstallment = ({ installmentId, onClose }) => {
         initialValues={initialValues}
         validationSchema={Yup.object({
           documentNumber: Yup.string().required(),
-          receiver: Yup.object().required(),
+          payer: Yup.object().required(),
         })}
         onSubmit={async (values) => {
-          await payments.insert(values)
+          await receivements.insert(values)
           onClose(true)
         }}
       >
@@ -243,12 +243,12 @@ const NewInstallment = ({ installmentId, onClose }) => {
 
                   <Grid container direction="row" spacing={2}>
 
-                    <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.payer}}>
                       <Field
                         component={AutoComplete}
-                        name="receiver"
+                        name="payer"
                         label="Beneficiário"
-                        text={(receiver) => `${receiver.surname}`}
+                        text={(payer) => `${payer.surname}`}
                         onSearch={search.partner}
                         renderSuggestion={(item) => (
                           <span>{item?.surname}</span>
@@ -411,7 +411,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     const fetchInstallment = async () => {
       setLoading(true);
       try {
-        const installment = await payments.findOne({ installmentId });
+        const installment = await receivements.findOne({ installmentId });
         console.log(installment)
         setInstallment(installment);
       } catch (error) {
@@ -449,7 +449,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
       values.codigo_movimento_detalhe = installmentId;
       values.paymentMethodId = values.paymentMethod?.id || null;
 
-      await payments.update(values);
+      await receivements.update(values);
 
       onClose(true);
 
@@ -549,7 +549,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
 
                   <Grid container direction="row" spacing={2}>
 
-                    <Grid item size={{xs: 12, sm: FIELD_SIZE.receiver}}>
+                    <Grid item size={{xs: 12, sm: FIELD_SIZE.payer}}>
                       <Field
                         component={TextField}
                         type="text"

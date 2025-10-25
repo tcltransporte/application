@@ -10,11 +10,11 @@ import { getServerSession } from "next-auth"
 import Sequelize from "sequelize"
 import { authentication, rateLimitedFetch } from "../sincronize/tiny"
 
-export async function findAll({ limit = 50, offset, company, documentNumber, receiver, category, dueDate, observation, status }) {
+export async function findAll({ limit = 50, offset, company, documentNumber, payer, category, dueDate, observation, status }) {
 
   const session = await getServerSession(authOptions)
 
-  await sincronize.receivements({start: format(dueDate.start, "dd/MM/yyyy"), end: format(dueDate.end, "dd/MM/yyyy"), situation: undefined})
+  await sincronize.receivements({start: dueDate.start, end: dueDate.end})
     
   const db = new AppContext()
 
@@ -35,9 +35,9 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
     })
   }
 
-  if (receiver?.codigo_pessoa) {
+  if (payer?.codigo_pessoa) {
     whereClauses.push({
-      '$financialMovement.codigo_pessoa$': receiver.codigo_pessoa
+      '$financialMovement.codigo_pessoa$': payer.codigo_pessoa
     })
   }
 
@@ -179,7 +179,7 @@ export async function insert(formData) {
     /* TINY INTEGRAÇÃO */
     const historico = `` //`Integração: ${/*item.statementData.sourceId} | ${item.statementData.orderId} / ${item.receivement?.name ?? ''*/}`;
 
-    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname', 'externalId'], where: [{'codigo_pessoa': formData.receiver?.codigo_pessoa}]})
+    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname', 'externalId'], where: [{'codigo_pessoa': formData.payer?.codigo_pessoa}]})
 
     const category = await db.FinancialCategory.findOne({attributes: ['id', 'description'], where: [{'id': formData.category?.id}]})
 
@@ -232,7 +232,7 @@ export async function insert(formData) {
         companyId: formData.company?.codigo_empresa_filial,
         centerCostId: formData.centerCost?.id,
         categoryId: formData.category?.id,
-        partnerId: formData.receiver?.codigo_pessoa,
+        partnerId: formData.payer?.codigo_pessoa,
         observation: formData.observation
     }, {transaction})
 
@@ -265,7 +265,6 @@ export async function insert(formData) {
 }
 
 export async function update(formData) {
-  
 
   const db = new AppContext();
 
@@ -302,7 +301,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
-  const options = await authentication()
+  const options = await authentication({})
 
   const args1 = `[${receivement.externalId},"R"]`
 

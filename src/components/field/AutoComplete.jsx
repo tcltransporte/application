@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom'
 import styled from 'styled-components'
 import { IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material'
 
-// --- Styled Components (sem alteração) ---
+// --- Styled Components ---
 
 const AutocompleteContainer = styled.div`
   position: relative;
@@ -38,7 +38,7 @@ const Nothing = styled.div`
   color: #888;
 `
 
-// --- Hook de Debounce (sem alteração) ---
+// --- Hook de Debounce ---
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -55,19 +55,14 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-
 // --- Componente Principal ---
-
 export const AutoComplete = (props) => {
-  // --- Refs ---
   const ref = useRef()
   const inputRef = useRef()
   const selectedItemRef = useRef()
   const abortControllerRef = useRef(null)
   const isClearingRef = useRef(false)
-  const isInitialMount = useRef(true);
 
-  // --- Props ---
   const { 
     field, 
     form, 
@@ -82,7 +77,6 @@ export const AutoComplete = (props) => {
   const value = field?.value || props.value
   const name = field?.name || props.name
 
-  // --- Lógica de Erro (Formik) ---
   const rawError =
     (form?.touched?.[name] || form?.submitCount > 0)
       ? form?.errors?.[name]
@@ -95,7 +89,6 @@ export const AutoComplete = (props) => {
 
   const showError = Boolean(rawError)
 
-  // --- Estado ---
   const [query, setQuery] = useState('')
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
@@ -103,14 +96,12 @@ export const AutoComplete = (props) => {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [boxPosition, setBoxPosition] = useState(null)
   
-  // --- Debounce ---
   const debouncedQuery = useDebounce(query, 300);
   
-  // --- Variáveis Derivadas ---
   const valueText = value ? text(value) : query
   const isBoxOpen = data.length > 0 || nothing
 
-  // --- Handlers (Memoizados com useCallback) ---
+  // --- Handlers ---
 
   const updateBoxPosition = useCallback(() => {
     const rect = ref.current?.getBoundingClientRect()
@@ -123,27 +114,18 @@ export const AutoComplete = (props) => {
     }
   }, [])
 
-  /**
-   * Chamado ao digitar no input (onChange)
-   */
   const handleInputChange = useCallback((e) => {
     if (isClearingRef.current) return
     if (value) return
 
     const newQuery = e.target.value
     setQuery(newQuery)
-    
-    // 👇 *** MUDANÇA 1: Ativa o loading IMEDIATAMENTE ***
     setLoading(true)
-    
   }, [value]) 
 
-  /**
-   * Chamado ao clicar no (X) para limpar
-   */
   const handleClear = useCallback((e) => {
     e.preventDefault() 
-    isClearingRef.current = true // ATIVA A FLAG
+    isClearingRef.current = true
 
     if (form?.setFieldValue) {
       form.setFieldValue(name, null)
@@ -155,15 +137,12 @@ export const AutoComplete = (props) => {
     setQuery('')
     setData([])
     setNothing(false)
-    setLoading(false) // Desliga o loading imediatamente
+    setLoading(false)
     setSelectedIndex(-1)
     inputRef.current?.focus()
     
   }, [form, name, onChange])
 
-  /**
-   * Chamado ao clicar na (Lupa) para buscar (IMEDIATO)
-   */
   const handleSearch = useCallback(async (e) => {
     e.preventDefault()
 
@@ -175,7 +154,7 @@ export const AutoComplete = (props) => {
     abortControllerRef.current = controller
 
     try {
-      setLoading(true) // Ativa o loading
+      setLoading(true)
       setNothing(false)
       setSelectedIndex(0)
 
@@ -183,12 +162,12 @@ export const AutoComplete = (props) => {
 
       setData(resultData)
       setNothing(resultData.length === 0)
-      setLoading(false) // Desliga o loading no sucesso
+      setLoading(false)
 
     } catch (error) {
       if (error.name === 'AbortError') return
       console.error(error)
-      setLoading(false) // Desliga o loading no erro
+      setLoading(false)
     }
 
     inputRef.current?.focus()
@@ -205,7 +184,7 @@ export const AutoComplete = (props) => {
     setQuery('')
     setData([])
     setNothing(false)
-    setLoading(false) // Desliga o loading ao selecionar
+    setLoading(false)
     setSelectedIndex(-1)
     inputRef.current?.focus()
   }, [form, name, onChange])
@@ -225,7 +204,7 @@ export const AutoComplete = (props) => {
         e.preventDefault()
         setData([])
         setNothing(false)
-        setLoading(false) // Desliga o loading ao pressionar ESC
+        setLoading(false)
       }
     }
   }, [data, selectedIndex, isBoxOpen, handleSuggestionClick])
@@ -234,98 +213,80 @@ export const AutoComplete = (props) => {
     if (!ref.current?.contains(event.target)) {
       setData([])
       setNothing(false)
-      // Não desliga o loading aqui, a busca pode estar em andamento
     }
   }, [])
 
-
-  // --- Efeitos (useEffect) ---
-  
-  /**
-   * 👇 *** MUDANÇA 2: useEffect da BUSCA COM DEBOUNCE ***
-   */
+  // --- Effects ---
   useEffect(() => {
     const doSearch = async (searchQuery) => {
+      if (!searchQuery) return;
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      // setLoading(true); // 👈 REMOVIDO DAQUI
       setNothing(false);
       setSelectedIndex(0);
       updateBoxPosition();
 
       try {
-        const resultData = await onSearch(searchQuery || '', controller.signal);
-        
+        const resultData = await onSearch(searchQuery, controller.signal);
+
         if (!controller.signal.aborted) {
           setData(resultData);
           setNothing(resultData.length === 0);
-          setLoading(false); // Desliga o loading no sucesso
+          setLoading(false);
         }
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error(error);
-          setLoading(false); // Desliga o loading no erro
+          setLoading(false);
         }
-        // Se for AbortError, não faz nada, pois o loading
-        // será controlado pela *próxima* busca.
       }
     };
 
-    // 1. Se um valor foi selecionado, para o loading e não busca
     if (value) {
-      setLoading(false)
+      setLoading(false);
       return;
     }
 
-    // 2. Se foi um 'clear' ou 'blur', para o loading e não busca
     if (isClearingRef.current) {
       isClearingRef.current = false; 
-      setLoading(false)
+      setLoading(false);
       return; 
     }
-    
-    // 3. Pula a busca (e para o loading) na montagem inicial
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      setLoading(false)
-      return;
-    }
 
-    // 4. Se chegamos aqui, é uma digitação real. BUSCA.
-    doSearch(debouncedQuery);
+    if (debouncedQuery) {
+      setLoading(true);
+      doSearch(debouncedQuery);
+    } else {
+      // ← aqui: quando a query está vazia
+      setData([]);
+      setNothing(false);
+      setLoading(false);
+    }
 
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [debouncedQuery, value, onSearch, updateBoxPosition]); 
+  }, [debouncedQuery, value, onSearch, updateBoxPosition]);
 
 
-  /**
-   * Efeito para fechar ao clicar fora
-   */
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [handleClickOutside])
 
-  /**
-   * Efeito para rolar a sugestão selecionada para a vista
-   */
   useEffect(() => {
     if (selectedItemRef.current) {
       selectedItemRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }, [selectedIndex]) 
 
-  /**
-   * Efeito para gerenciar a posição do Portal
-   */
   useEffect(() => {
     if (isBoxOpen) {
       updateBoxPosition() 
@@ -340,9 +301,6 @@ export const AutoComplete = (props) => {
       setBoxPosition(null) 
     }
   }, [isBoxOpen, updateBoxPosition]) 
-
-
-  // --- Renderização ---
 
   const suggestionsContent = isBoxOpen && boxPosition && (
     <SuggestionsBox
@@ -392,13 +350,12 @@ export const AutoComplete = (props) => {
         name={name}
         value={valueText}
         onChange={handleInputChange} 
-        // 👇 *** MUDANÇA 3: onBlur agora também desliga o loading ***
         onBlur={(e) => {
           field?.onBlur(e) 
           if (!value && query) {
             isClearingRef.current = true; 
             setQuery(''); 
-            setLoading(false); // Desliga o loading
+            setLoading(false)
           }
           setData([])
         }}

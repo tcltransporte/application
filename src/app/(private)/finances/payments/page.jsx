@@ -13,11 +13,6 @@ export default async function FinancesPayments() {
 
   const session = await getServerSession(authOptions);
 
-  const now = new Date()
-
-  //const start = DateFormat(startOfMonth(now), "yyyy-MM-dd HH:mm:ss")
-  //const end = DateFormat(endOfMonth(now), "yyyy-MM-dd HH:mm:ss")
-
   const start = DateFormat(new Date(), "yyyy-MM-dd 00:00:00")
   const end = DateFormat(new Date(), "yyyy-MM-dd 23:59:59")
 

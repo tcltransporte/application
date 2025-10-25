@@ -1,28 +1,29 @@
-import { getReceivements } from '@/app/server/finances/receivements/index.controller';
+import * as receivements from '@/app/server/finances/receivements';
+import { authOptions } from '@/libs/auth';
 import { DateFormat } from '@/utils/extensions';
 import { ViewFinancesReceivements } from '@/views/finances/receivements';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { getServerSession } from 'next-auth';
 
 export const metadata = {
-  title: `${process.env.TITLE} - Contas a pagar`,
+  title: `${process.env.TITLE} - Contas a receber`,
 }
 
 export default async function FinancesReceivements() {
 
-  const now = new Date()
-
-  //const start = DateFormat(startOfMonth(now), "yyyy-MM-dd HH:mm:ss")
-  //const end = DateFormat(endOfMonth(now), "yyyy-MM-dd HH:mm:ss")
+  const session = await getServerSession(authOptions);
 
   const start = DateFormat(new Date(), "yyyy-MM-dd 00:00:00")
   const end = DateFormat(new Date(), "yyyy-MM-dd 23:59:59")
 
-  const initialPayments = await getReceivements({
+  const initialReceivements = await receivements.findAll({
     limit: 50,
     offset: 0,
+    company: session.company,
+    status: [0],
     dueDate: { start, end },
   })
 
-  return <ViewFinancesReceivements initialPayments={initialPayments} />
+  return <ViewFinancesReceivements initialReceivements={initialReceivements} />
 
 }

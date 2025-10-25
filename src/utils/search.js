@@ -1,24 +1,33 @@
-export async function company(search) {
+import { toast } from 'react-toastify'
+import { ReturnStatusToken } from 'tedious/lib/token/token';
 
-  const session = await getServerSession(authOptions);
+export async function company(search, signal) {
+    try {
 
-  const db = new AppContext();
+        const response = await fetch('/api/search/company', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
 
-  const companies = await db.Company.findAll({
-    attributes: ['codigo_empresa_filial', 'surname'],
-    order: [['codigo_empresa_filial', 'asc']],
-    where: {
-        codigo_empresa: session.company.companyBusiness.codigo_empresa,
-        surname: {
-            [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%`
+        const data = await response.json()
+
+        if (!response.ok) {
+            throw new Error(data.message)
         }
-    },
-    limit: 20,
-    offset: 0,
-  });
 
-  return companies.map((item) => item.toJSON());
+        return data
 
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return []
+        }
+        toast.error(error.message)
+        return []
+    }
 }
 
 export async function user (search) {
@@ -69,37 +78,61 @@ export async function user (search) {
 }
 
 export async function partner(search, signal) {
+    try {
 
-    const response = await fetch('/api/search/partner', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ search }),
-        signal
-    })
+        const response = await fetch('/api/search/partner', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
 
-    const data = await response.json()
+        const data = await response.json()
 
-    return data
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
 
+        return data
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return []
+        }
+        toast.error(error.message)
+        return []
+    }
 }
 
 export async function financialCategory(search, signal) {
+    try {
 
-    const response = await fetch('/api/search/financial-category', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ search }),
-        signal
-    })
+        const response = await fetch('/api/search/financial-category', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
 
-    const data = await response.json()
+        const data = await response.json()
 
-    return data
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
 
+        return data
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return []
+        }
+        toast.error(error.message)
+        return []
+    }
 }
 
 export async function bank(search) {
@@ -123,20 +156,32 @@ export async function bank(search) {
 }
 
 export async function bankAccount(search, signal) {
+    try {
 
-    const response = await fetch('/api/search/bank-account', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ search }),
-        signal
-    })
+        const response = await fetch('/api/search/bank-account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
 
-    const data = await response.json()
+        const data = await response.json()
 
-    return data
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
 
+        return data
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return []
+        }
+        toast.error(error.message)
+        return []
+    }
 }
 
 export async function centerCost(search) {

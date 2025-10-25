@@ -187,7 +187,7 @@ export async function create(formData) {
 
   db.transaction(async (transaction) => {
 
-    const begin = format(addDays(new Date(formData.statement.begin), -15), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
+    const begin = format(addDays(new Date(formData.statement.begin), -20), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
     const end = format(addDays(new Date(formData.statement.end), 15), 'dd/MM/yyyy HH:mm') //Até 15 dias (Será analisado 5 dias)
 
     await sincronize.receivements({start: begin, end: end})
@@ -469,7 +469,24 @@ export async function vinculePayment({statementDataConciledId, codigo_movimento_
   
   const db = new AppContext()
 
-  await db.StatementDataConciled.update({paymentId: codigo_movimento_detalhe}, {where: [{id: statementDataConciledId}]})
+  const payment = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe'],
+    include: [
+      {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
+    ],
+    where: [{'$codigo_movimento_detalhe$': codigo_movimento_detalhe}]
+  })
+
+  await db.StatementDataConciled.update(
+    {
+      paymentId: payment.codigo_movimento_detalhe,
+      partnerId: payment.financialMovement?.partnerId,
+      categoryId: payment.financialMovement?.categoryId,
+    }, 
+    {
+      where: [{id: statementDataConciledId}]
+    }
+  )
 
 }
 
@@ -485,12 +502,15 @@ export async function vinculeReceivement({statementDataConciledId, codigo_movime
     where: [{'$codigo_movimento_detalhe$': codigo_movimento_detalhe}]
   })
 
-  await db.StatementDataConciled.update({
-    receivementId: receivement.codigo_movimento_detalhe,
-    partnerId: receivement.financialMovement.partnerId,
-    categoryId: receivement.financialMovement.categoryId,
-  }, 
-  {where: [{id: statementDataConciledId}]}
+  await db.StatementDataConciled.update(
+    {
+      receivementId: receivement.codigo_movimento_detalhe,
+      partnerId: receivement.financialMovement?.partnerId,
+      categoryId: receivement.financialMovement?.categoryId,
+    }, 
+    {
+      where: [{id: statementDataConciledId}]
+    }
   )
 
 }

@@ -28,64 +28,72 @@ export async function rateLimitedFetch() {
   lastCallTime = Date.now();
 }
 
-export async function authentication() {
-    try {
+export async function authentication({ companyIntegrationId }) {
+  try {
 
-        const session = await getServerSession(authOptions)
+    console.log(companyIntegrationId)
 
-        const db = new AppContext()
+    const session = await getServerSession(authOptions)
 
-        const companyIntegration = await db.CompanyIntegration.findOne({
-            attributes: ['id', 'options'],
-            where: [
-                {companyId: session.company.codigo_empresa_filial},
-                {integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07'}
-            ]
-        })
+    const db = new AppContext()
 
-        let options = JSON.parse(companyIntegration.options)
+    const where = []
 
-        const timestamp = getTime(new Date())
-
-        const url = `https://erp.tiny.com.br/services/auth.services.php?a=ping&time=${timestamp}`
-
-        await rateLimitedFetch();
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'cookie': `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token};`
-            }
-        })
-
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-        const data = await response.text()
-
-        if (data.includes(`"status":0`)) {
-            
-            return options
-
-        }
-
-        if (data.includes("Sua sessão expirou")) {
-            
-            const access = await login({username: options.username, password: options.password})
-
-            options.TINYSESSID = access.tinySession
-            options._csrf_token = access.csrfToken
-
-            await db.CompanyIntegration.update({ options: JSON.stringify(options) }, { where: [{ id: companyIntegration.id }] })
-
-            return options
-
-        }
-
-        throw new Error(`Não foi possível conectar ao tiny!`)
-
-    } catch (error) {
-        throw error
+    if (companyIntegrationId) {
+      where.push({ id: companyIntegrationId })
     }
+
+    where.push({ companyId: session.company.codigo_empresa_filial })
+    where.push({ integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07' })
+
+    console.log(where)
+
+    const companyIntegration = await db.CompanyIntegration.findOne({
+      attributes: ['id', 'options'],
+      where
+    })
+
+    let options = JSON.parse(companyIntegration.options)
+
+    const timestamp = getTime(new Date())
+
+    const url = `https://erp.tiny.com.br/services/auth.services.php?a=ping&time=${timestamp}`
+
+    await rateLimitedFetch();
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'cookie': `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token};`
+        }
+    })
+
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+    const data = await response.text()
+
+    if (data.includes(`"status":0`)) {
+        return options
+    }
+
+    if (data.includes("Sua sessão expirou")) {
+        
+        const access = await login({username: options.username, password: options.password})
+
+        options.TINYSESSID = access.tinySession
+        options._csrf_token = access.csrfToken
+
+        await db.CompanyIntegration.update({ options: JSON.stringify(options) }, { where: [{ id: companyIntegration.id }] })
+
+        return options
+
+    }
+
+    throw new Error(`Não foi possível conectar ao tiny!`)
+
+  } catch (error) {
+      throw error
+  }
 }
 
 export async function login({username, password}) {
@@ -149,10 +157,10 @@ export async function login({username, password}) {
 
 export async function categories({search = ' '}) {
   try {
-    
+
     const session = await getServerSession(authOptions)
     
-    const options = await authentication()
+    const options = await authentication({})
 
     if (options) {
 
@@ -220,19 +228,24 @@ export async function categories({search = ' '}) {
   }
 }
 
-export async function partners({search = " "}) {
+export async function partners({ search = " " }) {
   try {
-
-    if (search == '') {
-        search = " "
-    }
+    
+    if (!search) search = " "
 
     const session = await getServerSession(authOptions)
-
-    const options = await authentication()
-    
     const db = new AppContext()
-    
+
+    const companyIntegration = await db.CompanyIntegration.findOne({
+      attributes: ["id", "options"],
+      where: [
+        { companyId: session.company.codigo_empresa_filial },
+        { integrationId: "E6F39F15-5446-42A7-9AC4-A9A99E604F07" },
+      ],
+    })
+
+    let options = await authentication({ companyIntegrationId: companyIntegration.id })
+
     await db.transaction(async (transaction) => {
 
       let page = 1
@@ -240,337 +253,427 @@ export async function partners({search = " "}) {
 
       do {
 
-        const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?token=${options.token}&formato=json&pesquisa=${encodeURIComponent(search)}&pagina=${page}`;
-
-        console.log(`🔹 Buscando página ${page} de contatos`)
-
-        await rateLimitedFetch()
-
-        const res = await fetch(url, options)
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`)
+        const params = {
+          token: options.token,
+          formato: "json",
+          pesquisa: search,
+          pagina: page,
+          dataMinimaAtualizacao: format(options.lastSyncPartner, "dd/MM/yyyy HH:mm:ss"),
         }
+
+        const query = Object.entries(params)
+          .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+          .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+          .join("&");
+
+        const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?${query}`;
+
+        console.log(`🔹 Buscando página ${page} de contatos`);
+
+        await rateLimitedFetch();
+
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const r = await res.json();
-        
-        if (r?.retorno.status === "Erro") {
-          throw new Error(r.retorno.erros[0].erro);
-        }
+
+        console.log(r?.retorno)
+
+        // Nenhum registro retornado
+        if (r?.retorno?.codigo_erro === '20') break;
+
+        if (r?.retorno?.status === "Erro") throw new Error(r?.retorno?.erros[0]?.erro);
 
         totalPages = Number(r.retorno.numero_paginas) || 1;
 
-          const externalIdsFromApi = _.map(
-            r.retorno.contatos,
-            (item) => _.get(item, "contato.id")
+        const externalIdsFromApi = _.map(r.retorno.contatos, (item) => _.get(item, "contato.id"));
+
+        // Buscar parceiros existentes
+        const existingPartners = await db.Partner.findAll({
+          where: { externalId: externalIdsFromApi },
+          transaction,
+          attributes: ["codigo_pessoa", "externalId"],
+        });
+
+        const existingExternalIds = existingPartners.map((p) => p.externalId);
+
+        // 🔹 Novos parceiros
+        const newPartners = _(r.retorno.contatos)
+          .filter((item) => !_.includes(existingExternalIds, _.get(item, "contato.id")))
+          .map((item) => ({
+            companyId: session.company.codigo_empresa_filial,
+            externalId: _.get(item, "contato.id"),
+            surname: String(_.get(item, "contato.nome")),
+            cpfCnpj: String(_.get(item, "contato.cpf_cnpj", "")).replace(/\D/g, ""),
+            isActive: _.get(item, "contato.situacao") === "Ativo" ? 1 : 0,
+          }))
+          .value();
+
+        if (newPartners.length > 0) {
+          await db.Partner.bulkCreate(newPartners, { transaction });
+        }
+
+        // 🔹 Atualizar parceiros existentes
+        for (const partner of r.retorno.contatos) {
+          const existing = existingPartners.find(
+            (p) => p.externalId === _.get(partner, "contato.id")
           );
-
-          const existingPartners = await db.Partner.findAll({
-            where: { externalId: externalIdsFromApi },
-            transaction,
-            attributes: ["externalId"],
-          });
-
-          const existingExternalIds = existingPartners.map((p) => p.externalId);
-
-          const newPartners = _(r.retorno.contatos)
-            .filter((item) => !_.includes(existingExternalIds, _.get(item, "contato.id")))
-            .map((item) => ({
-              companyId: session.company.codigo_empresa_filial,
-              externalId: _.get(item, "contato.id"),
-              surname: String(_.get(item, "contato.nome")),
-              cpfCnpj: String(_.get(item, "contato.cpf_cnpj", "")).replace(/\D/g, ""),
-              isActive: _.get(item, "contato.situacao") == 'Ativo' ? 1 : 0
-            }))
-            .value();
-
-          if (newPartners.length > 0) {
-            await db.Partner.bulkCreate(newPartners, { transaction });
+          if (existing) {
+            await db.Partner.update(
+              {
+                surname: String(_.get(partner, "contato.nome")),
+                cpfCnpj: String(_.get(partner, "contato.cpf_cnpj", "")).replace(/\D/g, ""),
+                isActive: _.get(partner, "contato.situacao") === "Ativo" ? 1 : 0,
+              },
+              { where: { codigo_pessoa: existing.codigo_pessoa }, transaction }
+            )
           }
+        }
 
         page++;
-      } while (page <= totalPages);
 
-    });
+      } while (page <= totalPages)
 
-    console.log("✅ Sincronização de parceiros concluída");
+      // Atualizar última sincronização
+      options.lastSyncPartner = format(new Date(), "yyyy-MM-dd HH:mm")
+
+      await db.CompanyIntegration.update(
+        { options: JSON.stringify(options) },
+        { where: [{ id: companyIntegration.id }], transaction }
+      )
+
+    })
+
+    console.log("✅ Sincronização de parceiros concluída")
 
   } catch (error) {
-    console.error("Erro em getTinyPartner:", error.message);
+    console.error("Erro em getTinyPartner:", error.message)
     throw error
   }
 }
 
-export async function payments({ start, end }) {
-  try {
+// =============================
+// 🔹 AUXILIARES GENÉRICOS
+// =============================
+// Buscar páginas de contas
+async function fetchTinyAccounts({ token, start, end, offset, type }) {
 
-    await getTinyCategories()
+  const params = new URLSearchParams({ token, formato: "json" })
 
-    const session = await getServerSession(authOptions)
-    const db = new AppContext()
+  if (start !== undefined) params.append("data_ini_vencimento", start)
+  if (end !== undefined) params.append("data_fim_vencimento", end)
+  if (offset !== undefined) params.append("pagina", offset)
 
-    const companyIntegration = await db.CompanyIntegration.findOne({
-      attributes: ['options'],
-      where: [
-        {
-          integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07',
-          companyId: session.company.codigo_empresa_filial,
-        },
-      ],
+  const endpoint =
+    type === "pay"
+      ? "contas.pagar.pesquisa.php"
+      : "contas.receber.pesquisa.php"
+
+  const url = `https://api.tiny.com.br/api2/${endpoint}?${params.toString()}`
+
+  await rateLimitedFetch()
+
+  const res = await fetch(url)
+
+  if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`)
+
+  return res.json()
+
+}
+
+// Buscar detalhes de cada conta
+async function fetchTinyDetail({ token, id, type }) {
+  const endpoint =
+    type === "pay"
+      ? "conta.pagar.obter.php"
+      : "conta.receber.obter.php";
+
+  const url = `https://api.tiny.com.br/api2/${endpoint}?token=${token}&id=${id}&formato=json`;
+
+  await rateLimitedFetch();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`);
+
+  return res.json();
+}
+
+// Obter todas as páginas e detalhes
+async function getAllTinyAccounts({ token, start, end, type }) {
+
+  let page = 1
+  let totalPages = 1
+  let contas = []
+
+  console.log("🔹 Iniciando busca de contas...")
+
+  // 🔁 Buscar todas as páginas
+  do {
+
+    const response = await fetchTinyAccounts({
+      token,
+      start,
+      end,
+      offset: page,
+      type,
     })
 
-    if (companyIntegration) {
-      const options = JSON.parse(companyIntegration.dataValues.options)
+    const contasDaPagina = response?.retorno?.contas || []
 
-      const payments = async ({ token, start, end, offset }) => {
-        const url = `https://api.tiny.com.br/api2/contas.pagar.pesquisa.php?token=${token}&formato=json&data_ini_vencimento=${start}&data_fim_vencimento=${end}&pagina=${offset}`
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`Erro ao buscar página ${offset}: ${res.statusText}`)
-        return await res.json()
-      }
+    contas.push(...contasDaPagina)
 
-      const paymentDetails = async ({ token, id }) => {
-        const url = `https://api.tiny.com.br/api2/conta.pagar.obter.php?token=${token}&id=${id}&formato=json`
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`Erro ao buscar id ${id}: ${res.statusText}`)
-        return await res.json()
-      }
+    if (page === 1) {
 
-      const firstPage = await payments({ token: options.token, start, end, offset: 1 })
-      const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1
-      let contas = [...(firstPage?.retorno?.contas || [])]
+      totalPages = Number(response?.retorno?.numero_paginas) || 1
 
       if (totalPages > 1) {
-        const promises = []
-        for (let i = 2; i <= totalPages; i++) {
-          promises.push(payments({ token: options.token, start, end, offset: i }))
-        }
-        const responses = await Promise.all(promises)
-        for (const response of responses) {
-          contas.push(...(response?.retorno?.contas || []))
-        }
+        console.log(`🔹 Encontradas ${totalPages} páginas de contas...`)
       }
-
-      await db.transaction(async (transaction) => {
-        
-        const partnerNames = _.uniq(contas.map((item) => item.conta.nome_cliente).filter(Boolean))
-        const existingPartners = await db.Partner.findAll({
-          where: { surname: partnerNames },
-          transaction,
-        })
-
-        const partnerMap = new Map(existingPartners.map((p) => [p.surname, p]))
-
-        for (const name of partnerNames) {
-          if (!partnerMap.has(name)) {
-            const newPartner = await db.Partner.create({ surname: name }, { transaction })
-            partnerMap.set(name, newPartner)
-          }
-        }
-
-        // 2. Mapear pagamentos
-        const allPayments = contas.map((item) => {
-          const id = item.conta.id
-          const name = item.conta.nome_cliente
-          const partner = partnerMap.get(name)
-
-          return {
-            externalId: id,
-            documentNumber: id,
-            amount: item.conta.valor,
-            issueDate: format(parse(item.conta.data_emissao, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-            dueDate: format(parse(item.conta.data_vencimento, 'dd/MM/yyyy', new Date()), 'yyyy-MM-dd'),
-            observation: item.conta.historico,
-            partnerId: partner?.codigo_pessoa || null,
-          }
-        })
-
-        // 3. Buscar movimentos financeiros existentes
-        const existingMovements = await db.FinancialMovement.findAll({
-          where: {
-            externalId: allPayments.map((p) => p.externalId),
-          },
-          transaction,
-        })
-
-        const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]))
-
-        const toCreate = []
-
-        for (const payment of allPayments) {
-          if (!existingMap.has(payment.externalId)) {
-            const detail = await paymentDetails({ token: options.token, id: payment.externalId })
-
-            if (detail.retorno.conta?.categoria) {
-              const categorie = await db.FinancialCategory.findOne({
-                attributes: ['id'],
-                where: [{ Descricao: detail.retorno.conta?.categoria }],
-                transaction,
-              })
-              payment.categoryId = categorie?.dataValues.id
-            }
-            
-            payment.type_operation = 2
-            payment.companyId = session.company.companyBusiness.codigo_empresa
-            toCreate.push(payment)
-
-          }
-        }
-
-        const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
-          transaction,
-          returning: true,
-        })
-
-        const allMovements = createdMovements
-        const movementMap = new Map(allMovements.map((m) => [m.externalId, m]))
-
-        // 4. Criar parcelas apenas para os novos registros
-        for (const payment of toCreate) {
-          const movement = movementMap.get(payment.externalId)
-
-          if (!movement) continue
-
-          await db.FinancialMovementInstallment.findOrCreate({
-            where: {
-              financialMovementId: movement?.codigo_movimento,
-              installment: 1,
-            },
-            defaults: {
-              issueDate: payment.issueDate,
-              dueDate: payment.dueDate,
-              amount: payment.amount,
-              observation: payment.observation,
-            },
-            transaction,
-          })
-        }
-
-      })
 
     }
 
-  } catch (error) {
+    page++
 
+  } while (page <= totalPages)
+
+  console.log(`✅ Total de contas encontradas: ${contas.length}`)
+
+  // 🔍 Buscar detalhes de cada conta
+  const contasComDetalhe = []
+  let index = 0
+
+  do {
+
+    const conta = contas[index]
+
+    const id = conta?.conta?.id
+
+    if (!id) {
+      index++
+      continue
+    }
+
+    console.log(`🔹 [${index + 1}/${contas.length}] Buscando detalhe da conta ${id}`)
+
+    try {
+
+      const detail = await fetchTinyDetail({ token, id, type })
+      contasComDetalhe.push({ ...conta, detail: detail?.retorno || {} })
+
+    } catch (err) {
+      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message)
+    }
+
+    index++
+
+  } while (index < contas.length)
+
+  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`)
+
+  return contasComDetalhe
+
+}
+
+// Montar dados de parceiro (clientes/fornecedores)
+function extractPartners(contasComDetalhe) {
+  return _.uniqBy(
+    contasComDetalhe
+      .map((item) => {
+        const cpfCnpj = String(_.get(item, "detail.conta.cliente.cpf_cnpj", "")).replace(/\D/g, "");
+        const nome = _.get(item, "conta.nome_cliente", "").trim();
+        return { cpfCnpj: cpfCnpj || null, nome: nome || null };
+      })
+      .filter((p) => p.cpfCnpj || p.nome),
+    (p) => p.cpfCnpj || p.nome
+  )
+}
+
+// Montar lista de movimentos financeiros
+function buildMovements(contasComDetalhe, partnerMap) {
+
+  return contasComDetalhe.map((item) => {
+
+    const id = item.conta.id
+    const detail = item.detail
+    const nro_documento = detail?.conta?.nro_documento?.split("/") || []
+
+    const cpfCnpj = String(_.get(detail, "conta.cliente.cpf_cnpj", "")).replace(/\D/g, "")
+    const surname = _.get(detail, "conta.cliente.nome", "").trim()
+
+    const partner =
+      partnerMap.get(cpfCnpj) ||
+      partnerMap.get(surname.toLowerCase())
+
+    return {
+      externalId: id,
+      documentNumber: Number(nro_documento[0] || id),
+      partnerId: partner?.codigo_pessoa || null,
+      category: detail?.conta?.categoria || null,
+      amount: item.conta.valor,
+      issueDate: format(parse(item.conta.data_emissao, "dd/MM/yyyy", new Date()), "yyyy-MM-dd"),
+      dueDate: format(parse(item.conta.data_vencimento, "dd/MM/yyyy", new Date()), "yyyy-MM-dd"),
+      observation: item.conta.historico,
+    }
+
+  })
+
+}
+
+// Atualizar/criar movimentos e parcelas
+async function upsertMovements({
+  db,
+  transaction,
+  allPayments,
+  session,
+  type_operation, // 1 = receber, 2 = pagar
+}) {
+  const existingMovements = await db.FinancialMovementInstallment.findAll({
+    include: [
+      {
+        model: db.FinancialMovement,
+        as: "financialMovement",
+        attributes: ["partnerId", "documentNumber", "amount", "issueDate", "observation"],
+      },
+    ],
+    where: { externalId: allPayments.map((p) => p.externalId) },
+    transaction,
+  })
+
+  const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]))
+  const toCreate = []
+  const toUpdate = []
+
+  for (const item of allPayments) {
+
+    const existing = existingMap.get(item.externalId)
+
+    console.log(item.category)
+
+    const category = item.category
+      ? await db.FinancialCategory.findOne({
+          attributes: ["id"],
+          where: [{ Descricao: item.category }],
+          transaction,
+        })
+      : null
+
+    console.log('@'.repeat(10))
+    console.log(category)
+    console.log('@'.repeat(10))
+
+    const categoryId = category?.id || null;
+
+    if (!existing) {
+      toCreate.push({
+        ...item,
+        type_operation,
+        companyId: session.company.codigo_empresa_filial,
+        categoryId,
+      })
+    } else {
+
+      const updatedFields = {
+        documentNumber: item.documentNumber,
+        partnerId: item.partnerId,
+        categoryId,
+        amount: item.amount,
+        issueDate: item.issueDate,
+        dueDate: item.dueDate,
+        observation: item.observation,
+      }
+
+      const hasChanges = Object.keys(updatedFields).some(
+        (key) => String(existing[key]) !== String(updatedFields[key])
+      )
+
+      if (hasChanges) {
+        toUpdate.push({ id: existing.financialMovementId, ...updatedFields });
+      }
+    }
+  }
+
+  // Criar novos movimentos
+  const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
+    transaction,
+    returning: true,
+  })
+
+  // Atualizar existentes
+  for (const updateData of toUpdate) {
+
+    await db.FinancialMovement.update(updateData, {
+      where: { codigo_movimento: updateData.id },
+      transaction,
+    })
+
+    await db.FinancialMovementInstallment.update(
+      {
+        amount: updateData.amount,
+        dueDate: updateData.dueDate,
+        observation: updateData.observation,
+      },
+      { where: { codigo_movimento: updateData.id }, transaction }
+    )
+  }
+
+  // Criar ou atualizar parcelas
+  const documentNumberMap = new Map(
+    toCreate.map((m) => [m.documentNumber, { externalId: m.externalId, dueDate: m.dueDate }])
+  )
+
+  for (const movement of createdMovements) {
+    if (!movement) continue;
+
+    const { dueDate, externalId } =
+      documentNumberMap.get(movement.documentNumber) || {};
+
+    const [installment, created] =
+      await db.FinancialMovementInstallment.findOrCreate({
+        where: {
+          financialMovementId: movement.codigo_movimento,
+          installment: 1,
+        },
+        defaults: {
+          issueDate: movement.issueDate,
+          dueDate,
+          amount: movement.amount,
+          observation: movement.observation,
+          externalId,
+        },
+        transaction,
+      })
+
+    if (!created) {
+      await installment.update({ dueDate }, { transaction })
+    }
   }
 }
 
-export async function receivements({ start, end, situation = 'aberto' }) {
+// =============================
+// 🔹 Função principal genérica
+// =============================
+async function syncTinyData({ start, end, type, type_operation }) {
 
-  const options = await authentication();
+  const options = await authentication({})
 
-  if (!options) return;
+  if (!options) return
 
-  await categories({ search: '' });
-  //await partners({ search: '' });
+  await categories({})
+  await partners({})
 
-  const session = await getServerSession(authOptions);
-  const db = new AppContext();
+  const session = await getServerSession(authOptions)
 
-  // Função auxiliar para paginação da API Tiny
-  const receivements = async ({ token, start, end, offset, totalPages }) => {
-    console.log(`🔹 [${offset}/${totalPages || '?'}] Buscando página de contas`);
+  const db = new AppContext()
 
-    const params = new URLSearchParams({
-      token, // obrigatório
-      formato: 'json',
-    });
-
-    if (situation !== undefined) params.append('situacao', situation);
-    if (start !== undefined) params.append('data_ini_vencimento', start);
-    if (end !== undefined) params.append('data_fim_vencimento', end);
-    if (offset !== undefined) params.append('pagina', offset);
-
-    const url = `https://api.tiny.com.br/api2/contas.receber.pesquisa.php?${params.toString()}`;
-
-    await rateLimitedFetch();
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`);
-    return res.json();
-  };
-
-  // Função auxiliar para detalhes das contas
-  const receivementDetails = async ({ token, id }) => {
-    const url = `https://api.tiny.com.br/api2/conta.receber.obter.php?token=${token}&id=${id}&formato=json`;
-    await rateLimitedFetch();
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`);
-    return res.json();
-  };
-
-  // 🔹 1. Buscar todas as contas
-  const firstPage = await receivements({
+  const contasComDetalhe = await getAllTinyAccounts({
     token: options.token,
     start,
     end,
-    offset: 1,
-  });
+    type,
+  })
 
-  const totalPages = Number(firstPage?.retorno?.numero_paginas) || 1;
-  let contas = [...(firstPage?.retorno?.contas || [])];
-
-  if (totalPages > 1) {
-    console.log(`🔹 Buscando ${totalPages} páginas de contas...`);
-    for (let i = 2; i <= totalPages; i++) {
-      const response = await receivements({
-        token: options.token,
-        start,
-        end,
-        offset: i,
-        totalPages,
-      });
-      contas.push(...(response?.retorno?.contas || []));
-    }
-  }
-
-  console.log(`✅ Total de contas encontradas: ${contas.length}`);
-
-  // 🔹 2. Buscar detalhes (com controle de taxa)
-  const contasComDetalhe = [];
-
-  for (let i = 0; i < contas.length; i++) {
-    const item = contas[i];
-    const id = item.conta.id;
-
-    console.log(`🔹 [${i + 1}/${contas.length}] Buscando detalhe da conta ${id}`);
-
-    try {
-      const detail = await receivementDetails({
-        token: options.token,
-        id,
-      });
-
-      const conta = {
-        ...item,
-        detail: detail?.retorno || {},
-      };
-
-      contasComDetalhe.push(conta);
-
-    } catch (err) {
-      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message);
-    }
-  }
-
-  console.log(`✅ Detalhes obtidos para ${contasComDetalhe.length} contas`);
-
-  // 🔹 3. Início da transação no banco
   await db.transaction(async (transaction) => {
 
-    // 🔹 Garantir que os parceiros existem (CPF/CNPJ ou nome)
-    const partnerData = _.uniqBy(
-      contasComDetalhe
-        .map((item) => {
-          const cpfCnpj = String(_.get(item, "detail.conta.cliente.cpf_cnpj", "")).replace(/\D/g, "");
-          const nome = _.get(item, "conta.nome_cliente", "").trim();
-          return {
-            cpfCnpj: cpfCnpj || null,
-            nome: nome || null,
-          };
-        })
-        .filter((p) => p.cpfCnpj || p.nome), // mantém apenas registros válidos
-      (p) => p.cpfCnpj || p.nome // evita duplicidade
-    );
+    const partnerData = extractPartners(contasComDetalhe)
 
     const existingPartners = await db.Partner.findAll({
       where: {
@@ -581,158 +684,44 @@ export async function receivements({ start, end, situation = 'aberto' }) {
         ],
       },
       transaction,
-    });
+    })
 
-    // 🔹 Criar mapa para lookup por CPF e nome
     const partnerMap = new Map();
     for (const p of existingPartners) {
       if (p.cpfCnpj) partnerMap.set(p.cpfCnpj, p);
       if (p.surname) partnerMap.set(p.surname.trim().toLowerCase(), p);
     }
-    
-    // 🔹 4. Montar lista completa de pagamentos
-    const allPayments = contasComDetalhe.map((item) => {
-      const id = item.conta.id;
-      const detail = item.detail;
-      const nro_documento = detail?.conta?.nro_documento?.split("/") || [];
 
-      const cpfCnpj = String(_.get(detail, "conta.cliente.cpf_cnpj", "")).replace(/\D/g, "");
-      const surname = _.get(detail, "conta.cliente.nome", "").trim();
+    const allPayments = buildMovements(contasComDetalhe, partnerMap);
 
-      const partner =
-        partnerMap.get(cpfCnpj) ||
-        partnerMap.get(surname.toLowerCase());
-
-      return {
-        externalId: id,
-        documentNumber: Number(nro_documento[0]),
-        amount: item.conta.valor,
-        issueDate: format(parse(item.conta.data_emissao, "dd/MM/yyyy", new Date()), "yyyy-MM-dd"),
-        dueDate: format(parse(item.conta.data_vencimento, "dd/MM/yyyy", new Date()), "yyyy-MM-dd"),
-        observation: item.conta.historico,
-        partnerId: partner?.codigo_pessoa || null,
-        category: detail.categoria || null,
-      };
-    });
-
-    // 🔹 5. Buscar movimentos existentes
-    const existingMovements = await db.FinancialMovementInstallment.findAll({
-      include: [
-        {
-          model: db.FinancialMovement,
-          as: "financialMovement",
-          attributes: ["partnerId", "documentNumber", "amount", "issueDate", "observation"],
-        },
-      ],
-      where: { externalId: allPayments.map((p) => p.externalId) },
+    await upsertMovements({
+      db,
       transaction,
-    });
+      allPayments,
+      session,
+      type_operation,
+    })
 
-    const existingMap = new Map(existingMovements.map((m) => [m.externalId, m]));
+  })
 
-    const toCreate = [];
-    const toUpdate = [];
-
-    for (const receivement of allPayments) {
-      const existing = existingMap.get(receivement.externalId);
-
-      const category = receivement.category
-        ? await db.FinancialCategory.findOne({
-            attributes: ["id"],
-            where: [{ Descricao: receivement.category }],
-            transaction,
-          })
-        : null;
-
-      const categoryId = category?.dataValues.id || null;
-
-      if (!existing) {
-        toCreate.push({
-          ...receivement,
-          type_operation: 1,
-          companyId: session.company.codigo_empresa_filial,
-          categoryId,
-        });
-      } else {
-        const updatedFields = {
-          documentNumber: receivement.documentNumber,
-          amount: receivement.amount,
-          issueDate: receivement.issueDate,
-          dueDate: receivement.dueDate,
-          observation: receivement.observation,
-          partnerId: receivement.partnerId,
-          categoryId,
-        };
-
-        const hasChanges = Object.keys(updatedFields).some(
-          (key) => String(existing[key]) !== String(updatedFields[key])
-        );
-
-        if (hasChanges) {
-          toUpdate.push({
-            id: existing.financialMovementId,
-            ...updatedFields,
-          });
-        }
-      }
-    }
-
-    // 🔹 6. Criar novos movimentos
-    const createdMovements = await db.FinancialMovement.bulkCreate(toCreate, {
-      transaction,
-      returning: true,
-    });
-
-    // 🔹 6.1. Mapear documentNumber -> dueDate, externalId
-    const documentNumberMap = new Map(
-      toCreate.map((m) => [m.documentNumber, { externalId: m.externalId, dueDate: m.dueDate }])
-    );
-
-    // 🔹 7. Atualizar existentes
-    for (const updateData of toUpdate) {
-      await db.FinancialMovement.update(updateData, {
-        where: { codigo_movimento: updateData.id },
-        transaction,
-      });
-    }
-
-    // 🔹 8. Criar ou atualizar parcelas
-    for (const movement of createdMovements) {
-      if (!movement) continue;
-
-      const { dueDate, externalId } =
-        documentNumberMap.get(movement.documentNumber) || {};
-
-      const [installment, created] =
-        await db.FinancialMovementInstallment.findOrCreate({
-          where: {
-            financialMovementId: movement.codigo_movimento,
-            installment: 1,
-          },
-          defaults: {
-            issueDate: movement.issueDate,
-            dueDate: dueDate,
-            amount: movement.amount,
-            observation: movement.observation,
-            externalId: externalId,
-          },
-          transaction,
-        });
-
-      if (!created) {
-        await installment.update({ dueDate }, { transaction });
-      }
-    }
-  });
-
-  console.log("✅ Sincronização Tiny concluída com sucesso.");
+  console.log(`✅ Sincronização Tiny (${type}) concluída com sucesso.`)
 
 }
 
+// =============================
+// 🔹 FUNÇÕES PRINCIPAIS
+// =============================
+export async function payments({ start, end }) {
+  await syncTinyData({ start, end, type: "pay", type_operation: 2 });
+}
+
+export async function receivements({ start, end }) {
+  await syncTinyData({ start, end, type: "receive", type_operation: 1 });
+}
 
 export async function transfer({date, originId, destinationId, amount, observation = ''}) {
 
-  const options = await authentication()
+  const options = await authentication({})
 
   const args = `[{"data":"${format(date, 'dd/MM/yyyy')}","valor":"${amount.toString().replace('.', ',')}","idContaOrigem":"${originId}","idContaDestino":"${destinationId}","historicoTransferencia":"${observation}"}]`
 
