@@ -1,10 +1,7 @@
-import { getCtes } from '@/app/server/expedition/ctes/index.controller';
-import { getShippiments } from '@/app/server/expedition/shippiments/index.controller';
+import * as ctes from '@/app/server/expedition/ctes';
 import { DateFormat } from '@/utils/extensions';
-import { ViewExpeditionCtes } from '@/views/expedition/ctes';
-import { ViewExpeditionShippiments } from '@/views/expedition/shippiments';
 import { Typography } from '@mui/material';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { endOfMonth, startOfMonth } from 'date-fns';
 
 export const metadata = {
   title: `${process.env.TITLE} - Conhecimentos`,
