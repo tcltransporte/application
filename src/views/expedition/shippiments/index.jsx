@@ -24,7 +24,7 @@ import {
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { RangeFilter } from '@/components/RangeFilter'
-import * as shippiments from '@/app/server/expedition/shippiments/index.controller'
+import * as shippiments from '@/app/server/expedition/shippiments'
 
 import { styles } from '@/components/styles'
 import _ from 'lodash'

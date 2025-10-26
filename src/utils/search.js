@@ -30,7 +30,7 @@ export async function company(search, signal) {
     }
 }
 
-export async function user (search) {
+export async function user(search) {
     
     const session = await getServerSession(authOptions)
 
@@ -98,11 +98,9 @@ export async function partner(search, signal) {
         return data
 
     } catch (error) {
-        if (error.name === 'AbortError') {
-            return []
-        }
-        toast.error(error.message)
-        return []
+        
+        return exception(error)
+        
     }
 }
 
@@ -127,32 +125,37 @@ export async function financialCategory(search, signal) {
         return data
 
     } catch (error) {
-        if (error.name === 'AbortError') {
-            return []
-        }
-        toast.error(error.message)
-        return []
+        
+        return exception(error)
+
     }
 }
 
-export async function bank(search) {
-    
-    const session = await getServerSession(authOptions)
+export async function bank(search, signal) {
+    try {
 
-    const db = new AppContext()
+        const response = await fetch('/api/search/bank', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
 
-    const where = []
+        const data = await response.json()
 
-    const bankAccounts = await db.Bank.findAll({
-        attributes: ['id', 'name'],
-        where,
-        order: [['name', 'asc']],
-        limit: 20,
-        offset: 0,
-    })
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
 
-    return _.map(bankAccounts, (user) => user.get({ plain: true }))
-    
+        return data
+
+    } catch (error) {
+
+        return exception(error)
+
+    }
 }
 
 export async function bankAccount(search, signal) {
@@ -176,11 +179,9 @@ export async function bankAccount(search, signal) {
         return data
 
     } catch (error) {
-        if (error.name === 'AbortError') {
-            return []
-        }
-        toast.error(error.message)
-        return []
+
+        return exception(error)
+
     }
 }
 
@@ -232,4 +233,15 @@ export async function paymentMethod(search) {
 
     return _.map(paymentMethods, (item) => item.get({ plain: true }))
     
+}
+
+function exception(error) {
+
+    if (error.name === 'AbortError') {
+        return []
+    }
+    
+    toast.error(error.message)
+
+    return []
 }

@@ -18,7 +18,6 @@ import { Partner } from './models/partner.model.js'
 import { StatementData } from './models/statementData.model.js'
 import { StatementDataConciled } from './models/statementDataConciled.model.js'
 import { FinancialCategory } from './models/financialCategory.model.js'
-import { PaymentMethod } from './models/paymentMethod.model.js'
 import { Shippiment } from './models/shippiment.model.js'
 import { Cte } from './models/cte.model.js'
 import { CteNfe } from './models/cteNfe.model.js'
@@ -26,6 +25,7 @@ import { Nfe } from './models/Nfe.model.js'
 import { CenterCost } from './models/centerCost.model.js'
 import { BankAccountIntegration } from './models/bankAccountIntegration.model.js'
 import { Archive } from './models/archive.model.js'
+import { FundMethod } from './models/fundMethod.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -79,7 +79,7 @@ export class AppContext extends Sequelize {
 
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
 
-  PaymentMethod = this.define('paymentMethod', new PaymentMethod(), { tableName: 'paymentMethod' })
+  FundMethod = this.define('fundMethod', new FundMethod(), { tableName: 'fundMethod' })
   
   Shippiment = this.define('shippiment', new Shippiment(), { tableName: 'carga' })
 
@@ -138,7 +138,7 @@ export class AppContext extends Sequelize {
     this.CteNfe.belongsTo(this.Nfe, {as: 'nfe', foreignKey: 'nfeId', targetKey: 'codigo_nota', onDelete: 'CASCADE'})
 
     this.FinancialMovementInstallment.belongsTo(this.FinancialMovement, { as: 'financialMovement', foreignKey: 'codigo_movimento', onDelete: 'CASCADE' })
-    this.FinancialMovementInstallment.belongsTo(this.PaymentMethod, { as: 'paymentMethod', foreignKey: 'paymentMethodId', onDelete: 'CASCADE' })
+    this.FinancialMovementInstallment.belongsTo(this.FundMethod, { as: 'fundMethod', foreignKey: 'fundMethodId', onDelete: 'CASCADE' })
     this.FinancialMovementInstallment.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', onDelete: 'CASCADE' })
     
     this.FinancialMovement.belongsTo(this.Company, { as: 'company', foreignKey: 'CodigoEmpresaFilial', targetKey: 'codigo_empresa_filial', onDelete: 'CASCADE' })

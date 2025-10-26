@@ -19,8 +19,8 @@ import {
 import React, { useState, useEffect, useRef } from "react"
 //import { updateInstallment } from "./index.controller"
 import { AutoComplete } from "@/components/field/AutoComplete";
-import { getPaymentMethod } from "@/utils/search";
-import { updateInstallment } from "@/app/server/finances/prepare/index.controller";
+import * as search from "@/utils/search";
+import { updateInstallment } from "@/app/server/finances/prepare";
 
 // Novo componente para o Modal de Edição
 const EditInstallment = ({ open, onClose, installment, onSave }) => {
@@ -66,7 +66,7 @@ const EditInstallment = ({ open, onClose, installment, onSave }) => {
           value={paymentMethod}
           text={(paymentMethod) => paymentMethod.name}
           onChange={(paymentMethod) => setPaymentMethod(paymentMethod)}
-          onSearch={getPaymentMethod}
+          onSearch={search.paymentMethod}
         >
           {(item) => <span>{item.name}</span>}
         </AutoComplete>

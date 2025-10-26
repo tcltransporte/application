@@ -9,13 +9,13 @@ import { Button, Typography, Chip, IconButton, Table, TableHead, TableBody, Tabl
 import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import { signOut, useSession } from 'next-auth/react'
-import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
+import * as users from '@/app/server/settings/users'
 import { ViewUser } from './view.user'
 import { styles } from '@/components/styles'
 
 export const Users = () => {
 
-  const [users, setUsers] = useState([])
+  const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingStatus, setLoadingStatus] = useState({})
   const [companyUserId, setCompanyUserId] = useState(undefined)
@@ -29,8 +29,8 @@ export const Users = () => {
   }, [])
 
   const fetchUsers = async () => {
-    const updatedUsers = await getUsers()
-    setUsers(updatedUsers)
+    const updatedUsers = await users.findAll()
+    setData(updatedUsers)
   }
 
   const onSearch = async () => {
@@ -62,7 +62,7 @@ export const Users = () => {
 
   const handleDisable = async ({ id, userId }) => {
     setLoadingStatus(prev => ({ ...prev, [id]: true }))
-    await onDisable({ id })
+    await users.disable({ id })
     if (userId === session?.user?.userId) return signOut({ callbackUrl: '/login' })
     await fetchUsers()
     setLoadingStatus(prev => ({ ...prev, [id]: false }))
@@ -105,15 +105,15 @@ export const Users = () => {
                       <CircularProgress size={30} />
                     </TableCell>
                   </TableRow>
-                ) : users.length === 0 ? (
+                ) : data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} align="center">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(row => (
-                    <TableRow key={row.id}>
+                  data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(row => (
+                    <TableRow key={row.id} hover>
                       <TableCell>
                         <div className='flex items-center gap-3'>
                           {getAvatar({ avatar: row.avatar, fullName: row.fullName })}
@@ -184,7 +184,7 @@ export const Users = () => {
           <Box sx={{ ml: 'auto' }}>
             <TablePagination
               component='div'
-              count={users.length}
+              count={data.length}
               page={page}
               onPageChange={(e, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}

@@ -1,5 +1,5 @@
-import { getCtes } from '@/app/server/expedition/ctes/index.controller';
-import { getShippiments } from '@/app/server/expedition/shippiments/index.controller';
+import * as ctes from '@/app/server/expedition/ctes';
+import * as shippiments from '@/app/server/expedition/shippiments';
 import { authOptions } from '@/libs/auth';
 import { DateFormat } from '@/utils/extensions';
 import { ViewExpeditionCtes } from '@/views/expedition/ctes';
@@ -25,14 +25,14 @@ const ExpeditionCtes = async () => {
     //const start = DateFormat(new Date(), "yyyy-MM-dd 00:00:00")
     //const end = DateFormat(new Date(), "yyyy-MM-dd 23:59:59")
 
-    const initialPayments = await getCtes({
+    const initialCtes = await ctes.findAll({
       company: session.company,
       dhEmi: { start, end },
       limit: 50,
       offset: 0,
     })
 
-    return <ViewExpeditionCtes initialPayments={initialPayments} />
+    return <ViewExpeditionCtes initialCtes={initialCtes} />
 
   } catch (error) {
     return <Typography>{error.message}</Typography>

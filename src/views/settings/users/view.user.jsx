@@ -15,7 +15,7 @@ import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 
 import { Alert, FormControlLabel, Switch, TextField } from '@mui/material'
-import { createCompanyUser, deleteCompanyUser, getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
+import * as users from '@/app/server/settings/users'
 import _ from 'lodash'
 import { BackdropLoading } from '@/components/BackdropLoading'
 
@@ -36,7 +36,7 @@ export const ViewUser = ({ companyUserId, onClose }) => {
         setShouldReset(true)
 
         if (companyUserId) {
-          const companyUser = await getCompanyUser({ id: companyUserId })
+          const companyUser = await users.getCompanyUser({ id: companyUserId })
           setCompanies(companyUser?.companies)
           const loadedUser = companyUser?.companyUser?.user || null
           setUser(loadedUser)

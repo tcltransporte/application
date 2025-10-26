@@ -8,6 +8,11 @@ export class Bank {
     type: DataTypes.INTEGER
   }
 
+  code = {
+    field: 'Codigo',
+    type: DataTypes.STRING
+  }
+
   name = {
     field: 'Descricao',
     type: DataTypes.STRING

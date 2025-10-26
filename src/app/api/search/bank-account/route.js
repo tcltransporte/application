@@ -36,7 +36,7 @@ export async function POST(request) {
             offset: 0,
         })
 
-        const data = _.map(bankAccounts, (user) => user.get({ plain: true }))
+        const data = _.map(bankAccounts, (bankAccount) => bankAccount.toJSON())
 
         return Response.json(data)
 

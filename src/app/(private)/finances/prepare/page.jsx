@@ -5,7 +5,7 @@ import classnames from 'classnames'
 
 // Util Imports
 import { commonLayoutClasses } from '@layouts/utils/layoutClasses'
-import { getBankAccounts } from '@/app/server/finances/prepare/index.controller'
+import { getBankAccounts } from '@/app/server/finances/prepare'
 import KanbanBoard from '@/views/finances/prepare'
 
 const KanbanPage = async () => {

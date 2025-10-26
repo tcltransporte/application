@@ -9,6 +9,7 @@ export async function getBankAccounts() {
     const db = new AppContext()
 
     const bankAccounts = await db.BankAccount.findAll({
+        attributes: ['codigo_conta_bancaria', 'agency', 'number'],
         include: [
             {model: db.Bank, as: 'bank'}
         ],
@@ -16,19 +17,15 @@ export async function getBankAccounts() {
     })
 
     const financialMovementInstallments = await db.FinancialMovementInstallment.findAll({
-        attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate', 'observation'],
+        attributes: ['codigo_movimento_detalhe', 'installment', 'amount', 'dueDate', 'observation', 'bankAccountId'],
         include: [
             {model: db.FinancialMovement, as: 'financialMovement', attributes: ['codigo_movimento', 'documentNumber'], include: [
                 {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']},
             ]}
         ],
         where: [{
-            codigo_pagamento: {
-                [Op.is]: null
-            },
-            data_vencimento: {
-                [Op.gte]: '2025-06-01T00:00:00'
-            }
+            codigo_pagamento: { [Op.is]: null },
+            data_vencimento: { [Op.gte]: '2025-06-01T00:00:00' }
         }],
         order: [['data_vencimento', 'ASC']]
     })
@@ -52,6 +49,8 @@ export async function getBankAccounts() {
             return installment.bankAccountId === item.codigo_conta_bancaria
         }).map(item => Number(item.id)).slice(0, 10)
     }))
+
+    console.log(wBankAccounts)
 
     // Adiciona o item com id null no início
     return {

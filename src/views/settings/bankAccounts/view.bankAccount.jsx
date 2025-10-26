@@ -7,20 +7,15 @@ import Drawer from '@mui/material/Drawer'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
-import CircularProgress from '@mui/material/CircularProgress'
-import Backdrop from '@mui/material/Backdrop'
-import { toast } from 'react-toastify'
 
 import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 
-import { Alert, FormControlLabel, MenuItem, Select, Switch } from '@mui/material'
-import { createCompanyUser, deleteCompanyUser, getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
+import { Alert } from '@mui/material'
 import _ from 'lodash'
-import { getCategorie, saveCategorie } from '@/app/server/settings/categories/view.categorie.controller'
-import { TextField, SelectField, NumericField, AutoComplete } from '@/components/field'
+import { TextField, AutoComplete } from '@/components/field'
 import * as bankAccount from '@/app/server/settings/bank-accounts'
-import { getBanks } from '@/utils/search'
+import * as search from '@/utils/search'
 import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewBankAccount = ({ categorieId, onClose }) => {
@@ -150,10 +145,10 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                     component={AutoComplete}
                     name="bank"
                     label="Banco"
-                    text={(bank) => bank?.name || ''}
-                    onSearch={getBanks}
+                    text={(bank) => `${bank?.code || ''} - ${bank?.name || ''}`}
+                    onSearch={search.bank}
                     renderSuggestion={(item) => (
-                      <span>{item.id} - {item.name}</span>
+                      <span>{item.code} - {item.name}</span>
                     )}
                   />
 

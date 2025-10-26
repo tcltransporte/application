@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, createRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Typography,
   Table,
@@ -19,10 +19,6 @@ import {
   TextField,
   Checkbox,
   Badge,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Tooltip,
   Backdrop,
 } from '@mui/material'
@@ -31,74 +27,62 @@ import { useDropzone } from 'react-dropzone'
 import { useTitle } from '@/contexts/TitleProvider'
 import { DateFormat } from '@/utils/extensions'
 import { RangeFilter } from '@/components/RangeFilter'
-import { getShippiments, onServerAddCte, onServerRemoveCte } from '@/app/server/expedition/shippiments/index.controller'
+import * as shippiments from '@/app/server/expedition/shippiments'
 
 import { styles } from '@/components/styles'
 import _ from 'lodash'
 import { Field, Form, Formik } from 'formik'
-import { getCtes, onAddNfe, onDacte, onDeleteNfe, onDownload } from '@/app/server/expedition/ctes/index.controller'
+import * as ctes from '@/app/server/expedition/ctes'
 import { format, parseISO } from 'date-fns'
 import { ReportViewer } from '@/components/ReportViewer'
 import { downloadFile } from '@/utils/download'
 import { toast } from 'react-toastify'
 import { AutoComplete } from '@/components/field'
-import { getCompany } from '@/utils/search'
+import * as search from '@/utils/search'
+import { DragAndDrop } from '@/components/DragAndDrop'
 
+export const ImportDrawer = ({ open, onClose, onSubmit }) => {
 
-export const ImportDrawer = ({ open, onClose }) => {
-  
+  const [uploadedFile, setUploadedFile] = useState(null)
+
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
-  const [uploadResult, setUploadResult] = useState(null)
+  const [isHovering, setIsHovering] = useState(false)
+  const inputFileRef = useRef(null)
 
-  const onDrop = (acceptedFiles) => {
-    const withIds = acceptedFiles.map((file, index) => ({
-      file, // manter o File original aqui
+  useEffect(() => {
+    if (!open) {
+      setFiles([])
+      setIsHovering(false)
+      setUploading(false)
+    }
+  }, [open])
+
+  const handleFiles = (selectedFiles) => {
+    const withIds = Array.from(selectedFiles).map((file, index) => ({
+      file,
       _id: `${file.name}-${file.size}-${Date.now()}-${index}`,
     }))
     setFiles((prev) => [...prev, ...withIds])
   }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: true,
-  })
-
-  const removeFile = (index) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
+  const handleDrop = (e) => {
+    e.preventDefault()
+    handleFiles(e.dataTransfer.files)
+    setIsHovering(false)
   }
 
   const handleUpload = async () => {
-    
-    if (files.length === 0) return alert('Selecione arquivos para enviar');
+    if (_.size(uploadedFile) === 0) return alert('Selecione arquivos para enviar')
 
     setUploading(true)
-    setUploadResult(null)
 
     try {
-      // cria array de objetos com nome e buffer
-      const filesData = await Promise.all(
-        files.map(async ({ file }) => {
-          const arrayBuffer = await file.arrayBuffer() // pega bytes
-          const buffer = Array.from(new Uint8Array(arrayBuffer)) // converte para array de bytes
-          return {
-            name: file.name,
-            type: file.type,
-            data: buffer
-          }
-        })
-      )
 
-      const res = await fetch('/api/expedition/ctes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: filesData }) // envia como JSON
-      })
+      await ctes.upload({ files: uploadedFile })
 
-      if (!res.ok) throw new Error('Erro ao enviar arquivos')
+      await onSubmit()
 
-      const data = await res.json()
-      setUploadResult(data)
       setFiles([])
 
     } catch (error) {
@@ -108,92 +92,50 @@ export const ImportDrawer = ({ open, onClose }) => {
     }
   }
 
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
 
   return (
     <Drawer
       open={open}
       anchor="right"
       onClose={onClose}
-      sx={{ '& .MuiDrawer-paper': { width: '600px', maxWidth: '100%' } }}
+      sx={{
+        '& .MuiDrawer-paper': {
+          width: { xs: '100%', sm: 600 },
+          p: 6,
+          display: 'flex',
+          flexDirection: 'column',
+        },
+      }}
     >
-      <Box display="flex" alignItems="center" justifyContent="space-between" px={3} py={2}>
+      {/* Cabeçalho */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h5">Importar</Typography>
         <IconButton onClick={onClose}>
           <i className="ri-close-line text-2xl" />
         </IconButton>
       </Box>
 
-      <Divider />
+      <Divider sx={{ mb: 3 }} />
 
-      <Box
-        {...getRootProps()}
-        sx={{
-          height: 100,
-          border: '2px dashed #ccc',
-          borderRadius: 2,
-          textAlign: 'center',
-          cursor: 'pointer',
-          bgcolor: isDragActive ? '#f0f0f0' : 'transparent',
-          color: '#666',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <input {...getInputProps()} />
-        <Typography>
-          {isDragActive ? 'Solte os arquivos aqui...' : 'Clique ou arraste arquivos para essa área'}
-        </Typography>
-      </Box>
+      {/* Drag and Drop */}
+      <DragAndDrop title={'Arquivo XML'} accept={'.xml'} multiple onFiles={(files) => setUploadedFile(files)}></DragAndDrop>
 
-      {_.size(files) > 0 && (
-        <List
-          sx={{
-            overflowY: 'auto',
-            border: '1px solid #ddd',
-            borderRadius: 1,
-          }}
-        >
-          {files.length === 0 && (
-            <ListItem>
-              <ListItemText primary="Nenhum arquivo selecionado" />
-            </ListItem>
-          )}
-
-          {files.map((entry, index) => (
-            <ListItem key={index}>
-              <ListItemText
-                primary={entry.file.name}
-                secondary={`${(entry.file.size / 1024).toFixed(2)} KB`}
-              />
-              <ListItemSecondaryAction>
-                <IconButton edge="end" onClick={() => removeFile(index)}>
-                  <i className="ri-delete-bin-line" style={{ fontSize: 20 }} />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </List>
-      )}
-      
-      <Box display="flex" justifyContent="space-between" alignItems="center" ml="auto">
+      {/* Botão de Upload */}
+      <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2}>
         {uploading && <CircularProgress size={24} />}
-        {uploadResult && (
-          <Typography color="success.main" flexGrow={1} ml={2}>
-            {uploadResult.uploadedFiles.length} arquivo(s) enviados com sucesso!
-          </Typography>
-        )}
-
-        <Button variant="contained" onClick={handleUpload} disabled={uploading || files.length === 0}>
-          Enviar arquivos
+        <Button variant="contained" onClick={handleUpload} disabled={uploading || _.size(uploadedFile) === 0}>
+          Confirmar
         </Button>
       </Box>
-     
     </Drawer>
   )
 }
 
-const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveCte }) => {
+
+const NfeDrawer = ({ shippimentId, open, onClose, ctes: ctes1 = [], onAddCte, onRemoveCte }) => {
   
   const [removingIds, setRemovingIds] = useState(new Set())
 
@@ -202,17 +144,17 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
 
       const trimmed = values.chNFe.trim()
 
-      if (!trimmed || trimmed.length !== 44) {
+      if (!trimmed || _.size(trimmed) !== 44) {
         alert('Informe um chNFe válido com 44 caracteres.')
         return
       }
 
-      if (ctes.some((c) => c.nfe.chNFe === trimmed)) {
+      if (ctes1.some((c) => c.nfe.chNFe === trimmed)) {
         alert('NF-e já adicionado.')
         return
       }
 
-      const cte = await onAddNfe({ cteId: shippimentId, chNFe: trimmed })
+      const cte = await ctes.addNfe({ cteId: shippimentId, chNFe: trimmed })
 
       onAddCte?.({ id: cte.id, nfe: { chNFe: trimmed } })
 
@@ -228,7 +170,7 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
   const handleRemove = async (cte) => {
     try {
       setRemovingIds((prev) => new Set(prev).add(cte.id))
-      await onDeleteNfe({ id: cte.id })
+      await ctes.deleteNfe({ id: cte.id })
       onRemoveCte?.(cte)
     } catch (error) {
       alert(error.message)
@@ -294,7 +236,7 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
           )}
         </Formik>
 
-        {ctes.length > 0 ? (
+        {_.size(ctes) > 0 ? (
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -303,11 +245,15 @@ const NfeDrawer = ({ shippimentId, open, onClose, ctes = [], onAddCte, onRemoveC
               </TableRow>
             </TableHead>
             <TableBody>
-              {ctes.map((cteNfe, index) => {
-                const isRemoving = removingIds.has(cteNfe.id)
+              {_.map(ctes, (cteNfe, index) => {
+
+                const isRemoving = _.has(removingIds, cteNfe.id) || removingIds.has?.(cteNfe.id)
+
                 return (
                   <TableRow key={index}>
-                    <TableCell>{cteNfe.nfe.chNFe || 'Aguardando envio'}</TableCell>
+                    <TableCell>
+                      {_.get(cteNfe, 'nfe.chNFe', 'Aguardando envio')}
+                    </TableCell>
                     <TableCell align="right">
                       <IconButton
                         size="small"
@@ -389,7 +335,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
                 name="company"
                 label="Filial"
                 text={(company) => company?.surname || ''}
-                onSearch={getCompany}
+                onSearch={search.company}
                 renderSuggestion={(item) => (
                     <span>{item.surname}</span>
                 )}
@@ -413,7 +359,7 @@ const Filter = ({ request: initialRequest, onApply }) => {
   )
 }
 
-export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
+export const ViewExpeditionCtes = ({ initialCtes = [] }) => {
 
   const reportViewer = useRef()
 
@@ -423,7 +369,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
   const [isLoading, setIsLoading] = useState(undefined)
 
-  const [installments, setInstallments] = useState(initialPayments)
+  const [installments, setInstallments] = useState(initialCtes)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isDrawerOpen, setDrawerOpen] = useState(false)
   const [isImportDrawerOpen, setImportDrawerOpen] = useState(false)
@@ -437,7 +383,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
   const fetchCtes = async (request) => {
     try {
       setIsFetching(true)
-      const response = await getCtes(request)
+      const response = await ctes.findAll(request)
       setInstallments(response)
       setSelectedIds(new Set())
     } catch (error) {
@@ -495,7 +441,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
       setIsLoading('Visualizando PDF...')
 
-      const response = await onDacte({ id })
+      const response = await ctes.dacte({ id })
       reportViewer.current.visualize(response.pdf)
 
     } catch (error) {
@@ -510,7 +456,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
 
       setIsLoading('Baixando XML...')
 
-      const response = await onDownload({ id })
+      const response = await ctes.xml({ id })
 
       downloadFile('application/xml', response.base64, response.fileName)
 
@@ -524,7 +470,7 @@ export const ViewExpeditionCtes = ({ initialPayments = [] }) => {
   }
 
   const allIds = installments.response?.rows.map((p) => p.codigo_carga) || []
-  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
+  const allSelected = _.size(allIds) > 0 && allIds.every((id) => selectedIds.has(id))
 
   return (
     <>

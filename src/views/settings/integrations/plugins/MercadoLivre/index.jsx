@@ -27,6 +27,7 @@ import {
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
 import * as mercadolivre from '@/app/server/settings/integrations/plugins/mercado-livre.controller'
+import { DragAndDrop } from '@/components/DragAndDrop'
 
 export const ID = '420E434C-CF7D-4834-B8A6-43F5D04E462A'
 
@@ -49,6 +50,7 @@ export const Connect = () => {
 
 }
 
+/*
 const UploadArea = ({ onFiles }) => {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -106,7 +108,6 @@ const UploadArea = ({ onFiles }) => {
         Selecione o arquivo ou arraste e solte aqui
       </Typography>
 
-      {/* Botão separado para selecionar arquivo */}
       <Button
         variant="contained"
         color="primary"
@@ -118,7 +119,6 @@ const UploadArea = ({ onFiles }) => {
         Selecionar arquivo
       </Button>
 
-      {/* Input de arquivo escondido */}
       <input
         type="file"
         id="file-input"
@@ -130,6 +130,7 @@ const UploadArea = ({ onFiles }) => {
     </Box>
   )
 }
+*/
 
 export const Statement = ({ data, onChange }) => {
 
@@ -218,7 +219,7 @@ export const Statement = ({ data, onChange }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {!uploadedFile && (
-        <UploadArea onFiles={(files) => setUploadedFile(files[0])} />
+        <DragAndDrop title={'Arquivo CSV'} accept={'.csv'} multiple onFiles={(files) => setUploadedFile(files[0])} />
       )}
 
       {uploadedFile && (

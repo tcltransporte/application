@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 
-export class PaymentMethod {
+export class FundMethod {
 
   id = {
     field: 'id',

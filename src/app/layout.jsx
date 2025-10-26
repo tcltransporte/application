@@ -8,6 +8,7 @@ import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'
 import 'react-perfect-scrollbar/dist/css/styles.css'
 
 // Component Imports
+import ClientLayoutWrapper from '@/components/ClientLayoutWrapper' // 1. IMPORTE O NOVO WRAPPER
 
 // HOC Imports
 import TranslationWrapper from '@/hocs/TranslationWrapper'
@@ -23,7 +24,7 @@ import '@/app/globals.css'
 
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
-import RouteProgressBar from '@/components/RouteProgressBar'
+// import RouteProgressBar from '@/components/RouteProgressBar' // <-- 2. REMOVA ESTE IMPORT
 
 export const metadata = {
   title: 'Sistema',
@@ -31,7 +32,6 @@ export const metadata = {
 }
 
 const RootLayout = async ({ children }) => {
-
   // Vars
   const headersList = await headers()
   const systemMode = await getSystemMode()
@@ -42,8 +42,12 @@ const RootLayout = async ({ children }) => {
       <html id='__next' lang={i18n.defaultLocale} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-          <RouteProgressBar />
-          {children}
+          {/* <RouteProgressBar /> */} {/* <-- 3. REMOVIDO DAQUI */}
+
+          {/* 4. USE O WRAPPER AQUI */}
+          <ClientLayoutWrapper>
+            {children}
+          </ClientLayoutWrapper>
         </body>
       </html>
     </TranslationWrapper>

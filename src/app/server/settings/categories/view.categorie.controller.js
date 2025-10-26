@@ -1,4 +1,4 @@
-"use server"
+/*"use server"
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
@@ -51,4 +51,4 @@ export async function createCompanyUser({ companyId, userId }) {
 
     return companyUser.toJSON()
 
-}
+}*/

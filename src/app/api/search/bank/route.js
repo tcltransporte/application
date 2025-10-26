@@ -14,21 +14,18 @@ export async function POST(request) {
 
         const db = new AppContext()
 
-        const companies = await db.Company.findAll({
-            attributes: ['codigo_empresa_filial', 'surname'],
-            order: [['codigo_empresa_filial', 'asc']],
-            where: {
-                codigo_empresa: session.company.companyBusiness.codigo_empresa,
-                surname: {
-                    [Sequelize.Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%`
-                }
-            },
+        const where = []
+
+        const banks = await db.Bank.findAll({
+            attributes: ['id', 'code', 'name'],
+            where,
+            order: [['name', 'asc']],
             limit: 20,
             offset: 0,
         })
 
-        const data = companies.map((company) => company.toJSON())
-
+        const data = _.map(banks, (bank) => bank.toJSON())
+        
         return Response.json(data)
 
     } catch (error) {

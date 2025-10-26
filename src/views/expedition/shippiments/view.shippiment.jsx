@@ -7,8 +7,8 @@ import * as Yup from "yup";
 import { Backdrop, CircularProgress } from "@mui/material";
 import { AutoComplete } from "@/components/field/AutoComplete";
 import { styles } from "@/components/styles";
-import * as shippiments from "@/app/server/expedition/shippiments/index.controller";
-import { getCompany, getFinancialCategory, getPartner, getPaymentMethod } from "@/utils/search";
+import * as shippiments from "@/app/server/expedition/shippiments";
+import * as search from "@/utils/search";
 import { addDays, addMonths, format } from "date-fns";
 
 import { NumericField, TextField } from "@/components/field";
@@ -153,7 +153,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
                             name="sender"
                             label="Remetente"
                             text={(sender) => `${sender.surname}`}
-                            onSearch={getPartner}
+                            onSearch={search.partner}
                             renderSuggestion={(item) => (
                               <span>{item?.surname}</span>
                             )}
@@ -179,7 +179,7 @@ export const ViewShippiment = ({ shippimentId, onClose }) => {
                             name="company"
                             label="Filial"
                             text={(company) => company?.surname}
-                            onSearch={(search) => getCompany(search, 2)}
+                            onSearch={(value) => search.company(value, 2)}
                             renderSuggestion={(item) => (
                               <span>{item.surname}</span>
                             )}

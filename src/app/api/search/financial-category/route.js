@@ -34,7 +34,7 @@ export async function POST(request) {
             offset: 0,
         })
 
-        const data = _.map(financialCategories, (item) => item.get({ plain: true }))
+        const data = _.map(financialCategories, (financialCategory) => financialCategory.toJSON())
 
         return Response.json(data)
 

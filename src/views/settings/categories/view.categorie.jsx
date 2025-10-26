@@ -7,21 +7,18 @@ import Drawer from '@mui/material/Drawer'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
-import CircularProgress from '@mui/material/CircularProgress'
-import Backdrop from '@mui/material/Backdrop'
-import { toast } from 'react-toastify'
 
 import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 
-import { Alert, FormControlLabel, MenuItem, Select, Switch } from '@mui/material'
-import { createCompanyUser, deleteCompanyUser, getCompanyUser, setCompanyUser } from '@/app/server/settings/users/view.user.controller'
+import { Alert, MenuItem } from '@mui/material'
 import _ from 'lodash'
-import { getCategorie, saveCategorie } from '@/app/server/settings/categories/view.categorie.controller'
-import { TextField, SelectField, NumericField } from '@/components/field'
+import * as categories from '@/app/server/settings/categories'
+import { TextField, SelectField } from '@/components/field'
 import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewCategorie = ({ categorieId, onClose }) => {
+
   const [errorState, setErrorState] = useState(null)
   const [user, setUser] = useState(null)
   const [shouldReset, setShouldReset] = useState(false)
@@ -37,7 +34,7 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
         setShouldReset(true)
 
         if (categorieId) {
-          const categorie = await getCategorie({ id: categorieId })
+          const categorie = await categories.findOne({ id: categorieId })
           console.log(categorie)
           setUser(categorie)
         } else {
@@ -57,7 +54,7 @@ export const ViewCategorie = ({ categorieId, onClose }) => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
 
-      await saveCategorie({categorieId, ...values})
+      await categories.submit({categorieId, ...values})
 
       setErrorState(null)
 

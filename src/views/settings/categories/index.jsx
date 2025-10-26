@@ -4,21 +4,16 @@
 import { useEffect, useState } from 'react'
 
 // MUI Imports
-import { Button, Typography, Chip, IconButton, Table, TableHead, TableBody, TableRow, TableCell, TablePagination, CircularProgress, Tooltip, Stack, Paper, Box } from '@mui/material'
+import { Button, Typography, IconButton, Table, TableHead, TableBody, TableRow, TableCell, TablePagination, CircularProgress, Tooltip, Stack, Paper, Box } from '@mui/material'
 
-import CustomAvatar from '@core/components/mui/Avatar'
-import { getInitials } from '@/utils/getInitials'
-import { signOut, useSession } from 'next-auth/react'
-import { getUsers, onApprove, onDisable, onDisapprove } from '@/app/server/settings/users/index.controller'
 import { ViewCategorie } from './view.categorie'
 import { styles } from '@/components/styles'
-import { getCategories } from '@/app/server/settings/categories/index.controller'
+import * as categories from '@/app/server/settings/categories'
 
 export const Categories = () => {
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [loadingStatus, setLoadingStatus] = useState({})
   const [companyUserId, setCompanyUserId] = useState(undefined)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(50)
@@ -28,7 +23,7 @@ export const Categories = () => {
   }, [])
 
   const fetchCategories = async () => {
-    const updatedUsers = await getCategories()
+    const updatedUsers = await categories.findAll()
     setUsers(updatedUsers)
   }
 

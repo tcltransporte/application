@@ -33,7 +33,7 @@ export async function POST(request) {
             offset: 0,
         })
 
-        const data = partners.map((item) => item.get({ plain: true }))
+        const data = partners.map((partner) => partner.toJSON())
 
         return Response.json(data)
 
