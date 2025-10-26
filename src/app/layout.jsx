@@ -23,6 +23,7 @@ import '@/app/globals.css'
 
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
+import RouteProgressBar from '@/components/RouteProgressBar'
 
 export const metadata = {
   title: 'Sistema',
@@ -41,6 +42,7 @@ const RootLayout = async ({ children }) => {
       <html id='__next' lang={i18n.defaultLocale} dir={direction} suppressHydrationWarning>
         <body className='flex is-full min-bs-full flex-auto flex-col'>
           <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
+          <RouteProgressBar />
           {children}
         </body>
       </html>
