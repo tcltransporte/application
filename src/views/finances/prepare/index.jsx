@@ -21,6 +21,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { AutoComplete } from "@/components/field/AutoComplete";
 import * as search from "@/utils/search";
 import { updateInstallment } from "@/app/server/finances/prepare";
+import { useTitle } from "@/contexts/TitleProvider";
 
 // Novo componente para o Modal de Edição
 const EditInstallment = ({ open, onClose, installment, onSave }) => {
@@ -304,7 +305,6 @@ const ColumnHeader = ({ bankAccount, onGenerateRemessa, onExportCsv }) => {
 
           <Menu anchorEl={anchorEl} open={open} onClose={handleCloseMenu}>
             <MenuItem onClick={handleGenerateRemessaClick}>Gerar Remessa</MenuItem>
-            <MenuItem onClick={handleExportCsvClick}>Exportar CSV</MenuItem>
           </Menu>
         </>
       )}
@@ -323,34 +323,43 @@ const KanbanList = ({
   addLoadingInstallment,
   removeLoadingInstallment
 }) => {
-  const [installmentsList, setInstallmentsList] = useState([])
-  const [isDraggingOver, setIsDraggingOver] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false); // Estado para controlar a abertura do modal
-  const [selectedInstallment, setSelectedInstallment] = useState(null); // Estado para a parcela a ser editada no modal
+  const [installmentsList, setInstallmentsList] = useState([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedInstallment, setSelectedInstallment] = useState(null);
+
+  const dragCounter = useRef(0); // Contador de drag para lidar com filhos
 
   useEffect(() => {
-    const installmentIds = bankAccounts.find((col) => col.id === bankAccount.id)?.taskIds || []
-    setInstallmentsList(installments.filter((installment) => installment && installmentIds.includes(installment.id)))
-  }, [bankAccounts, installments, bankAccount.id])
+    const installmentIds = bankAccounts.find((col) => col.id === bankAccount.id)?.taskIds || [];
+    setInstallmentsList(
+      installments.filter((installment) => installment && installmentIds.includes(installment.id))
+    );
+  }, [bankAccounts, installments, bankAccount.id]);
 
-  const removeInstallmentFromBankAccount = (bankAccounts, bankAccountId, installmentId) => bankAccounts.map((ba) =>
-    ba.id === bankAccountId
-      ? { ...ba, taskIds: ba.taskIds.filter((id) => id !== installmentId) }
-      : ba
-  )
+  const removeInstallmentFromBankAccount = (bankAccounts, bankAccountId, installmentId) =>
+    bankAccounts.map((ba) =>
+      ba.id === bankAccountId
+        ? { ...ba, taskIds: ba.taskIds.filter((id) => id !== installmentId) }
+        : ba
+    );
 
-  const insertInstallmentInBankAccount = (bankAccounts, bankAccountId, installmentId, index) => bankAccounts.map((ba) =>
-    ba.id === bankAccountId
-      ? { ...ba, taskIds: [...ba.taskIds.slice(0, index), installmentId, ...ba.taskIds.slice(index)] }
-      : ba
-  )
+  const insertInstallmentInBankAccount = (bankAccounts, bankAccountId, installmentId, index) =>
+    bankAccounts.map((ba) =>
+      ba.id === bankAccountId
+        ? { ...ba, taskIds: [...ba.taskIds.slice(0, index), installmentId, ...ba.taskIds.slice(index)] }
+        : ba
+    );
 
   const handleDragStart = (e, installment) => {
-    e.dataTransfer.setData("text/plain", JSON.stringify({
-      installmentId: installment.id,
-      originBankAccountId: bankAccount.id,
-      fromIndex: installmentsList.findIndex(item => item.id === installment.id)
-    }));
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({
+        installmentId: installment.id,
+        originBankAccountId: bankAccount.id,
+        fromIndex: installmentsList.findIndex((item) => item.id === installment.id)
+      })
+    );
     e.dataTransfer.effectAllowed = "move";
     e.currentTarget.classList.add("dragging");
   };
@@ -366,27 +375,31 @@ const KanbanList = ({
 
   const handleDragEnter = (e) => {
     e.preventDefault();
+    dragCounter.current++;
     setIsDraggingOver(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
-    setIsDraggingOver(false);
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDraggingOver(false);
+    }
   };
 
   const handleDrop = async (e) => {
     e.preventDefault();
     setIsDraggingOver(false);
+    dragCounter.current = 0;
 
     const data = JSON.parse(e.dataTransfer.getData("text/plain"));
     const { installmentId, originBankAccountId, fromIndex } = data;
 
-    const draggedInstallment = installments.find(inst => inst.id === installmentId);
+    const draggedInstallment = installments.find((inst) => inst.id === installmentId);
     if (!draggedInstallment) return;
 
     let destIndex = installmentsList.length;
     const children = Array.from(e.currentTarget.querySelectorAll(".task-wrapper"));
-
     for (let i = 0; i < children.length; i++) {
       const childRect = children[i].getBoundingClientRect();
       if (e.clientY < childRect.top + childRect.height / 2) {
@@ -396,10 +409,7 @@ const KanbanList = ({
     }
 
     const destBankAccountId = bankAccount.id;
-
-    if (destBankAccountId === originBankAccountId && (fromIndex === destIndex || fromIndex + 1 === destIndex)) {
-      return;
-    }
+    if (destBankAccountId === originBankAccountId && (fromIndex === destIndex || fromIndex + 1 === destIndex)) return;
 
     let updatedBankAccounts = removeInstallmentFromBankAccount(bankAccounts, originBankAccountId, draggedInstallment.id);
     updatedBankAccounts = insertInstallmentInBankAccount(updatedBankAccounts, destBankAccountId, draggedInstallment.id, destIndex);
@@ -422,37 +432,32 @@ const KanbanList = ({
   };
 
   const addNewInstallment = (title) => {
-    const maxId = installments.length > 0 ? Math.max(...installments.map(t => t.id || 0)) : 0
-    const newInstallment = { id: maxId + 1, title }
-    setInstallments((prev) => [...prev, newInstallment])
+    const maxId = installments.length > 0 ? Math.max(...installments.map((t) => t.id || 0)) : 0;
+    const newInstallment = { id: maxId + 1, title };
+    setInstallments((prev) => [...prev, newInstallment]);
     setBankAccounts((prev) =>
       prev.map((ba) =>
-        ba.id === bankAccount.id
-          ? { ...ba, taskIds: [...ba.taskIds, newInstallment.id] }
-          : ba
+        ba.id === bankAccount.id ? { ...ba, taskIds: [...ba.taskIds, newInstallment.id] } : ba
       )
-    )
-  }
+    );
+  };
 
-  // Função para abrir o modal de edição
   const handleOpenEditModal = (installmentToEdit) => {
     setSelectedInstallment(installmentToEdit);
     setModalOpen(true);
   };
 
-  // Função para fechar o modal
   const handleCloseEditModal = () => {
     setModalOpen(false);
-    setSelectedInstallment(null); // Limpa a parcela selecionada
+    setSelectedInstallment(null);
   };
 
-  // Função para salvar as alterações do modal
   const handleSaveEditedAmount = async (installmentId, newAmount) => {
     addLoadingInstallment(installmentId);
     try {
       await updateInstallment({ id: installmentId, amount: newAmount });
-      setInstallments(prevInstallments =>
-        prevInstallments.map(inst =>
+      setInstallments((prevInstallments) =>
+        prevInstallments.map((inst) =>
           inst.id === installmentId ? { ...inst, amount: newAmount } : inst
         )
       );
@@ -462,7 +467,6 @@ const KanbanList = ({
       removeLoadingInstallment(installmentId);
     }
   };
-
 
   return (
     <div
@@ -480,7 +484,8 @@ const KanbanList = ({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        border: isDraggingOver ? "2px dashed #007bff" : "2px solid transparent"
+        border: isDraggingOver ? "2px dashed #007bff" : "2px solid transparent",
+        transition: "border 0.2s ease"
       }}
     >
       <ColumnHeader bankAccount={bankAccount} />
@@ -497,14 +502,13 @@ const KanbanList = ({
             <InstallmentCard
               installment={installment}
               loading={loadingInstallmentIds.includes(installment.id)}
-              onOpenEditModal={handleOpenEditModal} // Passa a função para abrir o modal
+              onOpenEditModal={handleOpenEditModal}
             />
           </div>
         ))}
-        {/*<NewInstallment addInstallment={addNewInstallment} />*/}
+        {/* <NewInstallment addInstallment={addNewInstallment} /> */}
       </div>
 
-      {/* Renderiza o Modal de Edição */}
       {selectedInstallment && (
         <EditInstallment
           open={modalOpen}
@@ -514,15 +518,21 @@ const KanbanList = ({
         />
       )}
     </div>
-  )
-}
+  );
+};
 
 // Componente KanbanBoard (inalterado)
 const KanbanBoard = ({ initialBankAccounts, initialInstallments }) => {
 
+  const { setTitle } = useTitle()
+
   const [installments, setInstallments] = useState(initialInstallments)
   const [bankAccounts, setBankAccounts] = useState(initialBankAccounts)
   const [loadingInstallmentIds, setLoadingInstallmentIds] = useState([])
+
+  useEffect(() => {
+    setTitle(['Finanças', 'Prepare'])
+  }, [])
 
   const addLoadingInstallment = (installmentId) =>
     setLoadingInstallmentIds((prev) => [...new Set([...prev, installmentId])])

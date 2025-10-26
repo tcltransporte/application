@@ -88,6 +88,8 @@
       <siteMapNode title="Contas a pagar" url="\finances\payments" description="Contas a pagar"/>
       <siteMapNode title="Contas a receber" url="\finances\receivements" description="Contas a receber"/>
       <siteMapNode title="Prepare" url="\finances\prepare" description="Prepare"/>
+      <siteMapNode title="Remessas" url="\finances\remittance" description="Remessas"/>
+      <siteMapNode title="Retornos" url="\finances\receipt" description="Retornos"/>
       <siteMapNode title="Extratos" url="\finances\statements" description="Extratos"/>
       <!--<siteMapNode title="Movimentos Bancário" url="${URL}\Financeiro\ListaMovimentoBanco.aspx" description="Movimento bancário"/>-->
       <!--<siteMapNode title="Contas Bancárias" url="${URL}\Financeiro\ListaContaBanco.aspx" description="Contas bancárias"/>-->
