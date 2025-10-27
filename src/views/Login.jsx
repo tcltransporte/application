@@ -57,7 +57,7 @@ const Login = ({ mode }) => {
   const darkImg = '/images/pages/auth-v2-mask-1-dark.png'
   const lightImg = '/images/pages/auth-v2-mask-1-light.png'
   const darkIllustration = '/images/illustrations/auth/v2-login-dark.png'
-  const lightIllustration = '/images/illustrations/auth/v2-login-light.png'
+  const lightIllustration = '/images/illustrations/auth/v2-login-light.png' //
   const borderedDarkIllustration = '/images/illustrations/auth/v2-login-dark-border.png'
   const borderedLightIllustration = '/images/illustrations/auth/v2-login-light-border.png'
 

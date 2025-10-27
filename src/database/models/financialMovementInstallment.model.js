@@ -16,8 +16,8 @@ export class FinancialMovementIntallment {
     type: DataTypes.BIGINT
   }
 
-  paymentMethodId = {
-      field: 'paymentMethodId',
+  fundMethodId = {
+      field: 'fundMethodId',
       type: DataTypes.UUIDV4
   }
 

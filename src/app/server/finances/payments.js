@@ -248,7 +248,7 @@ export async function insert(formData) {
         installment2 = await db.FinancialMovementInstallment.create({
           ...item,
           financialMovementId: movement.codigo_movimento,
-          paymentMethodId: formData.paymentMethod?.id,
+          fundMethodId: formData.fundMethodId?.id,
           bankAccountId: formData.bankAccount?.codigo_conta_bancaria,
           observation,
           externalId: paymentExternal.sourceId

@@ -430,7 +430,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     installment: installment?.installment || "",
     partner: installment?.financialMovement?.partner || null,
     centerCost: installment?.financialMovement?.centerCost || null,
-    paymentMethod: installment?.paymentMethod || null,
+    fundMethod: installment?.fundMethod || null,
     bankAccount: installment?.bankAccount || null,
     documentNumber: installment?.financialMovement?.documentNumber || "",
     company: installment?.financialMovement?.company || null,
@@ -447,7 +447,7 @@ const EditInstallment = ({ installmentId, onClose }) => {
     try {
       
       values.codigo_movimento_detalhe = installmentId;
-      values.paymentMethodId = values.paymentMethod?.id || null;
+      values.fundMethodId = values.fundMethod?.id || null;
 
       await receivements.update(values);
 
