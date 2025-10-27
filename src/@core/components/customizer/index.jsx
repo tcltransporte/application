@@ -422,6 +422,7 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
                   </div>
                 </div>
               </div>
+              {/*
               {!disableDirection && (
                 <div className='flex flex-col gap-2'>
                   <p className='font-medium'>Direção</p>
@@ -458,7 +459,7 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
                     </Link>
                   </div>
                 </div>
-              )}
+              )}*/}
             </div>
           </div>
         </ScrollWrapper>

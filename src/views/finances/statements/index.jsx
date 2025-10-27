@@ -14,8 +14,6 @@ import Swal from 'sweetalert2'
 
 export const ViewFinancesStatements = ({ initialStatements }) => {
 
-  console.log(initialStatements)
-
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -33,7 +31,6 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
     try {
       setIsFetching(true)
       const response = await statements2.findAll(request)
-      console.log(response)
       setStatements(response)
       //setSelectedIds(new Set()) // limpa seleção ao buscar nova página
     } catch (error) {
@@ -60,9 +57,9 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
   }
 
   const handleDelete = async (id) => {
-      try {
-        
-    const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' })
+    try {
+
+      const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Não' })
 
       if (result.isConfirmed) {
 
@@ -73,7 +70,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
         })
 
         Swal.fire({ text: 'Excluído com sucesso!', icon: 'success', timer: 2000, showConfirmButton: false })
-    
+
       }
     } catch (error) {
       Swal.fire({ title: 'Ops!', text: 'Não foi possível excluir o registro.', icon: 'error' })
