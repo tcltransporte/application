@@ -31,8 +31,6 @@ export async function rateLimitedFetch() {
 export async function authentication({ companyIntegrationId }) {
   try {
 
-    console.log(companyIntegrationId)
-
     const session = await getServerSession(authOptions)
 
     const db = new AppContext()
@@ -45,8 +43,6 @@ export async function authentication({ companyIntegrationId }) {
 
     where.push({ companyId: session.company.codigo_empresa_filial })
     where.push({ integrationId: 'E6F39F15-5446-42A7-9AC4-A9A99E604F07' })
-
-    console.log(where)
 
     const companyIntegration = await db.CompanyIntegration.findOne({
       attributes: ['id', 'options'],
@@ -276,8 +272,6 @@ export async function partners({ search = " " }) {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
         const r = await res.json();
-
-        console.log(r?.retorno)
 
         // Nenhum registro retornado
         if (r?.retorno?.codigo_erro === '20') break;
@@ -546,8 +540,6 @@ async function upsertMovements({
 
     const existing = existingMap.get(item.externalId)
 
-    console.log(item.category)
-
     const category = item.category
       ? await db.FinancialCategory.findOne({
           attributes: ["id"],
@@ -556,17 +548,13 @@ async function upsertMovements({
         })
       : null
 
-    console.log('@'.repeat(10))
-    console.log(category)
-    console.log('@'.repeat(10))
-
     const categoryId = category?.id || null;
 
     if (!existing) {
       toCreate.push({
         ...item,
-        type_operation,
         companyId: session.company.codigo_empresa_filial,
+        type_operation,
         categoryId,
       })
     } else {

@@ -10,6 +10,7 @@ import { useTitle } from '@/contexts/TitleProvider'
 import { styles } from '@/components/styles'
 import { RangeFilter } from '@/components/RangeFilter'
 import _ from 'lodash'
+import Swal from 'sweetalert2'
 
 export const ViewFinancesStatements = ({ initialStatements }) => {
 
@@ -59,14 +60,24 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
   }
 
   const handleDelete = async (id) => {
-    await statements2.destroy({id})
-    fetchStatements({
-      ...statements.request
-    })
-    //alert(id)
-    //console.log(statements)
-    //const updated = _.filter(statements.response?.rows, (s) => s.id !== id)
-    //setStatements(updated)
+      try {
+        
+    const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sim', cancelButtonText: 'Cancelar' })
+
+      if (result.isConfirmed) {
+
+        await statements2.destroy({ id })
+
+        await fetchStatements({
+          ...statements.request
+        })
+
+        Swal.fire({ text: 'Excluído com sucesso!', icon: 'success', timer: 2000, showConfirmButton: false })
+    
+      }
+    } catch (error) {
+      Swal.fire({ title: 'Ops!', text: 'Não foi possível excluir o registro.', icon: 'error' })
+    }
   }
 
   return (

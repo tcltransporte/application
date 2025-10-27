@@ -98,7 +98,7 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
           { model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname'] }
         ]
       },
-      { model: db.PaymentMethod, as: 'paymentMethod' },
+      { model: db.FundMethod, as: 'fundMethod' },
       { model: db.BankAccount, as: 'bankAccount', attributes: ['codigo_conta_bancaria', 'agency', 'number'], include: [
         { model: db.Bank, as: 'bank', attributes: ['id', 'name'] }
       ]},
