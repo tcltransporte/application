@@ -186,156 +186,219 @@ export async function create(formData) {
   })
 
   db.transaction(async (transaction) => {
+    try {
 
-    const begin = format(addDays(new Date(formData.statement.begin), -20), 'dd/MM/yyyy HH:mm') //Vencimento daqui 10 dias
-    const end = format(addDays(new Date(formData.statement.end), 15), 'dd/MM/yyyy HH:mm') //Até 15 dias (Será analisado 5 dias)
+      const begin = format(addDays(new Date(formData.statement.begin), -20), 'dd/MM/yyyy HH:mm')
+      const end = format(addDays(new Date(formData.statement.end), 20), 'dd/MM/yyyy HH:mm')
 
-    await sincronize.receivements({start: begin, end: end})
+      await sincronize.receivements({start: begin, end: end})
 
-    const options = await db.BankAccount.findOne({attributes: ['statement'], where: [{codigo_conta_bancaria: formData.bankAccount?.codigo_conta_bancaria}]})
+      const options = await db.BankAccount.findOne({attributes: ['statement'], where: [{codigo_conta_bancaria: formData.bankAccount?.codigo_conta_bancaria}]})
 
-    const settings = JSON.parse(options.statement)
+      const settings = JSON.parse(options.statement)
 
-    for (const item of formData.statement.statementData) {
+      for (const item of formData.statement.statementData) {
 
-      const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
-
-      if (item.entryType == `receivement`) {
-
-        const receivement = await db.FinancialMovementInstallment.findOne({
-          attributes: ['codigo_movimento_detalhe', 'amount'],
-          include: [
-            {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
-          ],
-          where: [{
-            [Sequelize.Op.or]: [
-              { '$financialMovementInstallment.Descricao$': { [Sequelize.Op.like]: `%${item.reference}%` } }
-            ]
-          }],
-          transaction
-        })
-        
-        if (receivement) {
-
-          await db.StatementDataConciled.create({
-            statementDataId: statementData.id,
-            type: 1,
-            partnerId: receivement?.financialMovement?.partnerId,
-            categoryId: receivement?.financialMovement?.categoryId || settings?.receivement?.categoryId,
-            amount: receivement?.amount,
-            receivementId: receivement?.codigo_movimento_detalhe,
-          }, {transaction})
-  
-          if (parseFloat(statementData.fee) < 0) {
-            await db.StatementDataConciled.create({
-              statementDataId: statementData.id,
-              type: 2,
-              partnerId: settings?.fee?.partnerId,
-              categoryId: settings?.fee?.categoryId,
-              amount: Number(statementData.fee) * -1},
-              {transaction}
-            );
-          }
-
-          if (parseFloat(statementData.shipping) < 0) {
-            await db.StatementDataConciled.create({
-              statementDataId: statementData.id,
-              type: 2,
-              partnerId: settings?.shipping?.partnerId,
-              categoryId: settings?.shipping?.categoryId,
-              amount: Number(statementData.shipping) * -1}, 
-              {transaction}
-            );
-          }
-
-        }
-        
-      }
-
-      if (item.entryType == 'reserve_for_debt_payment') {
-
-        /*await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          action: 'payment',
-          type: 'reserve_for_debt_payment',
-          paymentCategorieId: '577aff8d-cfc4-43ec-8c09-25776e4e9de0', //'2.04 - Juros Sobre Empréstimos
-          amount: (parseFloat(statementData.debit))},
-          {transaction}
-        );*/
-
-        await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          type: 2,
-          partnerId: settings?.reserve_for_debt_payment?.partnerId,
-          categoryId: settings?.reserve_for_debt_payment?.categoryId,
-          amount: Number(statementData.debit) * -1},
-          {transaction}
-        );
-
-      }
-
-      if (item.entryType == 'mediation') {
-
-        let originId = undefined;
-        let destinationId = undefined;
-        let amount = 0;
-
-        if (parseFloat(statementData.debit) < 0) {
-          originId = settings?.mediation?.originId;
-          destinationId = settings?.mediation?.destinationId;
-          amount = parseFloat(statementData.debit) * -1;
+        if (item.reference != '2000009694499707' && item.reference != '2000013482195460') {
+          //continue
         }
 
-        if (parseFloat(statementData.credit) > 0) {
-          originId = settings?.mediation?.destinationId;
-          destinationId = settings?.mediation?.originId;
-          amount = parseFloat(statementData.credit);
-        }
+        const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
 
-        await db.StatementDataConciled.create({
-          statementDataId: statementData.id,
-          type: 'transfer',
-          originId,
-          destinationId,
-          amount: amount}, {transaction}
-        );
+        //console.log(item)
+
+        if (item.entryType == `receivement`) {
+
+          const receivement = await db.FinancialMovementInstallment.findOne({
+            attributes: ['codigo_movimento_detalhe', 'amount'],
+            include: [
+              {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
+            ],
+            where: [{
+              [Sequelize.Op.or]: [
+                { '$financialMovementInstallment.Descricao$': { [Sequelize.Op.like]: `%${item.reference}%` } }
+              ]
+            }],
+            transaction
+          })
           
-      }
+          if (receivement) {
 
-      /*
-      if (item.entryType == `cancelled`) {
+            if (Number(receivement?.amount) > 0) {
+              await db.StatementDataConciled.create({
+                statementDataId: statementData.id,
+                type: 1,
+                partnerId: receivement?.financialMovement?.partnerId,
+                categoryId: receivement?.financialMovement?.categoryId || settings?.receivement?.categoryId,
+                amount: Number(receivement?.amount),
+                receivementId: receivement?.codigo_movimento_detalhe,
+              }, {transaction})
+            }
+          
+            if (Number(statementData.fee) < 0) {
+              await db.StatementDataConciled.create({
+                statementDataId: statementData.id,
+                type: 2,
+                partnerId: settings?.fee?.partnerId,
+                categoryId: settings?.fee?.categoryId,
+                amount: Math.abs(Number(statementData.fee))},
+                {transaction}
+              );
+            }
 
-        if (Number(item.credit) > 0) {
+            if (Number(statementData.shipping) < 0) {
 
-          await db.StatementDataConciled.create({
-            statementDataId: statementData.id,
-            type: `transfer`,
-            originId: 15,
-            destinationId: 1,
-            amount: item.credit,
-          }, {transaction})
+              await db.StatementDataConciled.create({
+                statementDataId: statementData.id,
+                type: 2,
+                partnerId: settings?.shipping?.partnerId,
+                categoryId: settings?.shipping?.categoryId,
+                amount: Math.abs(Number(statementData.shipping))}, 
+                {transaction}
+              );
+
+              //Rembolso de frete
+              /*
+              const conciled = Number(receivement?.amount) + Number(statementData.fee) + Number(statementData.shipping)
+              const diff = Number(conciled) - Number(statementData.credit)
+  
+              if (Number(diff).toFixed(2) - Number(statementData.shipping).toFixed(2) == 0) {
+                await db.StatementDataConciled.create({
+                  statementDataId: statementData.id,
+                  type: 1,
+                  partnerId: 690,
+                  categoryId: 1100,
+                  amount: Math.abs(Number(statementData.shipping))}, 
+                  {transaction}
+                );
+              }
+              */
+
+            }
+
+            /*
+            if (Number(statementData.shippingRefund) < 0) {
+
+              await db.StatementDataConciled.create({
+                statementDataId: statementData.id,
+                type: 1,
+                partnerId: 690,
+                categoryId: 1100,
+                amount: Math.abs(Number(statementData.shippingRefund))}, 
+                {transaction}
+              );
+
+            }*/
+
+          }
+          
+          continue
 
         }
 
-        if (Number(item.debit) < 0) {
+        if (item.entryType == 'reserve_for_debt_payment') {
 
           await db.StatementDataConciled.create({
             statementDataId: statementData.id,
-            type: `transfer`,
-            originId: 1,
-            destinationId: 15,
-            amount: item.debit * -1,
-          }, {transaction})
+            type: 2,
+            partnerId: settings?.reserve_for_debt_payment?.partnerId,
+            categoryId: settings?.reserve_for_debt_payment?.categoryId,
+            amount: Math.abs(Number(statementData.debit))},
+            {transaction}
+          );
+
+          continue
 
         }
 
+        if (item.entryType == 'credit_payment') {
+
+          let originId = undefined;
+          let destinationId = undefined;
+          let amount = 0;
+
+          const credit_payment_originId = 105
+          const credit_payment_destinationId = 123
+
+          if (parseFloat(statementData.debit) < 0) {
+            originId = credit_payment_originId
+            destinationId = credit_payment_destinationId
+            amount = parseFloat(statementData.debit) * -1;
+          }
+
+          if (parseFloat(statementData.credit) > 0) {
+            originId = credit_payment_destinationId
+            destinationId = credit_payment_originId
+            amount = parseFloat(statementData.credit);
+          }
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 'transfer',
+            originId,
+            destinationId,
+            amount: amount}, {transaction}
+          );
+
+          continue
+
+        }
+
+        if (item.entryType == 'reserve_for_dispute') {
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 2,
+            partnerId: settings?.reserve_for_dispute?.partnerId,
+            categoryId: settings?.reserve_for_dispute?.categoryId,
+            amount: Number(statementData.debit) * -1},
+            {transaction}
+          );
+
+          continue
+
+        }
+
+        if (item.entryType == 'mediation') {
+
+          let originId = undefined;
+          let destinationId = undefined;
+          let amount = 0;
+
+          if (parseFloat(statementData.debit) < 0) {
+            originId = settings?.mediation?.originId;
+            destinationId = settings?.mediation?.destinationId;
+            amount = parseFloat(statementData.debit) * -1;
+          }
+
+          if (parseFloat(statementData.credit) > 0) {
+            originId = settings?.mediation?.destinationId;
+            destinationId = settings?.mediation?.originId;
+            amount = parseFloat(statementData.credit);
+          }
+
+          await db.StatementDataConciled.create({
+            statementDataId: statementData.id,
+            type: 'transfer',
+            originId,
+            destinationId,
+            amount: amount}, {transaction}
+          );
+
+          continue
+            
+        }
+
       }
-      */
+
+      await db.Statement.update({status: 'completed'}, { where: [{id: statement.id}], transaction })
+
+    } catch (error) {
+
+      console.log(error.message)
+      await db.Statement.update({status: 'error'}, { where: [{id: statement.id}], transaction })
 
     }
-
-    await db.Statement.update({status: 'completed'}, { where: [{id: statement.id}], transaction })
-
   })
 
 }
