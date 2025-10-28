@@ -100,11 +100,11 @@ const UserDropdown = () => {
       <Popper
         open={open}
         transition
-        disablePortal
+        disablePortal={false}
         placement='bottom-end'
         anchorEl={anchorRef.current}
         className='min-is-[240px] !mbs-4 z-[1]'
-        style={{zIndex: 1200}}
+        style={{ zIndex: 99999 }} // ✅ garante sobreposição máxima
       >
         {({ TransitionProps, placement }) => (
           <Fade

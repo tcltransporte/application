@@ -92,7 +92,7 @@ export const BankAccounts = () => {
                               style={{ width: 24, height: 24, borderRadius: '50%' }}
                             />
                           )}
-                          <span>{row.bank?.name}</span>
+                          <span>{row.name}</span>
                         </Stack>
                       </TableCell>
                       
@@ -135,7 +135,7 @@ export const BankAccounts = () => {
       </Box>
 
       <ViewBankAccount
-        categorieId={companyUserId}
+        bankAccountId={companyUserId}
         onClose={(isUpdated) => {
           setCompanyUserId(undefined)
           if (isUpdated) {

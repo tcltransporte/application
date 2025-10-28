@@ -58,6 +58,11 @@ export class StatementData {
     type: DataTypes.DECIMAL(18, 2)
   }
 
+  shippingRefund = {
+    field: 'shippingRefund',
+    type: DataTypes.DECIMAL(18, 2)
+  }
+
   debit = {
     field: 'debit',
     type: DataTypes.DECIMAL(18, 2)

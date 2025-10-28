@@ -32,8 +32,6 @@ export async function authorization({companyIntegrationId}) {
     params.append('client_secret', 'XZKpfqhCIQjvnLk9DnRA4f7UHOs3OC5c')
     params.append('refresh_token', options.refresh_token)
 
-    console.log(options.refresh_token)
-
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
         method: 'POST',
         headers: {
@@ -86,12 +84,9 @@ export async function getStatements({companyIntegrationId}) {
 
     const statement = []
 
-    console.log(sourceIds)
-
     const filteredData = data.filter((item) => !sourceIds.includes(item.id))
 
     for (const item of filteredData) {
-        console.log(item)
         statement.push({
             sourceId: item.id,
             fileName: item.file_name,
@@ -134,8 +129,6 @@ export async function statement({companyIntegrationId, item, file}) {
     // Remove o último item (última linha)
     //accountStatement.pop()
 
-    //console.log(accountStatement)
-
     
     const token = await authorization({companyIntegrationId})
 
@@ -176,9 +169,6 @@ export async function statement({companyIntegrationId, item, file}) {
 
     for (let item of accountStatement) {
 
-        //console.log(item)
-
-
         let reference
 
         if (isEmptyJsonString(item)) {
@@ -187,29 +177,28 @@ export async function statement({companyIntegrationId, item, file}) {
 
         const liberations = _.filter(json, (c) => c.SOURCE_ID == item.REFERENCE_ID)
 
-        console.log(liberations)
-
         let liberation = liberations[0]
-
-        if (liberation?.DESCRIPTION == 'payment') {
-            liberation.DESCRIPTION = 'receivement'
-        }
 
         if (_.size(_.filter(liberations, (c) => c.DESCRIPTION == 'mediation')) > 0) {
             liberation.DESCRIPTION = 'mediation'
         }
 
-        console.log(liberation)
+        if (_.size(_.filter(liberations, (c) => c.DESCRIPTION == 'reserve_for_debt_payment')) > 0) {
+            liberation.DESCRIPTION = 'reserve_for_debt_payment'
+        }
 
         reference = liberation?.ORDER_ID?.toString()
 
+        let isShippingRefund = true
+
         if (!_.isEmpty(liberation?.PACK_ID)) {
+            isShippingRefund = false
             reference = liberation?.PACK_ID
         }
 
-        //console.log(item)
-
-        //console.log('sourceId: ', item.DEBITS, liberation)
+        if (liberation?.DESCRIPTION == 'payment') {
+            liberation.DESCRIPTION = 'receivement'
+        }
 
         /*
         if (Number(item.NET_DEBIT_AMOUNT) == 0 && Number(item.NET_CREDIT_AMOUNT) == 0) {
@@ -242,10 +231,6 @@ export async function statement({companyIntegrationId, item, file}) {
 
         }*/
         
-        //console.log(item)
-
-        //console.log(liberation?.DATE, item.RELEASE_DATE)
-
         let statementData = {}
 
         const entryDate = liberation?.DATE || item.RELEASE_DATE
@@ -260,6 +245,9 @@ export async function statement({companyIntegrationId, item, file}) {
         statementData.amount = parseFloat(liberation?.GROSS_AMOUNT ?? 0) ?? amount
         statementData.fee = parseFloat(liberation?.MP_FEE_AMOUNT ?? 0)
         statementData.shipping = parseFloat(liberation?.SHIPPING_FEE_AMOUNT ?? 0)
+        
+        //statementData.shippingRefund = isShippingRefund ? Number(statementData.shipping) : 0
+
         statementData.extra = JSON.stringify(liberations)
 
         if (amount < 0) {
@@ -337,28 +325,6 @@ async function mercadolivre_orders({access_token, start, end, offset}) {
 
     const r = await fetch(
         `https://api.mercadolibre.com/orders/search?seller=2484487707&offset=${offset * 50}&limit=50&order.date_last_updated.from=${start}T00:00:00.000-04:00&order.date_last_updated.to=${end}T23:59:59.999-04:00`,
-        {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${access_token}`,
-            },
-        }
-    );
-
-    if (!r.ok) {
-        throw new Error(`Erro na requisição: ${r.status} ${r.statusText}`);
-    }
-
-    const data = await r.json();
-    
-    return data;
-
-}
-
-async function findOne({access_token, orderId}) {
-
-    const r = await fetch(
-        `https://api.mercadolibre.com/orders/search?seller=2484487707&q=${orderId}`,
         {
             method: "GET",
             headers: {

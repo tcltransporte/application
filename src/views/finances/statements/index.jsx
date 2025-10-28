@@ -65,15 +65,15 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
 
         await statements2.destroy({ id })
 
+        await Swal.fire({ text: 'Excluído com sucesso!', icon: 'success', timer: 2000, showConfirmButton: true })
+
         await fetchStatements({
           ...statements.request
         })
 
-        Swal.fire({ text: 'Excluído com sucesso!', icon: 'success', timer: 2000, showConfirmButton: false })
-
       }
     } catch (error) {
-      Swal.fire({ title: 'Ops!', text: 'Não foi possível excluir o registro.', icon: 'error' })
+      await Swal.fire({ title: 'Ops!', text: 'Não foi possível excluir o registro.', icon: 'error', showConfirmButton: true })
     }
   }
 
@@ -183,7 +183,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
                         </TableCell>
                         <TableCell>{format(statement.begin, 'dd/MM/yyyy HH:mm')}</TableCell>
                         <TableCell>{format(statement.end, 'dd/MM/yyyy HH:mm')}</TableCell>
-                        <TableCell>{statement.status == 'pending' ? 'Pendente' : 'Completado'}</TableCell>
+                        <TableCell>{statement.status == 'pending' ? 'Pendente' : statement.status == 'completed' ? 'Completado' : statement.status == 'error' ? 'Erro' : ''}</TableCell>
                         <TableCell align="center">
                           <Box className="row-actions">
                               <Tooltip title="Editar">

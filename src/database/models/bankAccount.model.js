@@ -9,6 +9,11 @@ export class BankAccount {
     type: DataTypes.BIGINT
   }
 
+  bankId = {
+    field: 'bankId',
+    type: DataTypes.INTEGER
+  }
+
   companyId = {
     field: 'CodigoEmpresaFilial',
     type: DataTypes.TINYINT

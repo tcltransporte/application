@@ -18,7 +18,7 @@ import * as bankAccount from '@/app/server/settings/bank-accounts'
 import * as search from '@/utils/search'
 import { BackdropLoading } from '@/components/BackdropLoading'
 
-export const ViewBankAccount = ({ categorieId, onClose }) => {
+export const ViewBankAccount = ({ bankAccountId, onClose }) => {
 
   const [errorState, setErrorState] = useState(null)
   const [user, setUser] = useState(null)
@@ -34,9 +34,10 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
         setLoading(true)
         setShouldReset(true)
 
-        if (categorieId) {
-          const categorie = await bankAccount.findOne({ codigo_conta_bancaria: categorieId })
-          setUser(categorie)
+        if (bankAccountId) {
+          const bankAccount2 = await bankAccount.findOne({ codigo_conta_bancaria: bankAccountId })
+          setUser(bankAccount2)
+          console.log(bankAccount2)
         } else {
           setUser(null)
         }
@@ -49,27 +50,17 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
     }
 
     fetchUser()
-  }, [categorieId])
+  }, [bankAccountId])
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
 
-      await bankAccount.upsert({categorieId, ...values})
+      await bankAccount.upsert({bankAccountId, ...values})
 
       setErrorState(null)
 
       onClose(true)
       
-      /*
-      setSubmitting(true)
-
-      await setCompanyUser({ categorieId, ...values })
-
-      toast.success('Salvo com sucesso!', { closeButton: true, theme: 'colored' })
-
-      onClose(true)
-      */
-
     } catch (error) {
       setErrorState(error.message || 'Erro ao salvar')
     } finally {
@@ -97,7 +88,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
       <BackdropLoading loading={loading} message={`Carregando...`} />
 
       <Drawer
-        open={categorieId !== undefined && !loading}
+        open={bankAccountId !== undefined && !loading}
         anchor='right'
         variant='temporary'
         //ModalProps={{ keepMounted: true }}
@@ -105,7 +96,7 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
         sx={{ '& .MuiDrawer-paper': { width: { xs: 300, sm: 400 } } }}
       >
         <div className='flex items-center justify-between pli-5 plb-4' style={{ padding: '16px' }}>
-          <Typography variant='h5'>{categorieId ? 'Editar' : 'Adicionar'} conta bancária</Typography>
+          <Typography variant='h5'>{bankAccountId ? 'Editar' : 'Adicionar'} conta bancária</Typography>
           <IconButton size='small' onClick={handleClose}>
             <i className='ri-close-line text-2xl' />
           </IconButton>
@@ -119,9 +110,11 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
             initialValues={{
               codigo_conta_bancaria: user?.codigo_conta_bancaria,
               bank: user?.bank,
+              name: user?.name || '',
               holder: user?.holder || '',
               agency: user?.agency || '',
-              number: user?.number || ''
+              number: user?.number || '',
+              externalId: user?.externalId || ''
             }}
             validationSchema={Yup.object({
               //description: Yup.string().required('Campo obrigatório!'),
@@ -154,6 +147,16 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
 
                   <Field
                     component={TextField}
+                    label='Descrição'
+                    name='name'
+                    error={Boolean(touched.name && errors.name)}
+                    helperText={touched.name && errors.name}
+                    disabled={isSubmitting}
+                    autoFocus
+                  />
+
+                  <Field
+                    component={TextField}
                     label='Titular'
                     name='holder'
                     error={Boolean(touched.holder && errors.holder)}
@@ -178,6 +181,16 @@ export const ViewBankAccount = ({ categorieId, onClose }) => {
                     name='number'
                     error={Boolean(touched.number && errors.number)}
                     helperText={touched.number && errors.number}
+                    disabled={isSubmitting}
+                    autoFocus
+                  />
+
+                  <Field
+                    component={TextField}
+                    label='Cod.Externo'
+                    name='externalId'
+                    error={Boolean(touched.externalId && errors.externalId)}
+                    helperText={touched.externalId && errors.externalId}
                     disabled={isSubmitting}
                     autoFocus
                   />

@@ -242,6 +242,8 @@ export async function partners({ search = " " }) {
 
     let options = await authentication({ companyIntegrationId: companyIntegration.id })
 
+    const lastSyncPartner = new Date()
+
     await db.transaction(async (transaction) => {
 
       let page = 1
@@ -254,7 +256,7 @@ export async function partners({ search = " " }) {
           formato: "json",
           pesquisa: search,
           pagina: page,
-          dataMinimaAtualizacao: format(options.lastSyncPartner, "dd/MM/yyyy HH:mm:ss"),
+          dataMinimaAtualizacao: options?.lastSyncPartner ? format(options?.lastSyncPartner, "dd/MM/yyyy HH:mm:ss") : null,
         }
 
         const query = Object.entries(params)
@@ -264,7 +266,7 @@ export async function partners({ search = " " }) {
 
         const url = `https://api.tiny.com.br/api2/contatos.pesquisa.php?${query}`;
 
-        console.log(`🔹 Buscando página ${page} de contatos`);
+        console.log(`🔹 [${page}/${page}] Buscando página de contatos`)
 
         await rateLimitedFetch();
 
@@ -329,7 +331,7 @@ export async function partners({ search = " " }) {
       } while (page <= totalPages)
 
       // Atualizar última sincronização
-      options.lastSyncPartner = format(new Date(), "yyyy-MM-dd HH:mm")
+      options.lastSyncPartner = format(lastSyncPartner, "yyyy-MM-dd HH:mm")
 
       await db.CompanyIntegration.update(
         { options: JSON.stringify(options) },
@@ -338,7 +340,7 @@ export async function partners({ search = " " }) {
 
     })
 
-    console.log("✅ Sincronização de parceiros concluída")
+    console.log("✅ Sincronização de contatos concluída")
 
   } catch (error) {
     console.error("Erro em getTinyPartner:", error.message)

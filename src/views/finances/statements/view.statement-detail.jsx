@@ -3,6 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, Button, Collapse, CircularProgress, Typography, DialogActions, Select,
   MenuItem, TextField, Paper, Grid, Backdrop, Badge, Tooltip, Menu, Checkbox, Box,
+  TablePagination,
 } from '@mui/material'
 import { format } from 'date-fns'
 import { Fragment, useEffect, useState, useCallback, useRef, useMemo } from 'react'
@@ -252,6 +253,16 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
     }
   };
 
+  // Paginação
+  const [page, setPage] = useState(0);
+  const rowsPerPage = 50;
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Dados da página atual
+  const paginatedData = filteredDataList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <>
@@ -272,7 +283,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
             {[
               { label: "Entradas", value: `R$ ${formatCurrency(entradas)}`, icon: "ri-arrow-down-circle-line", type: "entrada" },
               { label: "Saídas", value: `R$ ${formatCurrency(saidas)}`, icon: "ri-arrow-up-circle-line", type: "saida" },
-              { label: "Saldo Final", value: `R$ ${formatCurrency(saldoFinal)}`, icon: "ri-wallet-3-line", type: "saldo" },
+              { label: "Saldo do dia", value: `R$ ${formatCurrency(saldoFinal)}`, icon: "ri-wallet-3-line", type: "saldo" },
               { label: "Contas a pagar", value: `R$ ${formatCurrency(contasAPagar)}`, icon: "ri-bill-line", type: "pagar" },
               { label: "Contas a receber", value: `R$ ${formatCurrency(contasAReceber)}`, icon: "ri-money-dollar-circle-line", type: "receber" },
               { label: "Transferências", value: `R$ ${formatCurrency(transferenciasSaldo)}`, icon: "ri-arrow-left-right-line", type: "transferencia" },
@@ -348,7 +359,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
               </TableRow>
             </TableHead>
             <TableBody ref={tableBodyRef}>
-              {filteredDataList.map((data, index) => {
+              {paginatedData.map((data, index) => {
 
                 const hasError = _.size(_.filter(data.concileds, (item) => item.message != null)) >= 1;
 
@@ -463,6 +474,17 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
               </TableRow>
             </TableBody>
           </Table>
+
+          {/* Paginação */}
+          <TablePagination
+            component="div"
+            count={filteredDataList.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[rowsPerPage]}
+          />
+          
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'space-between' }}>
           <div>

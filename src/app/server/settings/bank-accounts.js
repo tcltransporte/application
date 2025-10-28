@@ -18,7 +18,7 @@ export async function findAll() {
   const db = new AppContext()
 
   const bankAccounts = await db.BankAccount.findAll({
-    attributes: ['codigo_conta_bancaria', 'holder', 'agency', 'number'],
+    attributes: ['codigo_conta_bancaria', 'name', 'holder', 'agency', 'number'],
     include: [
       {model: db.Bank, as: 'bank', attributes: ['id', 'name', 'icon']}
     ],
@@ -39,7 +39,10 @@ export async function findOne({ codigo_conta_bancaria }) {
   const db = new AppContext()
 
   const bankAccount = await db.BankAccount.findOne({
-    attributes: ["codigo_conta_bancaria", "agency", "number"],
+    attributes: ["codigo_conta_bancaria", 'name', "agency", "number", 'externalId'],
+    include: [
+      {model: db.Bank, as: 'bank', attributes: ['id', 'code', 'name']}
+    ],
     where: { codigo_conta_bancaria }
   })
 
@@ -56,11 +59,12 @@ export async function upsert(values) {
   const { codigo_conta_bancaria, ...rest } = values
 
   if (codigo_conta_bancaria) {
-    await db.BankAccount.update(rest, { where: { codigo_conta_bancaria } })
+    await db.BankAccount.update({ bankId: values.bank?.id, ...rest}, { where: { codigo_conta_bancaria } })
   } else {
     await db.BankAccount.create({
       companyId: session.company.codigo_empresa_filial,
-      bankName: "",
+      bankId: values.bank?.id,
+      name: values.name,
       balance: 0,
       description: "",
       ...rest
