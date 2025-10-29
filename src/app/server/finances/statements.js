@@ -199,13 +199,7 @@ export async function create(formData) {
 
       for (const item of formData.statement.statementData) {
 
-        if (item.reference != '2000009694499707' && item.reference != '2000013482195460') {
-          //continue
-        }
-
         const statementData = await db.StatementData.create({statementId: statement.id, ...item /*, extra: JSON.stringify(item.extra)*/}, {transaction})
-
-        //console.log(item)
 
         if (item.entryType == `receivement`) {
 
@@ -394,7 +388,6 @@ export async function create(formData) {
       await db.Statement.update({status: 'completed'}, { where: [{id: statement.id}], transaction })
 
     } catch (error) {
-
       console.log(error.message)
       await db.Statement.update({status: 'error'}, { where: [{id: statement.id}], transaction })
 
@@ -590,134 +583,137 @@ export async function concile({id}) {
 
   const db = new AppContext()
 
-  const concileds = await db.StatementDataConciled.findAll({
-    attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
-    include: [
-      {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate', 'sourceId', 'reference'], include: [
-        {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
-      ]},
-      {model: db.BankAccount, as: 'origin', attributes: ['externalId']},
-      {model: db.BankAccount, as: 'destination', attributes: ['externalId']}
-    ],
-    where: [{id: id, isConciled: false}]
-  })
+  await db.transaction(async (transaction) => {
 
-  for (const item of concileds) {
+    const concileds = await db.StatementDataConciled.findAll({
+      attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
+      include: [
+        {model: db.StatementData, as: 'statementData', attributes: ['id', 'entryDate', 'sourceId', 'reference'], include: [
+          {model: db.Statement, as: 'statement', attributes: ['bankAccountId']}
+        ]},
+        {model: db.BankAccount, as: 'origin', attributes: ['externalId']},
+        {model: db.BankAccount, as: 'destination', attributes: ['externalId']}
+      ],
+      where: [{id: id, isConciled: false}],
+      transaction
+    })
 
-    if (item.type == 1) {
-      try {
+    for (const item of concileds) {
 
-        if (!item.receivementId) {
+      if (item.type == 1) {
+        try {
 
-          const installment = await receivements.insert({
-            company: {
-              codigo_empresa_filial: 2,
-            },
+          if (!item.receivementId) {
+
+            const installment = await receivements.insert({
+              company: {
+                codigo_empresa_filial: 2,
+              },
+              amount: item.amount,
+              installment: 1,
+              issueDate: item.statementData.entryDate,
+              startDate: item.statementData.entryDate,
+              bankAccount: null,
+              receiver: { codigo_pessoa: item.partnerId },
+              observation: '',
+              installments: [
+                {
+                  installment: 1,
+                  amount: item.amount,
+                  dueDate: item.statementData.entryDate,
+                  digitableLine: '',
+                  boletoNumber: ''
+                }
+              ],
+              category: { id: item.categoryId }
+            })
+
+            item.receivementId = installment
+            
+            await item.save()
+
+          }
+
+          await receivements.concile({
+            codigo_movimento_detalhe: item.receivementId,
+            date: item.statementData.entryDate,
             amount: item.amount,
-            installment: 1,
-            issueDate: item.statementData.entryDate,
-            startDate: item.statementData.entryDate,
-            bankAccount: null,
-            receiver: { codigo_pessoa: item.partnerId },
-            observation: '',
-            installments: [
-              {
-                installment: 1,
-                amount: item.amount,
-                dueDate: item.statementData.entryDate,
-                digitableLine: '',
-                boletoNumber: ''
-              }
-            ],
-            category: { id: item.categoryId }
+            bankAccountId: item.statementData.statement.bankAccountId,
+            observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
           })
 
-          item.receivementId = installment
+          await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
           
-          await item.save()
-
+        } catch (error) {
+          await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
         }
-
-        await receivements.concile({
-          codigo_movimento_detalhe: item.receivementId,
-          date: item.statementData.entryDate,
-          amount: item.amount,
-          bankAccountId: item.statementData.statement.bankAccountId,
-          observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference}`
-        })
-
-        await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
-        
-      } catch (error) {
-        await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
       }
-    }
 
-    if (item.type == 2) {
-      try {
+      if (item.type == 2) {
+        try {
 
-        console.log('payment')
+          if (!item.paymentId) {
 
-        if (!item.paymentId) {
+            const installment = await payments.insert({
+              company: {
+                codigo_empresa_filial: 2,
+              },
+              amount: Number(item.amount),
+              installment: 1,
+              issueDate: item.statementData.entryDate,
+              startDate: item.statementData.entryDate,
+              bankAccount: null,
+              receiver: { codigo_pessoa: item.partnerId },
+              observation: '',
+              installments: [
+                {
+                  installment: 1,
+                  amount: item.amount,
+                  dueDate: item.statementData.entryDate,
+                  digitableLine: '',
+                  boletoNumber: ''
+                }
+              ],
+              category: { id: item.categoryId }
+            })
 
-          const installment = await payments.insert({
-            company: {
-              codigo_empresa_filial: 2,
-            },
-            amount: Number(item.amount),
-            installment: 1,
-            issueDate: item.statementData.entryDate,
-            startDate: item.statementData.entryDate,
-            bankAccount: null,
-            receiver: { codigo_pessoa: item.partnerId },
-            observation: '',
-            installments: [
-              {
-                installment: 1,
-                amount: item.amount,
-                dueDate: item.statementData.entryDate,
-                digitableLine: '',
-                boletoNumber: ''
-              }
-            ],
-            category: { id: item.categoryId }
+            item.paymentId = installment
+
+            await item.save()
+
+          }
+        
+          await payments.concile({
+            codigo_movimento_detalhe: item.paymentId,
+            date: item.statementData.entryDate,
+            amount: item.amount,
+            bankAccountId: item.statementData.statement.bankAccountId,
+            observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference || ''}`
           })
 
-          item.paymentId = installment
+          await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
 
-          await item.save()
-
+        } catch (error) {
+          await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
         }
-       
-        await payments.concile({
-          codigo_movimento_detalhe: item.paymentId,
+      }
+
+      if (item.type == 'transfer') {
+        await sincronize.transfer({
           date: item.statementData.entryDate,
           amount: item.amount,
-          bankAccountId: item.statementData.statement.bankAccountId,
+          originId: item.origin?.externalId,
+          destinationId: item.destination?.externalId,
           observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference || ''}`
         })
 
         await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
 
-      } catch (error) {
-        await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
       }
-    }
-
-    if (item.type == 'transfer') {
-      await sincronize.transfer({
-        date: item.statementData.entryDate,
-        amount: item.amount,
-        originId: item.origin?.externalId,
-        destinationId: item.destination?.externalId,
-        observation: `Integração: ${item.statementData?.sourceId} | ${item.statementData?.reference || ''}`
-      })
-
-      await db.StatementDataConciled.update({isConciled: true, message: null}, {where: [{id: item.id}]})
 
     }
 
-  }
+  })
 
 }
 

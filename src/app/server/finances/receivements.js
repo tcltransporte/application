@@ -14,7 +14,7 @@ export async function findAll({ limit = 50, offset, company, documentNumber, pay
 
   const session = await getServerSession(authOptions)
 
-  await sincronize.receivements({start: dueDate.start, end: dueDate.end})
+  await sincronize.receivements({partner: payer, start: dueDate.start, end: dueDate.end})
     
   const db = new AppContext()
 
@@ -176,10 +176,13 @@ export async function insert(formData) {
 
   await db.transaction(async (transaction) => {
 
-    /* TINY INTEGRAÇÃO */
-    const historico = `` //`Integração: ${/*item.statementData.sourceId} | ${item.statementData.orderId} / ${item.receivement?.name ?? ''*/}`;
+    console.log(formData)
 
-    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname', 'externalId'], where: [{'codigo_pessoa': formData.payer?.codigo_pessoa}]})
+    /* TINY INTEGRAÇÃO */
+  
+    const partner = await db.Partner.findOne({attributes: ['codigo_pessoa', 'surname', 'externalId'], where: [{'codigo_pessoa': formData.receiver?.codigo_pessoa}]})
+    
+    const historico = '' //`Integração: ${formData.sourceId || ''} | ${formData.reference || ''} / ${partner?.surname || ''}`;
 
     const category = await db.FinancialCategory.findOne({attributes: ['id', 'description'], where: [{'id': formData.category?.id}]})
 
@@ -232,7 +235,7 @@ export async function insert(formData) {
         companyId: formData.company?.codigo_empresa_filial,
         centerCostId: formData.centerCost?.id,
         categoryId: formData.category?.id,
-        partnerId: formData.payer?.codigo_pessoa,
+        partnerId: formData.receiver?.codigo_pessoa,
         observation: formData.observation
     }, {transaction})
 
@@ -289,6 +292,54 @@ export async function update(formData) {
   })
 
   return installment?.get({ plain: true });
+
+}
+
+export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
+
+  const options = await authentication({})
+
+  const db = new AppContext()
+
+  const receivement = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe', 'externalId'],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
+  })
+
+  const bankAccount = await db.BankAccount.findOne({
+    attributes: ['name'],
+    where: [{codigo_conta_bancaria: bankAccountId}]
+  })
+
+  const conta = {
+    id: receivement.externalId,
+    data: format(new Date(date), 'dd/MM/yyyy'),
+    contaDestino: bankAccount.name,
+    valorPago: amount,
+    historico: observation
+  }
+
+  await rateLimitedFetch()
+
+  const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=${options.token}&conta=${encodeURIComponent(
+    JSON.stringify({
+      conta: conta
+    })
+  )}&formato=JSON`
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  })
+
+  const r = await response.json()
+
+  if (r.retorno.status == 'Erro') {
+    console.log(r.retorno.registros[0].registro.erros[0].erro)
+    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
+  }
 
 }
 
@@ -363,52 +414,6 @@ export async function desconcile({codigo_movimento_detalhe}) {
 
   if (!response2.ok) {
     throw new Error(`Erro HTTP! status: ${response2.status}`)
-  }
-
-}
-
-export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
-
-  const db = new AppContext()
-
-  const receivement = await db.FinancialMovementInstallment.findOne({
-    attributes: ['codigo_movimento_detalhe', 'externalId'],
-    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
-  })
-
-  const bankAccount = await db.BankAccount.findOne({
-    attributes: ['name'],
-    where: [{codigo_conta_bancaria: bankAccountId}]
-  })
-
-  const conta = {
-    id: receivement.externalId,
-    data: format(new Date(date), 'dd/MM/yyyy'),
-    contaDestino: bankAccount.name,
-    valorPago: amount,
-    historico: observation
-  }
-
-  await rateLimitedFetch()
-
-  const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
-    JSON.stringify({
-      conta: conta
-    })
-  )}&formato=JSON`
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
-  })
-
-  const r = await response.json()
-
-  if (r.retorno.status == 'Erro') {
-    console.log(r.retorno.registros[0].registro.erros[0].erro)
-    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
   }
 
 }

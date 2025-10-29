@@ -13,6 +13,7 @@ import * as statements from '@/app/server/finances/statements'
 import _ from 'lodash'
 
 export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
+  
   const [uploadType, setUploadType] = useState('')
   const [bankAccount, setBankAccount] = useState(null)
   const [droppedFile, setDroppedFile] = useState(null)
@@ -35,8 +36,6 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
   const handleSubmit = async (statement) => {
     try {
 
-      console.log(statement)
-
       await statements.create({statement: {...statement}, bankAccount})
       await onSubmit()
       
@@ -44,8 +43,6 @@ export const ViewAddStatement = ({ open, onClose, onSubmit }) => {
       console.log(error)
     }
   }
-
-  console.log(bankAccount)
 
   return (
     <Drawer

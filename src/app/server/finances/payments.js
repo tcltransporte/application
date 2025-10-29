@@ -14,7 +14,7 @@ export async function findAll({ limit = 50, offset, company, documentNumber, rec
 
   const session = await getServerSession(authOptions)
 
-  await sincronize.payments({start: dueDate.start, end: dueDate.end})
+  await sincronize.payments({partner: receiver, start: dueDate.start, end: dueDate.end})
     
   const db = new AppContext()
 
@@ -295,6 +295,52 @@ export async function update(formData) {
 
 }
 
+export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
+
+  const options = await authentication({})
+
+  const db = new AppContext()
+
+  const payment = await db.FinancialMovementInstallment.findOne({
+    attributes: ['codigo_movimento_detalhe', 'externalId'],
+    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
+  })
+
+  const bankAccount = await db.BankAccount.findOne({
+    attributes: ['name'],
+    where: [{codigo_conta_bancaria: bankAccountId}]
+  })
+
+  const conta = {
+    id: payment.externalId,
+    data: format(new Date(date), 'dd/MM/yyyy'),
+    contaOrigem: bankAccount.name,
+    valorPago: amount,
+    historico: observation
+  }
+  
+  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=${options.token}&conta=${encodeURIComponent(
+    JSON.stringify({
+      conta: conta
+    })
+  )}&formato=JSON`
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  })
+
+  const r = await response.json()
+
+  if (r.retorno.status == 'Erro') {
+    console.log(r.retorno.registros[0].registro.erros[0].erro)
+    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
+  }
+
+}
+
 export async function desconcile({codigo_movimento_detalhe}) {
 
   const db = new AppContext()
@@ -304,9 +350,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
     where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
   })
 
-  const auth = await authentication({
-    companyIntegrationId: '92075C95-6935-4FA4-893F-F22EA9B55B5C'
-  })
+  const options = await authentication({})
 
   const args1 = `[${payment.externalId},"P"]`
 
@@ -319,7 +363,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "cookie": `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
         "origin": "https://erp.tiny.com.br",
         "referer": "https://erp.tiny.com.br/caixa",
         "x-custom-request-for": "XAJAX",
@@ -364,50 +408,6 @@ export async function desconcile({codigo_movimento_detalhe}) {
 
   if (!response2.ok) {
     throw new Error(`Erro HTTP! status: ${response2.status}`)
-  }
-
-}
-
-export async function concile({codigo_movimento_detalhe, bankAccountId, date, amount, observation}) {
-
-  const db = new AppContext()
-
-  const payment = await db.FinancialMovementInstallment.findOne({
-    attributes: ['codigo_movimento_detalhe', 'externalId'],
-    where: [{codigo_movimento_detalhe: codigo_movimento_detalhe}]
-  })
-
-  const bankAccount = await db.BankAccount.findOne({
-    attributes: ['name'],
-    where: [{codigo_conta_bancaria: bankAccountId}]
-  })
-
-  const conta = {
-    id: payment.externalId,
-    data: format(new Date(date), 'dd/MM/yyyy'),
-    contaOrigem: bankAccount.name,
-    valorPago: amount,
-    historico: observation
-  }
-  
-  const url = `https://api.tiny.com.br/api2/conta.pagar.baixar.php?token=334dbca19fc02bb1339af70e1def87b5b26cdec61c4976760fe6191b5bbb1ebf&conta=${encodeURIComponent(
-    JSON.stringify({
-      conta: conta
-    })
-  )}&formato=JSON`
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
-  })
-
-  const r = await response.json()
-
-  if (r.retorno.status == 'Erro') {
-    console.log(r.retorno.registros[0].registro.erros[0].erro)
-    throw new Error(r.retorno.registros[0].registro.erros[0].erro)
   }
 
 }

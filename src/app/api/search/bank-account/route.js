@@ -25,13 +25,13 @@ export async function POST(request) {
         const bankAccounts = await db.BankAccount.findAll({
             attributes: ['codigo_conta_bancaria', 'name', 'agency', 'number'],
             include: [
-                {model: db.Bank, as: 'bank', attributes: ['id', 'name']},
+                {model: db.Bank, as: 'bank', attributes: ['id', 'name', 'icon']},
                 {model: db.BankAccountIntegration, as: 'bankAccountIntegrations', attributes: ['id', 'typeBankAccountIntegrationId'], include: [
                     {model: db.CompanyIntegration, as: 'companyIntegration', attributes: ['id', 'integrationId']}
                 ]}
             ],
             where,
-            order: [['agency', 'asc']],
+            order: [['name', 'asc']],
             limit: 20,
             offset: 0,
         })

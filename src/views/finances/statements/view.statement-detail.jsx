@@ -89,8 +89,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
   // --- Lógica de Pendência Centralizada ---
   const checkPendency = useCallback((data) => {
 
-    console.log(data)
-
     const concileds = data.concileds ?? []
 
     if (concileds.length === 0) return true;
@@ -101,7 +99,7 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
         return false;
     });
     
-    if (hasDivergent) return true;
+    //if (hasDivergent) return true;
 
     // --- LÓGICA DE SOMA FINAL ---
     const sumConcileds = _.sumBy(concileds, (c) => {
@@ -121,8 +119,6 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
       }
     });
 
-    console.log(sumConcileds.toFixed(2), data.amount)
-    
     const amountMismatch = Number(sumConcileds.toFixed(2)) !== Number(data.entryAmount);
 
     if (amountMismatch) return true;

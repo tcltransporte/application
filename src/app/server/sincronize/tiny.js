@@ -74,14 +74,14 @@ export async function authentication({ companyIntegrationId }) {
 
     if (data.includes("Sua sessão expirou")) {
         
-        const access = await login({username: options.username, password: options.password})
+      const access = await login({username: options.username, password: options.password})
 
-        options.TINYSESSID = access.tinySession
-        options._csrf_token = access.csrfToken
+      options.TINYSESSID = access.tinySession
+      options._csrf_token = access.csrfToken
 
-        await db.CompanyIntegration.update({ options: JSON.stringify(options) }, { where: [{ id: companyIntegration.id }] })
+      await db.CompanyIntegration.update({ options: JSON.stringify(options) }, { where: [{ id: companyIntegration.id }] })
 
-        return options
+      return options
 
     }
 
@@ -120,10 +120,9 @@ export async function login({username, password}) {
         await page.fill('#password', password);
 
         // clique + espera navegação
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.click('//button[contains(text(),"Entrar") or contains(text(),"Login")]')
-        ]);
+        await page.waitForTimeout(2000)
+
+        page.click('//button[contains(text(),"Entrar") or contains(text(),"Login")]')
 
         // tenta pegar modal se existir
         const loginModalBtn = await page.waitForSelector('//div[@class="modal-footer"]//button[contains(text(),"login")]', { timeout: 5000 }).catch(() => null);
@@ -240,7 +239,7 @@ export async function partners({ search = " " }) {
       ],
     })
 
-    let options = await authentication({ companyIntegrationId: companyIntegration.id })
+    let options = await authentication({})
 
     const lastSyncPartner = new Date()
 
@@ -352,10 +351,11 @@ export async function partners({ search = " " }) {
 // 🔹 AUXILIARES GENÉRICOS
 // =============================
 // Buscar páginas de contas
-async function fetchTinyAccounts({ token, start, end, offset, type }) {
+async function fetchTinyAccounts({ token, partner, start, end, offset, type }) {
 
   const params = new URLSearchParams({ token, formato: "json" })
 
+  if (partner !== undefined) params.append("nome_cliente", partner.surname)
   if (start !== undefined) params.append("data_ini_vencimento", start)
   if (end !== undefined) params.append("data_fim_vencimento", end)
   if (offset !== undefined) params.append("pagina", offset)
@@ -394,7 +394,7 @@ async function fetchTinyDetail({ token, id, type }) {
 }
 
 // Obter todas as páginas e detalhes
-async function getAllTinyAccounts({ token, start, end, type }) {
+async function getAllTinyAccounts({ token, partner, start, end, type }) {
 
   let page = 1
   let totalPages = 1
@@ -407,6 +407,7 @@ async function getAllTinyAccounts({ token, start, end, type }) {
 
     const response = await fetchTinyAccounts({
       token,
+      partner,
       start,
       end,
       offset: page,
@@ -641,7 +642,7 @@ async function upsertMovements({
 // =============================
 // 🔹 Função principal genérica
 // =============================
-async function syncTinyData({ start, end, type, type_operation }) {
+async function syncTinyData({ partner, start, end, type, type_operation }) {
 
   const options = await authentication({})
 
@@ -656,6 +657,7 @@ async function syncTinyData({ start, end, type, type_operation }) {
 
   const contasComDetalhe = await getAllTinyAccounts({
     token: options.token,
+    partner,
     start,
     end,
     type,
@@ -701,12 +703,12 @@ async function syncTinyData({ start, end, type, type_operation }) {
 // =============================
 // 🔹 FUNÇÕES PRINCIPAIS
 // =============================
-export async function payments({ start, end }) {
-  await syncTinyData({ start, end, type: "pay", type_operation: 2 });
+export async function payments({ partner, start, end }) {
+  await syncTinyData({ partner, start, end, type: "pay", type_operation: 2 });
 }
 
-export async function receivements({ start, end }) {
-  await syncTinyData({ start, end, type: "receive", type_operation: 1 });
+export async function receivements({ partner, start, end }) {
+  await syncTinyData({ partner, start, end, type: "receive", type_operation: 1 });
 }
 
 export async function transfer({date, originId, destinationId, amount, observation = ''}) {
