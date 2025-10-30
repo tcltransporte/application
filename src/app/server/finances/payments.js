@@ -396,7 +396,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
         "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "cookie": `TINYSESSID=${auth.TINYSESSID};_csrf_token=${auth._csrf_token}`,
+        "cookie": `TINYSESSID=${options.TINYSESSID};_csrf_token=${options._csrf_token}`,
         "origin": "https://erp.tiny.com.br",
         "referer": "https://erp.tiny.com.br/caixa",
         "x-custom-request-for": "XAJAX",

@@ -491,8 +491,59 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           <div>
             {selectedConcileds.size > 0 && (
               <>
-                <Button variant="text" onClick={async () => { try { setDesconciling(true); await statements.desconcile({id: Array.from(selectedConcileds)}); await fetchStatement(false); toast.success('Desconciliado com sucesso!'); } catch (error) { console.log(error); } finally { setDesconciling(false); } }} startIcon={<i className="ri-link-unlink" style={{ fontSize: 18 }} />} disabled={desconciling}>{desconciling ? 'Desconciliando' : 'Desconciliar'}</Button>
-                <Button variant="contained" color="success" onClick={async () => { try { setConciling(true); await statements.concile({id: Array.from(selectedConcileds)}); await fetchStatement(false); toast.success('Conciliado com sucesso!'); } catch (error) { console.log(error); } finally { setConciling(false); } }} sx={{ ml: 1 }} startIcon={<i className="ri-check-line" style={{ fontSize: 18 }} />} disabled={conciling}>{conciling ? 'Conciliando' : 'Conciliar'}</Button>
+                <Button
+                  variant="text"
+                  onClick={async () => {
+                    try {
+                      setDesconciling(true)
+                      await statements.desconcile({ id: Array.from(selectedConcileds) })
+                      await fetchStatement(false)
+                      toast.success('Desconciliado com sucesso!')
+                    } catch (error) {
+                      console.log(error)
+                    } finally {
+                      setDesconciling(false)
+                    }
+                  }}
+                  startIcon={
+                    desconciling ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <i className="ri-link-unlink" style={{ fontSize: 18 }} />
+                    )
+                  }
+                  disabled={desconciling}
+                  sx={{ minWidth: 140 }} // mantém largura estável durante a ação
+                >
+                  {desconciling ? 'Desconciliando...' : 'Desconciliar'}
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={async () => {
+                    try {
+                      setConciling(true)
+                      await statements.concile({ id: Array.from(selectedConcileds) })
+                      await fetchStatement(false)
+                      toast.success('Conciliado com sucesso!')
+                    } catch (error) {
+                      console.log(error)
+                    } finally {
+                      setConciling(false)
+                    }
+                  }}
+                  sx={{ ml: 1, minWidth: 140 }} // mantém largura estável
+                  startIcon={
+                    conciling ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <i className="ri-check-line" style={{ fontSize: 18 }} />
+                    )
+                  }
+                  disabled={conciling}
+                >
+                  {conciling ? 'Conciliando...' : 'Conciliar'}
+                </Button>
               </>
             )}
           </div>

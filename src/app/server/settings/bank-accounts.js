@@ -59,15 +59,16 @@ export async function upsert(values) {
   const { codigo_conta_bancaria, ...rest } = values
 
   if (codigo_conta_bancaria) {
-    await db.BankAccount.update({ bankId: values.bank?.id, ...rest}, { where: { codigo_conta_bancaria } })
+    const bankAccount = { ...rest, bankId: values.bank?.id || null}
+    await db.BankAccount.update(bankAccount, { where: { codigo_conta_bancaria } })
   } else {
     await db.BankAccount.create({
+      ...rest,
       companyId: session.company.codigo_empresa_filial,
       bankId: values.bank?.id,
       name: values.name,
       balance: 0,
       description: "",
-      ...rest
     })
   }
   

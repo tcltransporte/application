@@ -188,8 +188,8 @@ export async function create(formData) {
   db.transaction(async (transaction) => {
     try {
 
-      const begin = format(addDays(new Date(formData.statement.begin), -20), 'dd/MM/yyyy HH:mm')
-      const end = format(addDays(new Date(formData.statement.end), 20), 'dd/MM/yyyy HH:mm')
+      const begin = addDays(new Date(formData.statement.begin), -20)
+      const end = addDays(new Date(formData.statement.end), 20)
 
       await sincronize.receivements({start: begin, end: end})
 
@@ -209,7 +209,8 @@ export async function create(formData) {
               {model: db.FinancialMovement, as: 'financialMovement', attributes: ['partnerId', 'categoryId']}
             ],
             where: [{
-              [Sequelize.Op.or]: [
+              [Sequelize.Op.and]: [
+                { '$financialMovement.CodigoEmpresaFilial$': session.company.codigo_empresa_filial },
                 { '$financialMovementInstallment.Descricao$': { [Sequelize.Op.like]: `%${item.reference}%` } }
               ]
             }],
@@ -224,7 +225,7 @@ export async function create(formData) {
                 type: 1,
                 partnerId: receivement?.financialMovement?.partnerId,
                 categoryId: receivement?.financialMovement?.categoryId || settings?.receivement?.categoryId,
-                amount: Number(receivement?.amount),
+                amount: Number(item.amount),
                 receivementId: receivement?.codigo_movimento_detalhe,
               }, {transaction})
             }
@@ -723,7 +724,7 @@ export async function desconcile({id}) {
 
   const concileds = await db.StatementDataConciled.findAll({
     attributes: ['id', 'type', 'partnerId', 'categoryId', 'amount', 'paymentId', 'receivementId'],
-    where: [{id: id, isConciled: true}]
+    where: [{id: id, isConciled: true}],
   })
 
   for (const item of concileds) {
@@ -766,6 +767,7 @@ export async function desconcile({id}) {
         }
 
       }
+      
 
     } catch (error) {
       await db.StatementDataConciled.update({message: error.message}, {where: [{id: item.id}]})
