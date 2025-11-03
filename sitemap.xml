@@ -5,6 +5,7 @@
   
     <siteMapNode title="Cadastros" roles="" icon="ri-file-list-3-line">
       <siteMapNode title="Produtos" url="\register\products" description="Produtos"/>
+      <siteMapNode title="Serviços" url="\register\services" description="Serviços"/>
       <siteMapNode title="Fornecedores" url="\register\suppliers" description="Fornecedores"/>
       <siteMapNode title="Clientes" url="\register\customers" description="Clientes"/>
       <siteMapNode title="Transportadoras" url="\register\carriers" description="Transportadoras"/>
@@ -79,6 +80,20 @@
 
     <siteMapNode title="Recursos humanos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-user-star-line">
       <siteMapNode title="e-Social" url="\logistic\trips" description="e-Social"/>
+    </siteMapNode>
+
+    <!--
+    <siteMapNode title="Oficina" roles="" icon="ri-clipboard-line">
+      <siteMapNode title="Ordem de serviço" url="\workshop\service-order" description="Ordem de serviço"/>
+    </siteMapNode>
+    -->
+
+    <siteMapNode title="Vendas" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-shopping-cart-line">
+      <!--<siteMapNode title="Agenda" url="\sales\schedule" description="Agenda"/>-->
+      <siteMapNode title="PDV" url="\sales\pdv" description="PDV"/>
+      <siteMapNode title="Pedidos" url="\sales\orders" description="Pedidos"/>
+      <siteMapNode title="Separação" url="\sales\separation" description="Separação"/>
+      <siteMapNode title="Expedição" url="\sales\expedition" description="Expedição"/>
     </siteMapNode>
 
     <siteMapNode title="Finanças" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">

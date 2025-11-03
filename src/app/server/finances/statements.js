@@ -401,37 +401,47 @@ export async function destroy({ id }) {
 
   const db = new AppContext()
 
-  await db.transaction(async (transaction) => {
+  return await db.transaction(async (transaction) => {
+
+    const concileds = await db.StatementDataConciled.count({
+      where: { '$statementData.statementId$': id },
+      transaction,
+    })
+
+    if (concileds > 0) {
+      throw new Error('Já existe registros conciliados');
+    }
 
     // Buscar todos os statementData que pertencem ao statement
     const statementDataList = await db.StatementData.findAll({
-      where: { statementId: id },
-      transaction
+      where: { '$statementData.statementId$': id },
+      transaction,
     })
 
-    const statementDataIds = statementDataList.map(s => s.id)
+    const statementDataIds = statementDataList.map((s) => s.id);
 
     if (statementDataIds.length > 0) {
-      // Apaga todos os conciliações vinculadas
+      // Apaga todas as conciliações vinculadas
       await db.StatementDataConciled.destroy({
         where: { statementDataId: statementDataIds },
-        transaction
+        transaction,
       })
 
       // Apaga os statementData vinculados
       await db.StatementData.destroy({
         where: { id: statementDataIds },
-        transaction
+        transaction,
       })
     }
 
-    // Por fim apaga o statement
+    // Por fim, apaga o statement
     await db.Statement.destroy({
       where: { id },
-      transaction
+      transaction,
     })
 
   })
+
 }
 
 export async function deleteData({id}) {

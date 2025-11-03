@@ -26,6 +26,7 @@ import { CenterCost } from './models/centerCost.model.js'
 import { BankAccountIntegration } from './models/bankAccountIntegration.model.js'
 import { Archive } from './models/archive.model.js'
 import { FundMethod } from './models/fundMethod.model.js'
+import { Service } from './models/service.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -78,6 +79,8 @@ export class AppContext extends Sequelize {
   Nfe = this.define('nfe', new Nfe(), { tableName: 'nota' })
 
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
+  
+  Service = this.define('service', new Service(), { tableName: 'TipoServico' })
 
   FundMethod = this.define('fundMethod', new FundMethod(), { tableName: 'fundMethod' })
   
