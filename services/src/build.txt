@@ -1,0 +1,10 @@
+# sempre executar o Visual Studio como administrador
+
+# build application
+
+dotnet publish -c Release -r linux-x64 -f net9.0 --no-self-contained
+
+# restart host application
+sudo systemctl daemon-reload
+sudo systemctl restart application-services
+sudo systemctl status application-services

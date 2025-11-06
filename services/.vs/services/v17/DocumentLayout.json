@@ -1,7 +1,52 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\develop\\application\\services\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\utils\\gziphelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\utils\\gziphelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\controllers\\dfe\\nfse\\nfsecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\controllers\\dfe\\nfse\\nfsecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|c:\\develop\\application\\services\\openac.net.nfse.nacional\\webservice\\nfsewebservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|solutionrelative:openac.net.nfse.nacional\\webservice\\nfsewebservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\utils\\certificate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\utils\\certificate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|c:\\develop\\application\\services\\openac.net.nfse.nacional\\opennfsenacional.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|solutionrelative:openac.net.nfse.nacional\\opennfsenacional.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|c:\\develop\\application\\services\\openac.net.nfse.nacional\\common\\model\\pedidoregistroevento.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|solutionrelative:openac.net.nfse.nacional\\common\\model\\pedidoregistroevento.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|c:\\develop\\application\\services\\openac.net.nfse.nacional\\common\\model\\dps.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9FC42479-4A46-6CBA-71BF-601BC883F929}|OpenAC.Net.NFSe.Nacional\\OpenAC.Net.NFSe.Nacional.csproj|solutionrelative:openac.net.nfse.nacional\\common\\model\\dps.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\controllers\\dfe\\nfse\\setupopennfsenacional.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\controllers\\dfe\\nfse\\setupopennfsenacional.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\build.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\build.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|c:\\develop\\application\\services\\src\\controllers\\dfe\\nfse\\municipioconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{667319A5-2881-4094-9B6E-74F0ED0ACB6D}|src\\services.csproj|solutionrelative:src\\controllers\\dfe\\nfse\\municipioconverter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,11 +54,148 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
-              "$type": "Bookmark",
-              "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GZipHelper.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Utils\\GZipHelper.cs",
+              "RelativeDocumentMoniker": "src\\Utils\\GZipHelper.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Utils\\GZipHelper.cs",
+              "RelativeToolTip": "src\\Utils\\GZipHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T19:19:11.527Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Program.cs",
+              "RelativeDocumentMoniker": "src\\Program.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Program.cs",
+              "RelativeToolTip": "src\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T18:38:39.874Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "PedidoRegistroEvento.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Common\\Model\\PedidoRegistroEvento.cs",
+              "RelativeDocumentMoniker": "OpenAC.Net.NFSe.Nacional\\Common\\Model\\PedidoRegistroEvento.cs",
+              "ToolTip": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Common\\Model\\PedidoRegistroEvento.cs",
+              "RelativeToolTip": "OpenAC.Net.NFSe.Nacional\\Common\\Model\\PedidoRegistroEvento.cs",
+              "ViewState": "AgIAACMAAAAAAAAAAAAqwEsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T18:06:52.717Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Dps.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Common\\Model\\Dps.cs",
+              "RelativeDocumentMoniker": "OpenAC.Net.NFSe.Nacional\\Common\\Model\\Dps.cs",
+              "ToolTip": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Common\\Model\\Dps.cs",
+              "RelativeToolTip": "OpenAC.Net.NFSe.Nacional\\Common\\Model\\Dps.cs",
+              "ViewState": "AgIAADwAAAAAAAAAAAAqwFEAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T18:03:31.711Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "OpenNFSeNacional.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\OpenNFSeNacional.cs",
+              "RelativeDocumentMoniker": "OpenAC.Net.NFSe.Nacional\\OpenNFSeNacional.cs",
+              "ToolTip": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\OpenNFSeNacional.cs",
+              "RelativeToolTip": "OpenAC.Net.NFSe.Nacional\\OpenNFSeNacional.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAADwv04AAAB1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T18:02:19.228Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Certificate.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Utils\\Certificate.cs",
+              "RelativeDocumentMoniker": "src\\Utils\\Certificate.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Utils\\Certificate.cs",
+              "RelativeToolTip": "src\\Utils\\Certificate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T18:01:05.918Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "NFSeWebservice.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Webservice\\NFSeWebservice.cs",
+              "RelativeDocumentMoniker": "OpenAC.Net.NFSe.Nacional\\Webservice\\NFSeWebservice.cs",
+              "ToolTip": "C:\\develop\\application\\services\\OpenAC.Net.NFSe.Nacional\\Webservice\\NFSeWebservice.cs",
+              "RelativeToolTip": "OpenAC.Net.NFSe.Nacional\\Webservice\\NFSeWebservice.cs",
+              "ViewState": "AgIAAAwBAAAAAAAAAAA2wC4BAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T14:58:05.427Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "NFSeController.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\NFSeController.cs",
+              "RelativeDocumentMoniker": "src\\Controllers\\DFe\\NFSe\\NFSeController.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\NFSeController.cs",
+              "RelativeToolTip": "src\\Controllers\\DFe\\NFSe\\NFSeController.cs",
+              "ViewState": "AgIAAJMAAAAAAAAAAADwv6wAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-05T20:19:46.853Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "MunicipioConverter.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\MunicipioConverter.cs",
+              "RelativeDocumentMoniker": "src\\Controllers\\DFe\\NFSe\\MunicipioConverter.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\MunicipioConverter.cs",
+              "RelativeToolTip": "src\\Controllers\\DFe\\NFSe\\MunicipioConverter.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAB0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T12:43:29.482Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "SetupOpenNFSeNacional.cs",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\SetupOpenNFSeNacional.cs",
+              "RelativeDocumentMoniker": "src\\Controllers\\DFe\\NFSe\\SetupOpenNFSeNacional.cs",
+              "ToolTip": "C:\\develop\\application\\services\\src\\Controllers\\DFe\\NFSe\\SetupOpenNFSeNacional.cs",
+              "RelativeToolTip": "src\\Controllers\\DFe\\NFSe\\SetupOpenNFSeNacional.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAB7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-05T20:47:44.44Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "build.txt",
+              "DocumentMoniker": "C:\\develop\\application\\services\\src\\build.txt",
+              "RelativeDocumentMoniker": "src\\build.txt",
+              "ToolTip": "C:\\develop\\application\\services\\src\\build.txt",
+              "RelativeToolTip": "src\\build.txt",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
+              "WhenOpened": "2025-11-05T20:31:32.851Z"
             }
           ]
         }
