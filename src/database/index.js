@@ -27,6 +27,8 @@ import { BankAccountIntegration } from './models/bankAccountIntegration.model.js
 import { Archive } from './models/archive.model.js'
 import { FundMethod } from './models/fundMethod.model.js'
 import { Service } from './models/service.model.js'
+import { Order } from './models/order.model.js'
+import { OrderService } from './models/orderService.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -77,6 +79,10 @@ export class AppContext extends Sequelize {
   Integration = this.define('integration', new Integration(), { tableName: 'integration' })
 
   Nfe = this.define('nfe', new Nfe(), { tableName: 'nota' })
+
+  Order = this.define('order', new Order(), { tableName: 'Solicitacao' })
+  
+  OrderService = this.define('orderService', new OrderService(), { tableName: 'SolicitacaoServicoRealizado' })
 
   Partner = this.define('partner', new Partner(), { tableName: 'pessoa' })
   
@@ -180,6 +186,11 @@ export class AppContext extends Sequelize {
 
     this.Nfe.belongsTo(this.Partner, {as: 'sender', foreignKey: 'IDRemetente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
     this.Nfe.belongsTo(this.Partner, {as: 'destination', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
+
+    
+    this.Order.hasMany(this.OrderService, { as: 'services', foreignKey: 'IDSolicitacao', onDelete: 'CASCADE' })
+    
+    this.OrderService.belongsTo(this.Service, {as: 'service', foreignKey: 'IDServico', targetKey: 'id', onDelete: 'CASCADE'})
 
 
     this.Bank.addHook('afterFind', afterFind)

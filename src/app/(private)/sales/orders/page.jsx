@@ -1,4 +1,4 @@
-import * as services from '@/app/server/register/services';
+import * as orders from '@/app/server/sales/orders';
 import { ViewSalesOrders } from '@/views/sales/orders';
 import { Typography } from '@mui/material';
 
@@ -9,9 +9,9 @@ export const metadata = {
 export default async () => {
   try {
 
-    const initialServices = await services.findAll({ limit: 50, offset: 0 })
+    const initialOrders = await orders.findAll({ limit: 50, offset: 0 })
 
-    return <ViewSalesOrders initialServices={initialServices} />
+    return <ViewSalesOrders initialOrders={initialOrders} />
 
   } catch (error) {
     

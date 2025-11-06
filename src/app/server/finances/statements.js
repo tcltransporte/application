@@ -188,7 +188,7 @@ export async function create(formData) {
   db.transaction(async (transaction) => {
     try {
 
-      const begin = addDays(new Date(formData.statement.begin), -20)
+      const begin = addDays(new Date(formData.statement.begin), -25)
       const end = addDays(new Date(formData.statement.end), 20)
 
       await sincronize.receivements({start: begin, end: end})
@@ -404,7 +404,15 @@ export async function destroy({ id }) {
   return await db.transaction(async (transaction) => {
 
     const concileds = await db.StatementDataConciled.count({
-      where: { '$statementData.statementId$': id },
+      include: [
+        {model: db.StatementData, as: 'statementData', attributes: ['statementId']}
+      ],
+      where: [
+        {
+          '$statementData.statementId$': id,
+          'isConciled': true
+        }
+      ],
       transaction,
     })
 
@@ -414,7 +422,7 @@ export async function destroy({ id }) {
 
     // Buscar todos os statementData que pertencem ao statement
     const statementDataList = await db.StatementData.findAll({
-      where: { '$statementData.statementId$': id },
+      where: { 'statementId': id },
       transaction,
     })
 

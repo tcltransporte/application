@@ -43,12 +43,12 @@ export async function findOne({id}) {
 
   where.push({ id: id })
 
-  const services = await db.Service.findOne({
+  const service = await db.Service.findOne({
       attributes: ['id', 'name'],
       where
   })
 
-  return services.toJSON()
+  return service.toJSON()
 
 }
 

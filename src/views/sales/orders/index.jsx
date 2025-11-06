@@ -1,24 +1,42 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Typography, Table, TableHead, TableBody, TableRow, TableCell, Paper, Box, CircularProgress, Button, TablePagination, IconButton, Checkbox, Tooltip } from '@mui/material'
+import {
+  Typography,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  Box,
+  CircularProgress,
+  Button,
+  TablePagination,
+  IconButton,
+  Checkbox,
+  Tooltip,
+  Menu,
+  MenuItem
+} from '@mui/material'
 import { useTitle } from '@/contexts/TitleProvider'
-import * as services from '@/app/server/register/services'
+import * as orders from '@/app/server/sales/orders'
 import { styles } from '@/components/styles'
 import { ViewOrder } from './view.order'
-
 import _ from 'lodash'
+import { format } from 'date-fns'
 
-export const ViewSalesOrders = ({ initialServices = [] }) => {
-
+export const ViewSalesOrders = ({ initialOrders = [] }) => {
   const { setTitle } = useTitle()
 
-  const [ isFetching, setIsFetching] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
+  const [data, setData] = useState(initialOrders)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [serviceId, setServiceId] = useState(undefined)
 
-  const [ data, setData] = useState(initialServices)
-  const [ selectedIds, setSelectedIds ] = useState(new Set())
-
-  const [ serviceId, setServiceId ] = useState(undefined)
+  // estados para o menu de ações
+  const [anchorEl, setAnchorEl] = useState(null)
+  const [menuOrderId, setMenuOrderId] = useState(null)
 
   useEffect(() => {
     setTitle(['Vendas', 'Pedidos'])
@@ -27,7 +45,7 @@ export const ViewSalesOrders = ({ initialServices = [] }) => {
   const fetchServices = async (request) => {
     try {
       setIsFetching(true)
-      const response = await services.findAll(request)
+      const response = await orders.findAll(request)
       setData(response)
       setSelectedIds(new Set())
     } catch (error) {
@@ -53,14 +71,46 @@ export const ViewSalesOrders = ({ initialServices = [] }) => {
     setSelectedIds(allSelected ? new Set() : new Set(allIds))
   }
 
+  const handleMenuOpen = (event, orderId) => {
+    setAnchorEl(event.currentTarget)
+    setMenuOrderId(orderId)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+    setMenuOrderId(null)
+  }
+
+  const handleEmitirNota = async (orderId) => {
+    try {
+
+      handleMenuClose()
+      await orders.generate()
+      console.log('Emitir Nota Fiscal para:', orderId)
+      // Exemplo: await orders.emitInvoice(orderId)
+
+    } catch (error) {
+      console.log(error.message)
+    }
+  }
+
+  const handleDelete = (orderId) => {
+    handleMenuClose()
+    console.log('Excluir pedido:', orderId)
+    // Exemplo: await orders.destroy(orderId)
+  }
+
   const allIds = data.response?.rows.map((p) => p.id) || []
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
 
   return (
     <Box sx={styles.container}>
       <Box sx={styles.header}>
-        
-        <Button variant="contained" startIcon={<i className="ri-add-circle-line" />} onClick={() => setServiceId(null)}>
+        <Button
+          variant="contained"
+          startIcon={<i className="ri-add-circle-line" />}
+          onClick={() => setServiceId(null)}
+        >
           Adicionar
         </Button>
 
@@ -94,27 +144,29 @@ export const ViewSalesOrders = ({ initialServices = [] }) => {
                     onChange={toggleSelectAll}
                   />
                 </TableCell>
+                <TableCell align="center" sx={{ width: 140 }}>Data</TableCell>
+                <TableCell align="center" sx={{ width: 70 }}>Número</TableCell>
                 <TableCell>Descrição</TableCell>
                 <TableCell align="center" sx={{ width: 90 }}></TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {isFetching ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={styles.tableCellLoader}>
+                  <TableCell colSpan={4} align="center" sx={styles.tableCellLoader}>
                     <CircularProgress size={30} />
                   </TableCell>
                 </TableRow>
               ) : (
-                _.map(data.response?.rows, (service, index) => {
-                  
-                  const isItemSelected = selectedIds.has(service.id)
+                _.map(data.response?.rows, (order, index) => {
+                  const isItemSelected = selectedIds.has(order.id)
 
                   return (
                     <TableRow
                       key={index}
                       hover
-                      onDoubleClick={() => setServiceId(service.id)}
+                      onDoubleClick={() => setServiceId(order.id)}
                       selected={isItemSelected}
                       sx={{ cursor: 'pointer' }}
                       className="with-hover-actions"
@@ -123,23 +175,49 @@ export const ViewSalesOrders = ({ initialServices = [] }) => {
                         <Checkbox
                           color="primary"
                           checked={isItemSelected}
-                          onChange={() => toggleSelect(service.id)}
+                          onChange={() => toggleSelect(order.id)}
                         />
                       </TableCell>
-                      <TableCell>{service.name}</TableCell>
+                      <TableCell align="center">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                      <TableCell align="center">{order.sequence}</TableCell>
+                      <TableCell>{order.description}</TableCell>
                       <TableCell align="center">
                         <Box className="row-actions">
-                            <Tooltip title="Editar">
-                              <IconButton onClick={() => setServiceId(service.id)}>
+                          <Tooltip title="Editar">
+                            <IconButton onClick={() => setServiceId(order.id)}>
                               <i className="ri-edit-2-line text-lg" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Excluir">
-                            <IconButton onClick={() => handleDelete(statement.id)} color="error">
-                              <i className="ri-delete-bin-line text-lg" />
+                          <Tooltip title="Mais ações">
+                            <IconButton onClick={(e) => handleMenuOpen(e, order.id)}>
+                              <i className="ri-more-2-line text-lg" />
                             </IconButton>
                           </Tooltip>
                         </Box>
+
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl) && menuOrderId === order.id}
+                          onClose={handleMenuClose}
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                        >
+                          <MenuItem onClick={() => handleEmitirNota(order.id)}>
+                            <i className="ri-printer-line" />
+                            Imprimir
+                          </MenuItem>
+                          <MenuItem onClick={() => handleEmitirNota(order.id)}>
+                            <i className="ri-file-text-line mr-2 text-base" />
+                            Gerar Nota Fiscal
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleDelete(order.id)}
+                            sx={{ color: 'error.main' }}
+                          >
+                            <i className="ri-delete-bin-line mr-2 text-base" />
+                            Excluir
+                          </MenuItem>
+                        </Menu>
                       </TableCell>
                     </TableRow>
                   )
@@ -180,11 +258,13 @@ export const ViewSalesOrders = ({ initialServices = [] }) => {
         </Box>
       </Box>
 
-      <ViewOrder serviceId={serviceId} onClose={(service) => {
-        setServiceId(undefined)
-        if (service) fetchServices({ ...data.request })
-      }} />
-
+      <ViewOrder
+        serviceId={serviceId}
+        onClose={(service) => {
+          setServiceId(undefined)
+          if (service) fetchServices({ ...data.request })
+        }}
+      />
     </Box>
   )
 }

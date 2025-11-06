@@ -88,6 +88,12 @@
     </siteMapNode>
     -->
 
+    <siteMapNode title="Suprimentos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-shopping-cart-line">
+      <!--<siteMapNode title="Agenda" url="\sales\schedule" description="Agenda"/>-->
+      <siteMapNode title="Cotação" url="\supplies\quotation" description="Cotação"/>
+      <siteMapNode title="Compras" url="\supplies\orders" description="Compras"/>
+    </siteMapNode>
+
     <siteMapNode title="Vendas" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-shopping-cart-line">
       <!--<siteMapNode title="Agenda" url="\sales\schedule" description="Agenda"/>-->
       <siteMapNode title="PDV" url="\sales\pdv" description="PDV"/>
