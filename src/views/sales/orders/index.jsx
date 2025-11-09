@@ -25,8 +25,13 @@ import { styles } from '@/components/styles'
 import { ViewOrder } from './view.order'
 import _ from 'lodash'
 import { format } from 'date-fns'
+import Swal from 'sweetalert2'
+import { BackdropLoading } from '@/components/BackdropLoading'
 
 export const ViewSalesOrders = ({ initialOrders = [] }) => {
+
+  const [loading, setLoading] = useState(undefined)
+
   const { setTitle } = useTitle()
 
   const [isFetching, setIsFetching] = useState(false)
@@ -81,16 +86,19 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
     setMenuOrderId(null)
   }
 
-  const handleEmitirNota = async (orderId) => {
+  const handleGenerate = async (orderId) => {
     try {
 
       handleMenuClose()
+
+      setLoading('Gerando nota fiscal...')
+
       await orders.generate()
-      console.log('Emitir Nota Fiscal para:', orderId)
-      // Exemplo: await orders.emitInvoice(orderId)
 
     } catch (error) {
-      console.log(error.message)
+      Swal.fire({ icon: 'warning', title: 'Ops!', text: error.message, confirmButtonText: 'Ok' })
+    } finally {
+      setLoading(undefined)
     }
   }
 
@@ -104,167 +112,174 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id))
 
   return (
-    <Box sx={styles.container}>
-      <Box sx={styles.header}>
-        <Button
-          variant="contained"
-          startIcon={<i className="ri-add-circle-line" />}
-          onClick={() => setServiceId(null)}
-        >
-          Adicionar
-        </Button>
+    <>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
+      <BackdropLoading loading={loading} message={loading} />
+
+      <Box sx={styles.container}>
+        
+        <Box sx={styles.header}>
           <Button
-            variant="outlined"
-            startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
-            onClick={() =>
-              fetchServices({
-                ...data.request,
-                offset: 0,
-              })
-            }
-            disabled={isFetching}
+            variant="contained"
+            startIcon={<i className="ri-add-circle-line" />}
+            onClick={() => setServiceId(null)}
           >
-            {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            Adicionar
           </Button>
-        </Box>
-      </Box>
 
-      <Box sx={styles.tableWrapper}>
-        <Paper sx={styles.paperContainer}>
-          <Table sx={styles.tableLayout} stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell align="center" sx={{ width: 56 }}>
-                  <Checkbox
-                    color="primary"
-                    checked={allSelected}
-                    indeterminate={selectedIds.size > 0 && !allSelected}
-                    onChange={toggleSelectAll}
-                  />
-                </TableCell>
-                <TableCell align="center" sx={{ width: 140 }}>Data</TableCell>
-                <TableCell align="center" sx={{ width: 70 }}>Número</TableCell>
-                <TableCell>Descrição</TableCell>
-                <TableCell align="center" sx={{ width: 90 }}></TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {isFetching ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center" sx={styles.tableCellLoader}>
-                    <CircularProgress size={30} />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                _.map(data.response?.rows, (order, index) => {
-                  const isItemSelected = selectedIds.has(order.id)
-
-                  return (
-                    <TableRow
-                      key={index}
-                      hover
-                      onDoubleClick={() => setServiceId(order.id)}
-                      selected={isItemSelected}
-                      sx={{ cursor: 'pointer' }}
-                      className="with-hover-actions"
-                    >
-                      <TableCell align="center" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          color="primary"
-                          checked={isItemSelected}
-                          onChange={() => toggleSelect(order.id)}
-                        />
-                      </TableCell>
-                      <TableCell align="center">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                      <TableCell align="center">{order.sequence}</TableCell>
-                      <TableCell>{order.description}</TableCell>
-                      <TableCell align="center">
-                        <Box className="row-actions">
-                          <Tooltip title="Editar">
-                            <IconButton onClick={() => setServiceId(order.id)}>
-                              <i className="ri-edit-2-line text-lg" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Mais ações">
-                            <IconButton onClick={(e) => handleMenuOpen(e, order.id)}>
-                              <i className="ri-more-2-line text-lg" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-
-                        <Menu
-                          anchorEl={anchorEl}
-                          open={Boolean(anchorEl) && menuOrderId === order.id}
-                          onClose={handleMenuClose}
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                        >
-                          <MenuItem onClick={() => handleEmitirNota(order.id)}>
-                            <i className="ri-printer-line" />
-                            Imprimir
-                          </MenuItem>
-                          <MenuItem onClick={() => handleEmitirNota(order.id)}>
-                            <i className="ri-file-text-line mr-2 text-base" />
-                            Gerar Nota Fiscal
-                          </MenuItem>
-                          <MenuItem
-                            onClick={() => handleDelete(order.id)}
-                            sx={{ color: 'error.main' }}
-                          >
-                            <i className="ri-delete-bin-line mr-2 text-base" />
-                            Excluir
-                          </MenuItem>
-                        </Menu>
-                      </TableCell>
-                    </TableRow>
-                  )
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={isFetching ? <CircularProgress size={16} /> : <i className="ri-search-line" />}
+              onClick={() =>
+                fetchServices({
+                  ...data.request,
+                  offset: 0,
                 })
-              )}
-            </TableBody>
-          </Table>
-        </Paper>
-      </Box>
-
-      <Box sx={styles.pagination}>
-        <Box sx={{ minWidth: 220 }}>
-          {selectedIds.size > 0 && (
-            <Typography variant="subtitle1" sx={{ px: 2, py: 1, fontWeight: 500 }}>
-              {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado
-              {selectedIds.size > 1 ? 's' : ''}
-            </Typography>
-          )}
+              }
+              disabled={isFetching}
+            >
+              {isFetching ? 'Pesquisando...' : 'Pesquisar'}
+            </Button>
+          </Box>
         </Box>
-        <Box sx={{ ml: 'auto' }}>
-          <TablePagination
-            component="div"
-            labelRowsPerPage="Registros por página"
-            count={data.response?.count || 0}
-            page={data.request?.offset || 0}
-            rowsPerPage={data.request?.limit || 10}
-            onPageChange={(event, offset) =>
-              fetchServices({ ...data.request, offset })
-            }
-            onRowsPerPageChange={(event) =>
-              fetchServices({
-                ...data.request,
-                limit: parseInt(event.target.value),
-                offset: 0,
-              })
-            }
-          />
-        </Box>
-      </Box>
 
-      <ViewOrder
-        serviceId={serviceId}
-        onClose={(service) => {
-          setServiceId(undefined)
-          if (service) fetchServices({ ...data.request })
-        }}
-      />
-    </Box>
+        <Box sx={styles.tableWrapper}>
+          <Paper sx={styles.paperContainer}>
+            <Table sx={styles.tableLayout} stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center" sx={{ width: 56 }}>
+                    <Checkbox
+                      color="primary"
+                      checked={allSelected}
+                      indeterminate={selectedIds.size > 0 && !allSelected}
+                      onChange={toggleSelectAll}
+                    />
+                  </TableCell>
+                  <TableCell align="center" sx={{ width: 140 }}>Data</TableCell>
+                  <TableCell align="center" sx={{ width: 70 }}>Número</TableCell>
+                  <TableCell>Descrição</TableCell>
+                  <TableCell align="center" sx={{ width: 90 }}></TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {isFetching ? (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={styles.tableCellLoader}>
+                      <CircularProgress size={30} />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  _.map(data.response?.rows, (order, index) => {
+                    const isItemSelected = selectedIds.has(order.id)
+
+                    return (
+                      <TableRow
+                        key={index}
+                        hover
+                        onDoubleClick={() => setServiceId(order.id)}
+                        selected={isItemSelected}
+                        sx={{ cursor: 'pointer' }}
+                        className="with-hover-actions"
+                      >
+                        <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            color="primary"
+                            checked={isItemSelected}
+                            onChange={() => toggleSelect(order.id)}
+                          />
+                        </TableCell>
+                        <TableCell align="center">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                        <TableCell align="center">{order.sequence}</TableCell>
+                        <TableCell>{order.description}</TableCell>
+                        <TableCell align="center">
+                          <Box className="row-actions">
+                            <Tooltip title="Editar">
+                              <IconButton onClick={() => setServiceId(order.id)}>
+                                <i className="ri-edit-2-line text-lg" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Mais ações">
+                              <IconButton onClick={(e) => handleMenuOpen(e, order.id)}>
+                                <i className="ri-more-2-line text-lg" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+
+                          <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl) && menuOrderId === order.id}
+                            onClose={handleMenuClose}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                          >
+                            <MenuItem onClick={() => handleGenerate(order.id)}>
+                              <i className="ri-printer-line" />
+                              Imprimir
+                            </MenuItem>
+                            <MenuItem onClick={() => handleGenerate(order.id)}>
+                              <i className="ri-file-text-line mr-2 text-base" />
+                              Gerar Nota Fiscal
+                            </MenuItem>
+                            <MenuItem
+                              onClick={() => handleDelete(order.id)}
+                              sx={{ color: 'error.main' }}
+                            >
+                              <i className="ri-delete-bin-line mr-2 text-base" />
+                              Excluir
+                            </MenuItem>
+                          </Menu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </Paper>
+        </Box>
+
+        <Box sx={styles.pagination}>
+          <Box sx={{ minWidth: 220 }}>
+            {selectedIds.size > 0 && (
+              <Typography variant="subtitle1" sx={{ px: 2, py: 1, fontWeight: 500 }}>
+                {selectedIds.size} registro{selectedIds.size > 1 ? 's' : ''} selecionado
+                {selectedIds.size > 1 ? 's' : ''}
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ ml: 'auto' }}>
+            <TablePagination
+              component="div"
+              labelRowsPerPage="Registros por página"
+              count={data.response?.count || 0}
+              page={data.request?.offset || 0}
+              rowsPerPage={data.request?.limit || 10}
+              onPageChange={(event, offset) =>
+                fetchServices({ ...data.request, offset })
+              }
+              onRowsPerPageChange={(event) =>
+                fetchServices({
+                  ...data.request,
+                  limit: parseInt(event.target.value),
+                  offset: 0,
+                })
+              }
+            />
+          </Box>
+        </Box>
+
+        <ViewOrder
+          serviceId={serviceId}
+          onClose={(service) => {
+            setServiceId(undefined)
+            if (service) fetchServices({ ...data.request })
+          }}
+        />
+
+      </Box>
+    </>
   )
 }

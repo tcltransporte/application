@@ -219,7 +219,7 @@ export const Statement = ({ data, onChange }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {!uploadedFile && (
-        <DragAndDrop title={'Arquivo CSV'} accept={'.csv'} multiple onFiles={(files) => setUploadedFile(files[0])} />
+        <DragAndDrop files={uploadedFile} title={'Arquivo CSV'} accept={'.csv'} onChange={(files) => setUploadedFile(files[0])} />
       )}
 
       {uploadedFile && (

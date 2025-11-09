@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography'
 import Drawer from '@mui/material/Drawer'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
-import { Paper } from '@mui/material'
+import { CardContent, Paper } from '@mui/material'
 
 // Plugin renderer
 import { PluginRenderer } from './plugins'
@@ -110,260 +110,264 @@ const Integrations = ({ integrations }) => {
   }
 
   return (
-    <>
-      <Box sx={styles.container}>
-        <Box sx={styles.header}>
-          <Button
-            className='max-sm:is-full'
-            variant='contained'
-            startIcon={<i className='ri-add-circle-line' />}
-            onClick={() => setAddDrawerOpen(true)}
-          >
-            Adicionar
-          </Button>
-        </Box>
+    <Card>
+      <CardContent className='mbe-5'>
 
-        <Box sx={styles.tableWrapper}>
-          <Paper sx={styles.paperContainer}>
-                
-          {loading ? (
-            <Box display="flex" justifyContent="center" my={4}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Grid container spacing={4} mb={6}>
-              {connectedIntegrations.length > 0 ? (
-                connectedIntegrations.map((integration, index) => (
-                  <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    md={4}
-                    key={index}
-                  >
-                    <Card
-                      variant="outlined"
-                      sx={{ height: 150, display: 'flex' }}
-                      onMouseEnter={() => setHoveredIntegration(integration.id)}
-                      onMouseLeave={() => setHoveredIntegration(null)}
+        <Box>
+          <Box>
+            <Button
+              className='max-sm:is-full'
+              variant='contained'
+              startIcon={<i className='ri-add-circle-line' />}
+              onClick={() => setAddDrawerOpen(true)}
+            >
+              Adicionar
+            </Button>
+          </Box>
+
+          <Box sx={styles.tableWrapper}>
+            <Paper sx={styles.paperContainer}>
+                  
+            {loading ? (
+              <Box display="flex" justifyContent="center">
+                <CircularProgress size={30} />
+              </Box>
+            ) : (
+              <Grid container spacing={4} mb={6}>
+                {connectedIntegrations.length > 0 ? (
+                  connectedIntegrations.map((integration, index) => (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={4}
+                      key={index}
                     >
-                      <Box
-                        component="img"
-                        src={integration.integration.icon}
-                        alt={integration.integration.name}
-                        sx={{
-                          width: 150,
-                          height: '100%',
-                          objectFit: 'contain',
-                          flexShrink: 0,
-                          borderRadius: '4px 0 0 4px',
-                          backgroundColor: '#f5f5f5',
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          flexGrow: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          p: 2,
-                        }}
+                      <Card
+                        variant="outlined"
+                        sx={{ height: 150, display: 'flex' }}
+                        onMouseEnter={() => setHoveredIntegration(integration.id)}
+                        onMouseLeave={() => setHoveredIntegration(null)}
                       >
                         <Box
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          mb={1}
-                        >
-                          <Typography variant="h6">
-                            {integration.integration.name}
-                          </Typography>
-                          <IconButton
-                            color="primary"
-                            title="Configurar integração"
-                            onClick={() => handleConfigureClick(integration)}
-                          >
-                            <i className="ri-settings-3-line" />
-                          </IconButton>
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ flexGrow: 1 }}
-                        >
-                          {integration.integration.description}
-                        </Typography>
+                          component="img"
+                          src={integration.integration.icon}
+                          alt={integration.integration.name}
+                          sx={{
+                            width: 150,
+                            height: '100%',
+                            objectFit: 'contain',
+                            flexShrink: 0,
+                            borderRadius: '4px 0 0 4px',
+                            backgroundColor: '#f5f5f5',
+                          }}
+                        />
                         <Box
-                          mt={2}
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
+                          sx={{
+                            flexGrow: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            p: 2,
+                          }}
                         >
-                          <Switch
-                            checked={integration.isActive}
-                            onChange={() => handleToggleActive({ id: integration.id })}
-                          />
-
-                          {integration.isActive ? (
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              onClick={() => disconnectIntegration({ id: integration.id })}
-                              disabled={disconnectingId === integration.id}
-                            >
-                              {disconnectingId === integration.id
-                                ? 'Desconectando...'
-                                : 'Desconectar'}
-                            </Button>
-                          ) : hoveredIntegration === integration.id ? (
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              onClick={() => disconnectIntegration({ id: integration.id })}
-                              disabled={disconnectingId === integration.id}
-                            >
-                              {disconnectingId === integration.id
-                                ? 'Desconectando...'
-                                : 'Desconectar'}
-                            </Button>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-                              Inativada
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </Card>
-                  </Grid>
-                ))
-              ) : (
-                <Grid item xs={12}>
-                  <Typography variant="body2">
-                    Nenhuma integração conectada ainda.
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          )}
-
-          {/* Drawer de Edição */}
-          <Drawer
-            anchor="right"
-            open={editDrawerOpen}
-            onClose={handleCloseDrawers}
-            PaperProps={{ sx: { width: 350, p: 3 } }}
-          >
-            {selectedIntegration && (
-              <>
-                <Typography variant="h5" mb={2}>
-                  Configurar {selectedIntegration.integration?.name}
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-
-                <PluginRenderer
-                  pluginId={
-                    selectedIntegration.integration
-                      ? selectedIntegration.integration.id // conectada
-                      : selectedIntegration.id // disponível
-                  }
-                  componentName={editDrawerOpen ? 'Settings' : 'Connect'}
-                  data={editDrawerOpen ? selectedIntegration.options : {}}
-                />
-              </>
-            )}
-          </Drawer>
-
-          {/* Drawer de Conexão */}
-          <Drawer
-            anchor="right"
-            open={connectDrawerOpen}
-            onClose={handleCloseDrawers}
-            PaperProps={{ sx: { width: 350, p: 3 } }}
-          >
-            {selectedIntegration && (
-              <>
-                <Typography variant="h5" mb={2}>
-                  Conectar {selectedIntegration.name}
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-
-                <PluginRenderer
-                  pluginId={selectedIntegration.id}
-                  componentName="Connect"
-                  data={{}}
-                />
-              </>
-            )}
-          </Drawer>
-
-          {/* Drawer de Adição */}
-          <Drawer
-            anchor="right"
-            open={addDrawerOpen}
-            onClose={handleCloseDrawers}
-            PaperProps={{ sx: { width: 1100, p: 4 } }}
-          >
-            <Typography variant="h5" mb={2}>
-              Integrações disponíveis
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-
-            <Grid container spacing={3}>
-              {integrations.length > 0 ? (
-                integrations.map((integration) => (
-                  <Grid item size={{sx: 12, sm: 4}} key={`available-${integration.name}`}>
-                    <Card variant="outlined" sx={{ height: 150, display: 'flex' }}>
-                      <Box
-                        component="img"
-                        src={integration.icon}
-                        alt={integration.name}
-                        sx={{
-                          width: 120,
-                          height: '100%',
-                          objectFit: 'contain',
-                          flexShrink: 0,
-                          borderRadius: '4px 0 0 4px',
-                        }}
-                      />
-                      <Box sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {integration.name}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ flexGrow: 1 }}
-                        >
-                          {integration.description}
-                        </Typography>
-                        <Box display="flex" justifyContent="flex-end">
-                          <Button
-                            variant="outlined"
-                            color="success"
-                            size="small"
-                            onClick={() => handleConnectClick(integration)}
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            mb={1}
                           >
-                            Conectar
-                          </Button>
-                        </Box>
-                      </Box>
-                    </Card>
-                  </Grid>
-                ))
-              ) : (
-                <Grid item xs={12}>
-                  <Typography variant="body2">
-                    Nenhuma integração disponível para conectar.
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          </Drawer>
+                            <Typography variant="h6">
+                              {integration.integration.name}
+                            </Typography>
+                            <IconButton
+                              color="primary"
+                              title="Configurar integração"
+                              onClick={() => handleConfigureClick(integration)}
+                            >
+                              <i className="ri-settings-3-line" />
+                            </IconButton>
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ flexGrow: 1 }}
+                          >
+                            {integration.integration.description}
+                          </Typography>
+                          <Box
+                            mt={2}
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Switch
+                              checked={integration.isActive}
+                              onChange={() => handleToggleActive({ id: integration.id })}
+                            />
 
-          </Paper>
+                            {integration.isActive ? (
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                onClick={() => disconnectIntegration({ id: integration.id })}
+                                disabled={disconnectingId === integration.id}
+                              >
+                                {disconnectingId === integration.id
+                                  ? 'Desconectando...'
+                                  : 'Desconectar'}
+                              </Button>
+                            ) : hoveredIntegration === integration.id ? (
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                onClick={() => disconnectIntegration({ id: integration.id })}
+                                disabled={disconnectingId === integration.id}
+                              >
+                                {disconnectingId === integration.id
+                                  ? 'Desconectando...'
+                                  : 'Desconectar'}
+                              </Button>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
+                                Inativada
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Grid item xs={12} sx={{paddingTop: '16px'}}>
+                    <Typography>
+                      Nenhuma integração conectada ainda.
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+
+            {/* Drawer de Edição */}
+            <Drawer
+              anchor="right"
+              open={editDrawerOpen}
+              onClose={handleCloseDrawers}
+              PaperProps={{ sx: { width: 350, p: 3 } }}
+            >
+              {selectedIntegration && (
+                <>
+                  <Typography variant="h5" mb={2}>
+                    Configurar {selectedIntegration.integration?.name}
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <PluginRenderer
+                    pluginId={
+                      selectedIntegration.integration
+                        ? selectedIntegration.integration.id // conectada
+                        : selectedIntegration.id // disponível
+                    }
+                    componentName={editDrawerOpen ? 'Settings' : 'Connect'}
+                    data={editDrawerOpen ? selectedIntegration.options : {}}
+                  />
+                </>
+              )}
+            </Drawer>
+
+            {/* Drawer de Conexão */}
+            <Drawer
+              anchor="right"
+              open={connectDrawerOpen}
+              onClose={handleCloseDrawers}
+              PaperProps={{ sx: { width: 350, p: 3 } }}
+            >
+              {selectedIntegration && (
+                <>
+                  <Typography variant="h5" mb={2}>
+                    Conectar {selectedIntegration.name}
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <PluginRenderer
+                    pluginId={selectedIntegration.id}
+                    componentName="Connect"
+                    data={{}}
+                  />
+                </>
+              )}
+            </Drawer>
+
+            {/* Drawer de Adição */}
+            <Drawer
+              anchor="right"
+              open={addDrawerOpen}
+              onClose={handleCloseDrawers}
+              PaperProps={{ sx: { width: 1100, p: 4 } }}
+            >
+              <Typography variant="h5" mb={2}>
+                Integrações disponíveis
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+
+              <Grid container spacing={3}>
+                {integrations.length > 0 ? (
+                  integrations.map((integration) => (
+                    <Grid item size={{sx: 12, sm: 4}} key={`available-${integration.name}`}>
+                      <Card variant="outlined" sx={{ height: 150, display: 'flex' }}>
+                        <Box
+                          component="img"
+                          src={integration.icon}
+                          alt={integration.name}
+                          sx={{
+                            width: 120,
+                            height: '100%',
+                            objectFit: 'contain',
+                            flexShrink: 0,
+                            borderRadius: '4px 0 0 4px',
+                          }}
+                        />
+                        <Box sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {integration.name}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ flexGrow: 1 }}
+                          >
+                            {integration.description}
+                          </Typography>
+                          <Box display="flex" justifyContent="flex-end">
+                            <Button
+                              variant="outlined"
+                              color="success"
+                              size="small"
+                              onClick={() => handleConnectClick(integration)}
+                            >
+                              Conectar
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Grid item xs={12}>
+                    <Typography variant="body2">
+                      Nenhuma integração disponível para conectar.
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </Drawer>
+
+            </Paper>
+          </Box>
         </Box>
-      </Box>
+
+      </CardContent>
       
-    </>
+    </Card>
   )
 }
 

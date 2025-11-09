@@ -29,6 +29,8 @@ import { FundMethod } from './models/fundMethod.model.js'
 import { Service } from './models/service.model.js'
 import { Order } from './models/order.model.js'
 import { OrderService } from './models/orderService.model.js'
+import { State } from './models/state.model.js'
+import { City } from './models/city.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -57,6 +59,8 @@ export class AppContext extends Sequelize {
   BankAccountIntegration = this.define('bankAccountIntegration', new BankAccountIntegration(), { tableName: 'bankAccountIntegration' })
 
   CenterCost = this.define('centerCost', new CenterCost(), { tableName: 'CentroCusto' })
+
+  City = this.define('city', new City(), { tableName: 'municipio' })
 
   Company = this.define('company', new Company(), { tableName: 'empresa_filial' })
 
@@ -90,6 +94,8 @@ export class AppContext extends Sequelize {
 
   FundMethod = this.define('fundMethod', new FundMethod(), { tableName: 'fundMethod' })
   
+  State = this.define('state', new State(), { tableName: 'uf' })
+
   Shippiment = this.define('shippiment', new Shippiment(), { tableName: 'carga' })
 
   Statement = this.define('statement', new Statement(), { tableName: 'statement' })
@@ -128,7 +134,10 @@ export class AppContext extends Sequelize {
 
     this.BankAccountIntegration.belongsTo(this.CompanyIntegration, { as: 'companyIntegration', foreignKey: 'companyIntegrationId', onDelete: 'CASCADE' })
 
+    this.City.belongsTo(this.State, { as: 'state', foreignKey: 'codigo_uf', onDelete: 'CASCADE' })
+
     this.Company.hasMany(this.CompanyUser, { as: 'companyUsers', foreignKey: 'companyId', onDelete: 'CASCADE' })
+    this.Company.belongsTo(this.City, { as: 'city', foreignKey: 'CodigoMunicipio', onDelete: 'CASCADE' })
 
     this.CompanyBusiness.hasMany(this.Company, { as: 'companies', foreignKey: 'companyBusinessId', onDelete: 'CASCADE' })
     

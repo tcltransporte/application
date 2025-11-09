@@ -231,6 +231,7 @@ export const ViewFinancesStatements = ({ initialStatements }) => {
             <TablePagination
               component="div"
               labelRowsPerPage="Registros por página"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `mais de ${to}`}`}
               count={statements.response?.count || 0}
               page={statements.request?.offset || 0}
               rowsPerPage={statements.request?.limit || 10}

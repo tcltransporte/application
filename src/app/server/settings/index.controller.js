@@ -12,11 +12,19 @@ export async function getCompany() {
   const db = new AppContext()
 
   const company = await db.Company.findOne({
-    attributes: ['codigo_empresa_filial', 'cnpj', 'name', 'surname'],
+    attributes: ['codigo_empresa_filial', 'logo', 'cnpj', 'name', 'surname', 'zipCode', 'street', 'number', 'district', 'certificate'],
+    include: [
+      {model: db.City, as: 'city', attributes: ['codigo_municipio', 'name'], include: [
+        {model: db.State, as: 'state', attributes: ['codigo_uf', 'name', 'acronym']}
+      ]}
+    ],
     where: [{codigo_empresa_filial: session.company.codigo_empresa_filial}]
   })
 
-  return company.dataValues
+  return {
+    ...company.toJSON(),
+    logo: company.logo?.toString('base64')
+  }
 
 }
 

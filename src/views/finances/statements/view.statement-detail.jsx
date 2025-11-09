@@ -474,6 +474,8 @@ export function ViewStatementDetail({ statementId, onClose, onError }) {
           {/* Paginação */}
           <TablePagination
             component="div"
+            labelRowsPerPage='Registros por página'
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `mais de ${to}`}`}
             count={filteredDataList.length}
             page={page}
             onPageChange={handleChangePage}

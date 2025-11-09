@@ -688,6 +688,7 @@ export const ViewExpeditionCtes = ({ initialCtes = [] }) => {
             <TablePagination
               component="div"
               labelRowsPerPage="Registros por página"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count !== -1 ? count : `mais de ${to}`}`}
               count={installments.response?.count || 0}
               page={installments.request?.offset || 0}
               rowsPerPage={installments.request?.limit || 10}

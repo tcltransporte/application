@@ -169,6 +169,8 @@ export async function statement({companyIntegrationId, item, file}) {
 
     for (let item of accountStatement) {
 
+        console.log(item)
+
         let reference
 
         if (isEmptyJsonString(item)) {
@@ -234,7 +236,7 @@ export async function statement({companyIntegrationId, item, file}) {
         let statementData = {}
 
         const entryDate = liberation?.DATE || item.RELEASE_DATE
-        const amount = parseFloat(item?.TRANSACTION_NET_AMOUNT.replace(/\./g, '').replace(',', '.'))
+        const amount = parseFloat(item?.TRANSACTION_NET_AMOUNT?.replace(/\./g, '')?.replace(',', '.') || '0')
 
         statementData.sequence = sequence
         statementData.entryDate = entryDate ? format(liberation?.DATE ? new Date(entryDate) : parse(entryDate, 'dd-MM-yyyy', new Date()), 'yyyy-MM-dd HH:mm:ss') : null
@@ -260,7 +262,7 @@ export async function statement({companyIntegrationId, item, file}) {
             statementData.credit = amount
         }
         
-        statementData.balance = parseFloat(item.PARTIAL_BALANCE?.replace(/\./g, '').replace(',', '.'))
+        statementData.balance = parseFloat(item.PARTIAL_BALANCE?.replace(/\./g, '').replace(',', '.') || '0')
 
         statements.push(statementData)
 

@@ -11,11 +11,15 @@ import {
   ListItemText,
   ListItemSecondaryAction,
 } from '@mui/material'
+import _ from 'lodash'
 
-export const DragAndDrop = ({ title, multiple = true, accept, onFiles }) => {
+export const DragAndDrop = ({ files = [], title = 'Upload', multiple = false, accept, onChange }) => {
   const [isDragging, setIsDragging] = useState(false)
-  const [selectedFiles, setSelectedFiles] = useState([])
   const fileInputRef = useRef(null)
+
+  const safeOnChange = (next) => {
+    if (typeof onChange === 'function') onChange(next)
+  }
 
   const handleDragOver = (e) => {
     e.preventDefault()
@@ -33,36 +37,46 @@ export const DragAndDrop = ({ title, multiple = true, accept, onFiles }) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) addFiles(files)
+    const droppedFiles = Array.from(e.dataTransfer.files || [])
+    if (droppedFiles.length > 0) addFiles(droppedFiles)
   }
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files)
-    if (files.length > 0) addFiles(files)
-    // 🔥 limpa o valor para permitir re-selecionar o mesmo arquivo
+    const selected = Array.from(e.target.files || [])
+    if (selected.length > 0) addFiles(selected)
+    // limpa o input para permitir re-seleção do mesmo arquivo
     e.target.value = ''
   }
 
-  const addFiles = (files) => {
-    const uniqueFiles = files.filter(
-      (f) => !selectedFiles.some((sf) => sf.name === f.name && sf.size === f.size)
-    )
-    const newFiles = multiple ? [...selectedFiles, ...uniqueFiles] : uniqueFiles
-    setSelectedFiles(newFiles)
-    onFiles?.(newFiles)
+  /**
+   * newFilesParam = array de File vindos do input/drop
+   * currentFiles = props.files (fonte da verdade)
+   */
+  const addFiles = (newFilesParam) => {
+    const currentFiles = Array.isArray(files) ? files : []
+
+    if (!multiple) {
+      // se não permite múltiplos, apenas pega o primeiro novo arquivo (substitui)
+      const first = newFilesParam[0]
+      const result = first ? [first] : []
+      safeOnChange(result)
+      return
+    }
+
+    // Para múltiplos: concatena current + novos e deduplica por name+size
+    const combined = [...currentFiles, ...newFilesParam]
+    const unique = _.uniqBy(combined, (f) => `${f.name}-${f.size}`)
+    safeOnChange(unique)
   }
 
   const removeFile = (index) => {
-    const updated = selectedFiles.filter((_, i) => i !== index)
-    setSelectedFiles(updated)
-    onFiles?.(updated)
+    const updated = (files || []).filter((_, i) => i !== index)
+    safeOnChange(updated)
   }
 
-  const clearAll = () => {
-    setSelectedFiles([])
-    onFiles?.([])
-    // também limpa o input
+  const clearAll = (e) => {
+    e?.stopPropagation()
+    safeOnChange([])
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -82,21 +96,26 @@ export const DragAndDrop = ({ title, multiple = true, accept, onFiles }) => {
         transition: 'border-color 0.2s',
         '&:hover': { borderColor: 'primary.main' },
       }}
+      onClick={() => fileInputRef.current?.click()}
     >
-      <Typography fontWeight="bold">{title}</Typography>
-      <Typography sx={{ my: 2 }}>Arraste e solte o arquivo aqui, ou</Typography>
+      {(multiple || (files || []).length === 0) && (
+        <>
+          <Typography fontWeight="bold">{title}</Typography>
+          <Typography sx={{ my: 2 }}>Arraste e solte o arquivo aqui, ou</Typography>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={(e) => {
-          e.stopPropagation()
-          fileInputRef.current?.click()
-        }}
-        startIcon={<i className="ri-upload-2-line" />}
-      >
-        Selecione o arquivo
-      </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation()
+              fileInputRef.current?.click()
+            }}
+            startIcon={<i className="ri-upload-2-line" />}
+          >
+            Selecione o arquivo
+          </Button>
+        </>
+      )}
 
       <input
         ref={fileInputRef}
@@ -107,24 +126,26 @@ export const DragAndDrop = ({ title, multiple = true, accept, onFiles }) => {
         onChange={handleFileSelect}
       />
 
-      {selectedFiles.length > 0 && (
+      {(files || []).length > 0 && (
         <Box mt={3} textAlign="left">
-          <Typography fontWeight="bold" pt={4} mb={1} sx={{ pl: '16px' }}>
-            Arquivos
-          </Typography>
+          {multiple && (
+            <Typography fontWeight="bold" pt={4} mb={1} sx={{ pl: '16px' }}>
+              Arquivos
+            </Typography>
+          )}
 
           <List dense>
-            {selectedFiles.map((file, index) => (
+            {files.map((file, index) => (
               <ListItem
-                key={file.name + file.size}
+                key={`${file?.name}-${file?.size}-${index}`}
                 sx={{ borderBottom: '1px solid #e0e0e0', pr: 6 }}
               >
                 <ListItemText
-                  primary={file.name}
-                  secondary={`${(file.size / 1024).toFixed(2)} KB`}
+                  primary={file?.name}
+                  secondary={`${(file?.size / 1024).toFixed(2)} KB`}
                 />
                 <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => removeFile(index)}>
+                  <IconButton edge="end" onClick={(e) => { e.stopPropagation(); removeFile(index) }}>
                     <i className="ri-delete-bin-6-line" />
                   </IconButton>
                 </ListItemSecondaryAction>
@@ -132,16 +153,18 @@ export const DragAndDrop = ({ title, multiple = true, accept, onFiles }) => {
             ))}
           </List>
 
-          <Box textAlign="right" mt={1}>
-            <Button
-              color="error"
-              size="small"
-              onClick={clearAll}
-              startIcon={<i className="ri-delete-bin-line" />}
-            >
-              Limpar todos
-            </Button>
-          </Box>
+          {multiple && (
+            <Box textAlign="right" mt={1}>
+              <Button
+                color="error"
+                size="small"
+                onClick={clearAll}
+                startIcon={<i className="ri-delete-bin-line" />}
+              >
+                Limpar todos
+              </Button>
+            </Box>
+          )}
         </Box>
       )}
     </Box>

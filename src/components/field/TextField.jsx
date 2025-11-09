@@ -1,7 +1,7 @@
 import React from 'react'
 import MuiTextField from '@mui/material/TextField'
 
-const TextField = (props) => {
+const TextField = ({ slotProps, ...props }) => {
 
   const rawError = (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0) ? props.form?.errors?.[props.field?.name] : undefined
   const errorMessage = rawError && rawError !== `${props.field?.name} is a required field` ? rawError : undefined
@@ -33,7 +33,8 @@ const TextField = (props) => {
       helperText={errorMessage}
       slotProps={{
         input: {
-          readOnly: props.readOnly
+          ...slotProps?.input,
+          readOnly: props.readOnly,
         },
         formHelperText: {
           sx: {

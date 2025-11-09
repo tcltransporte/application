@@ -16,3 +16,11 @@ export const DateFormatUTC = (value) => {
   const utcDate = new Date(value || null)
   return utcDate?.toISOString().replace('T', ' ').substring(0, 19)
 }
+
+String.prototype.toNullIfEmpty = function() {
+  return this.trim() === '' ? null : this.toString();
+}
+
+Number.prototype.toNullIfEmpty = function() {
+  return this == null || isNaN(this) ? null : this.valueOf();
+}
