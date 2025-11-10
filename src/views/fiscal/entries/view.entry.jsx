@@ -9,11 +9,9 @@ import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import { styles } from "@/components/styles";
 import * as orders from "@/app/server/sales/orders";
-import { AutoComplete, TextField } from "@/components/field";
+import { TextField } from "@/components/field";
 import { BackdropLoading } from "@/components/BackdropLoading";
 import _ from "lodash";
-
-import * as search from '@/utils/search'
 
 export const ViewOrder = ({ serviceId, onClose }) => {
 
@@ -46,7 +44,7 @@ export const ViewOrder = ({ serviceId, onClose }) => {
 
   const handleSubmit = async (values) => {
     try {
-      const updated = await orders.upsert({ ...values, services: items });
+      const updated = await services.upsert({ ...values, services: items });
       onClose(updated);
     } catch (error) {
       console.error(error.message);
@@ -71,23 +69,13 @@ export const ViewOrder = ({ serviceId, onClose }) => {
           <Dialog open={serviceId !== undefined && !loading} onClose={() => onClose(undefined)} maxWidth={'lg'} fullWidth>
             <Form>
               <DialogTitle sx={styles.dialogTitle}>
-                {serviceId ? 'Editar' : 'Adicionar'} serviço
+                {serviceId ? 'Editar' : 'Adicionar'} entrada/saída
                 <IconButton aria-label="close" onClick={() => onClose(false)} sx={styles.dialogClose}>
                   <i className="ri-close-line" />
                 </IconButton>
               </DialogTitle>
 
               <DialogContent sx={{ maxHeight: '80vh', overflowY: 'auto', px: 3 }}>
-
-                <Field
-                  component={AutoComplete}
-                  name="city"
-                  label="Cliente"
-                  text={(partner) => `${partner.surname}`}
-                  onSearch={(value) => search.partner(value)}
-                  renderSuggestion={(item) => <span>{item.surname}</span>}
-                />
-
                 <fieldset className="dark-fieldset">
                   <legend>Serviços</legend>
 

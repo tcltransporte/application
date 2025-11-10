@@ -239,6 +239,10 @@ export async function partners({ search = " " }) {
       ],
     })
 
+    if (!companyIntegration) {
+      return
+    }
+
     let options = await authentication({})
 
     const lastSyncPartner = new Date()

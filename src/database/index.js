@@ -31,6 +31,8 @@ import { Order } from './models/order.model.js'
 import { OrderService } from './models/orderService.model.js'
 import { State } from './models/state.model.js'
 import { City } from './models/city.model.js'
+import { DocumentTemplate } from './models/documentTemplate.model.js'
+import { Fiscal } from './models/fiscal.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -73,12 +75,16 @@ export class AppContext extends Sequelize {
   Cte = this.define('cte', new Cte(), { tableName: 'Ctes' })
 
   CteNfe = this.define('cteNfe', new CteNfe(), { tableName: 'CteNotas' })
+  
+  DocumentTemplate = this.define('documentTemplate', new DocumentTemplate(), { tableName: 'TipoModeloDocumento' })
 
   FinancialCategory = this.define('financialCategory', new FinancialCategory(), { tableName: 'PlanoContasContabil' })
 
   FinancialMovement = this.define('financialMovement', new FinancialMovement(), { tableName: 'movimentos' })
 
   FinancialMovementInstallment = this.define('financialMovementInstallment', new FinancialMovementIntallment(), { tableName: 'movimentos_detalhe' })
+
+  Fiscal = this.define('fiscal', new Fiscal(), { tableName: 'Compras' })
 
   Integration = this.define('integration', new Integration(), { tableName: 'integration' })
 
@@ -165,6 +171,9 @@ export class AppContext extends Sequelize {
     this.FinancialMovement.belongsTo(this.Partner, { as: 'partner', foreignKey: 'codigo_pessoa', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta', onDelete: 'CASCADE' })
     //this.FinancialMovement.hasMany(this.FinancialMovementInstallment, { as: 'installments', foreignKey: 'financialMovementId', onDelete: 'CASCADE' })
+
+
+    this.Fiscal.belongsTo(this.Partner, { as: 'partner', foreignKey: 'IDFornecedor', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
 
     this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
     this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId', onDelete: 'CASCADE' })

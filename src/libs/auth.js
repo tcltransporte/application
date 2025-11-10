@@ -15,6 +15,7 @@ class AuthError extends Error {
 }
 
 async function validateUserByEmail({ email, password, companyBusinessId, companyId, validatePassword = true }) {
+
   const db = new AppContext()
 
   const user = await db.User.findOne({
@@ -37,6 +38,7 @@ async function validateUserByEmail({ email, password, companyBusinessId, company
   if (_.isEmpty(user)) throw new AuthError(201, 'Usuário não encontrado!')
 
   if (validatePassword) {
+
     if (!process.env.VALIDATE_USER) throw new AuthError(201, 'VALIDATE_USER não configurado.')
 
     const response = await fetch(process.env.VALIDATE_USER, {
@@ -45,10 +47,10 @@ async function validateUserByEmail({ email, password, companyBusinessId, company
       body: JSON.stringify({ username: user.userName, password }),
     })
 
-    console.log(process.env.VALIDATE_USER)
-
     const result = await response.json()
+
     if (!result.d) throw new AuthError(201, 'Senha incorreta!')
+
   }
 
   const { company, isActive } = await validateCompanyAccess(user.userId, companyBusinessId, companyId, db)
@@ -64,7 +66,9 @@ async function validateUserByEmail({ email, password, companyBusinessId, company
 }
 
 async function validateCompanyAccess(userId, companyBusinessId, companyId, db) {
+
   const whereCompanyBusiness = companyBusinessId ? { codigo_empresa: Number(companyBusinessId) } : {}
+
   const whereCompany = companyId ? { codigo_empresa_filial: Number(companyId) } : {}
 
   const companyBusinesses = await db.CompanyBusiness.findAll({
@@ -129,8 +133,11 @@ export const authOptions = {
       credentials: {},
       async authorize(credentials) {
         try {
+
           const { email, password, companyBusinessId, companyId } = credentials || {}
+
           return await validateUserByEmail({ email, password, companyBusinessId, companyId })
+
         } catch (error) {
           const err = error instanceof AuthError
             ? error

@@ -9,9 +9,24 @@ export class Order {
     type: DataTypes.BIGINT
   }
 
+  companyId = {
+    field: 'companyId',
+    type: DataTypes.TINYINT
+  }
+
   sequence = {
     field: 'Numero',
     type: DataTypes.INTEGER
+  }
+
+  typeId = {
+    field: 'IDTipoSolicitacao',
+    type: DataTypes.INTEGER
+  }
+
+  userId = {
+    field: 'UserId',
+    type: DataTypes.UUID
   }
 
   date = {

@@ -53,49 +53,46 @@ export class Company {
 
   district = {
     field: 'Bairro',
-    allowNull: true,
     type: DataTypes.STRING
+  }
+
+  cityId = {
+    field: 'CodigoMunicipio',
+    type: DataTypes.INTEGER
   }
 
   certificate = {
     field: 'certificate',
-    allowNull: true,
     type: DataTypes.STRING
   }
 
   dpsEnvironment = {
     field: 'dpsEnvironment',
-    allowNull: true,
     type: DataTypes.SMALLINT
   }
 
   dpsLastNum = {
     field: 'dpsLastNum',
-    allowNull: true,
     type: DataTypes.BIGINT
   }
 
   dpsSerie = {
     field: 'dpsSerie',
-    allowNull: true,
     type: DataTypes.STRING
   }
 
   dpsRegimeCalculation = {
     field: 'dpsRegimeCalculation',
-    allowNull: true,
     type: DataTypes.SMALLINT
   }
 
   dpsRegimeSpecial = {
     field: 'dpsRegimeSpecial',
-    allowNull: true,
     type: DataTypes.SMALLINT
   }
 
   dpsOptingForSimpleNational = {
     field: 'dpsOptingForSimpleNational',
-    allowNull: true,
     type: DataTypes.SMALLINT
   }
 

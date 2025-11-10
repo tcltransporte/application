@@ -64,11 +64,17 @@ const CompanySwitcherDropdown = () => {
     <>
       <Box className="flex items-center gap-2 cursor-pointer select-none">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body1" fontWeight={600}>
+          <Typography variant="body1">
+            {session.data?.user?.userName}
+          </Typography>
+          <Typography variant="body1" sx={{ mx: 1 }} fontWeight={600}>
+            /
+          </Typography>
+          <Typography variant="body1">
             {session.data?.company?.companyBusiness?.description || company.name}
           </Typography>
           <Typography variant="body1" sx={{ mx: 1 }}>
-            /
+            -
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {session.data?.company?.surname || branch.name}

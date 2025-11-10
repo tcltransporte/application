@@ -76,7 +76,13 @@ export const Company = ({ company }) => {
   const validationSchema = Yup.object().shape({
     cnpj: Yup.string().required('Campo obrigatório'),
     name: Yup.string().required('Campo obrigatório'),
-    surname: Yup.string().required('Campo obrigatório')
+    surname: Yup.string().required('Campo obrigatório'),
+    zipCode: Yup.string().required('Campo obrigatório'),
+    street: Yup.string().required('Campo obrigatório'),
+    number: Yup.string().required('Campo obrigatório'),
+    district: Yup.string().required('Campo obrigatório'),
+    state: Yup.mixed().required('Campo obrigatório'),
+    city: Yup.object().required('Campo obrigatório')
   })
 
   const handleSubmit = async (values) => {
@@ -105,8 +111,12 @@ export const Company = ({ company }) => {
                   <div className='flex max-sm:flex-col items-center gap-6'>
 
                     <img height={60} src={values.logo ? `data:image/png;base64,${values.logo}` : '/images/no-logo.png'} alt='Logo' />
-
-                    <Button component='label' variant='text'>
+                    
+                    <Button component='label' variant='text' startIcon={
+                      <div className='flex items-center justify-center'>
+                        <i className="ri-image-edit-line" style={{ fontSize: 18 }} />
+                      </div>
+                    }>
                       Alterar logo
                       <input
                         hidden
@@ -134,15 +144,15 @@ export const Company = ({ company }) => {
                     <legend>Dados gerais</legend>
 
                     <Grid container spacing={2}>
-                      <Grid xs={12} sm={3}>
+                      <Grid size={{xs: 12, sm: 2.2}}>
                         <Field component={TextField} label="CNPJ" name="cnpj" />
                       </Grid>
 
-                      <Grid xs={12} sm={4.5}>
+                      <Grid size={{xs: 12, sm: 4.8}}>
                         <Field component={TextField} label="Razão social" name="name" />
                       </Grid>
 
-                      <Grid xs={12} sm={4.5}>
+                      <Grid size={{xs: 12, sm: 5}}>
                         <Field component={TextField} label="Nome fantasia" name="surname" />
                       </Grid>
                     </Grid>
@@ -152,44 +162,55 @@ export const Company = ({ company }) => {
                     <legend>Endereço</legend>
 
                     <Grid container spacing={2}>
-                      <Grid xs={12} sm={1.5}>
+                      <Grid size={{xs: 12, sm: 1.5}}>
                         <CepField />
                       </Grid>
 
-                      <Grid xs={12} sm={5.5}>
+                      <Grid size={{xs: 12, sm: 5.5}}>
                         <Field component={TextField} label="Logradouro" name="street" />
                       </Grid>
 
-                      <Grid xs={12} sm={2}>
+                      <Grid size={{xs: 12, sm: 2}}>
                         <Field component={TextField} label="Número" name="number" />
                       </Grid>
 
-                      <Grid xs={12} sm={3}>
+                      <Grid size={{xs: 12, sm: 3}}>
                         <Field component={TextField} label="Complemento" name="complement" />
                       </Grid>
 
-                      <Grid xs={12} sm={5}>
+                      <Grid size={{xs: 12, sm: 5}}>
                         <Field component={TextField} label="Bairro" name="district" />
                       </Grid>
 
-                      <Grid xs={12} sm={2}>
+                      <Grid size={{xs: 12, sm: 2}}>
                         <Field
                           component={AutoComplete}
                           name="state"
                           label="Estado"
                           text={(state) => state?.name}
                           onSearch={(value) => search.state(value)}
+                          onChange={(value) => {
+                            if (!value) {
+                              setFieldValue('city', null)
+                            }
+                          }}
                           renderSuggestion={(item) => <span>{item.name}</span>}
                         />
                       </Grid>
 
-                      <Grid xs={12} sm={5}>
+                      <Grid size={{xs: 12, sm: 5}}>
                         <Field
                           component={AutoComplete}
                           name="city"
                           label="Cidade"
                           text={(city) => `${city.name} - ${city.state?.acronym}`}
-                          onSearch={(value) => search.city(value, values.state?.codigo_uf)}
+                          onSearch={async (value) => {
+                            if (!values.state?.codigo_uf) {
+                              await Swal.fire({ icon: 'warning', text: 'Primeiro, informe o estado!', confirmButtonText: 'Ok' })
+                              return []
+                            }
+                            return await search.city(value, values.state?.codigo_uf)
+                          }}
                           renderSuggestion={(item) => <span>{item.name} - {item.state?.acronym}</span>}
                         />
                       </Grid>

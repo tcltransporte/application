@@ -20,7 +20,7 @@ export async function getCompanyByCNPJ(cnpj) {
 
     const db = new AppContext()
 
-    const company = await db.Company.findOne({where: [{cnpj: cnpj.replace(/\D/g, '')}]})
+    const company = await db.Company.findOne({attributes: ['name'], where: [{cnpj: cnpj.replace(/\D/g, '')}]})
 
     if (company) {
         return { exists: true, name: company.name }

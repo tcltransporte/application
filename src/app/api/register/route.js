@@ -16,6 +16,7 @@ export async function POST(req) {
   let isActive = null
 
   await db.transaction(async (transaction) => {
+    
     if (await checkUserExists(body.userName)) {
       throw new Error('Usuário já existe')
     }

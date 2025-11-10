@@ -2,6 +2,7 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
+import _ from "lodash"
 import { getServerSession } from "next-auth"
 
 export async function onSubmit(company) {
@@ -10,7 +11,14 @@ export async function onSubmit(company) {
 
   const db = new AppContext()
 
-  const updatedData = { ...company }
+  const updatedData = {
+    ...company,
+    cityId: company.city?.codigo_municipio ?? null
+  }
+
+  if (!updatedData.cityId) {
+    throw new Error("E necessário informar a cidade")
+  }
 
   if (company.logo) {
 

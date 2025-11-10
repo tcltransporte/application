@@ -9,14 +9,23 @@ export class Partner {
     type: DataTypes.BIGINT
   }
 
+  partnerType = {
+    field: 'IDTipoPessoa',
+    type: DataTypes.TINYINT
+  }
+
   cpfCnpj = {
     field: 'CpfCnpj',
     type: DataTypes.STRING
   }
 
+  name = {
+    field: 'RazaoSocial',
+    type: DataTypes.STRING
+  }
+
   surname = {
     field: 'nome',
-    primaryKey: true,
     type: DataTypes.STRING
   }
 

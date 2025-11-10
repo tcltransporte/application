@@ -2,7 +2,6 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
-import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 
@@ -14,10 +13,11 @@ export async function findAll({dueDate, limit = 50, offset}) {
 
     const where = []
 
-    where.push({ companyId: session.company.codigo_empresa_filial })
-
-    const orders = await db.Order.findAndCountAll({
-        attributes: ['id', 'sequence', 'date', 'description'],
+    const fiscal = await db.Fiscal.findAndCountAll({
+        attributes: ['id', 'documentNumber', 'value'],
+        include: [
+          {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'surname']}
+        ],
         limit: limit,
         offset: offset * limit,
         order: [['id', 'desc']],
@@ -29,7 +29,7 @@ export async function findAll({dueDate, limit = 50, offset}) {
             limit, offset
         },
         response: {
-            rows: _.map(orders.rows, (item) => item.toJSON()), count: orders.count
+            rows: _.map(fiscal.rows, (item) => item.toJSON()), count: fiscal.count
         }
     }
 
@@ -59,9 +59,7 @@ export async function findOne({id}) {
 
 }
 
-export async function upsert(values) {
-
-  const session = await getServerSession(authOptions)
+export async function upsert(fiscal) {
 
   const db = new AppContext()
 
@@ -69,28 +67,18 @@ export async function upsert(values) {
 
     let result
 
-    const order = {
-      ...values,
-      companyId: session.company.codigo_empresa_filial,
-      typeId: 5,
-      sequence: '',
-      date: format(new Date(), "dd/MM/yyyy HH:mm:ss"),
-      userId: session.user.userId,
-      description: ''
-    }
-
-    if (!order.id) {
+    if (!fiscal.id) {
       
-      result = await db.Order.create(order, { transaction })
+      result = await db.Fiscal.create({ ...fiscal }, { transaction })
 
     } else {
       
-      await db.Order.update(
-        order,
-        { where: { id: service.id }, transaction }
+      await db.Fiscal.update(
+        { ...fiscal },
+        { where: { id: fiscal.id }, transaction }
       )
 
-      result = await db.Order.findByPk(order.id, { transaction })
+      result = await db.Service.findByPk(fiscal.id, { transaction })
 
     }
 
@@ -100,8 +88,33 @@ export async function upsert(values) {
 
 }
 
-export async function generate() {
+export async function generate(id) {
 
+  const db = new AppContext()
+
+  const entry = await db.Fiscal.findOne({
+    attributes: [],
+    where: [{ id }]
+  })
+
+  let xml
+
+  switch (entry) {
+    case 1:
+
+      break
+    case 99:
+      xml = await nfse(entry)
+      break
+
+    default:
+      break
+  }
+
+}
+
+async function nfse(entry) {
+  
   const getCurrentDateTimeFormatted = (date) => {
 
     function pad(num, size = 2) {
@@ -125,7 +138,7 @@ export async function generate() {
     return `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}${offsetSign}${offsetHours}:${offsetMinutes}`;
   
   }
-    
+  
   const session = await getServerSession(authOptions)
 
   const db = new AppContext()

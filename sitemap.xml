@@ -2,13 +2,13 @@
 <siteMap>
   <siteMapNode url="${URL}\Default.aspx" title="Início" description="Página Inicial">
 
-  
     <siteMapNode title="Cadastros" roles="" icon="ri-file-list-3-line">
+      <siteMapNode title="Clientes" url="\register\customers" description="Clientes"/>
+      <siteMapNode title="Fornecedores" url="\register\suppliers" description="Fornecedores"/>
+      <siteMapNode title="Transportadoras" url="\register\carriers" description="Transportadoras"/>
+      <siteMapNode title="Funcionários" url="\register\employees" description="Funcionários"/>
       <siteMapNode title="Produtos" url="\register\products" description="Produtos"/>
       <siteMapNode title="Serviços" url="\register\services" description="Serviços"/>
-      <siteMapNode title="Fornecedores" url="\register\suppliers" description="Fornecedores"/>
-      <siteMapNode title="Clientes" url="\register\customers" description="Clientes"/>
-      <siteMapNode title="Transportadoras" url="\register\carriers" description="Transportadoras"/>
     </siteMapNode>
 
     <!--
@@ -78,9 +78,11 @@
     </siteMapNode>
     -->
 
+    <!--
     <siteMapNode title="Recursos humanos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-user-star-line">
       <siteMapNode title="e-Social" url="\logistic\trips" description="e-Social"/>
     </siteMapNode>
+    -->
 
     <!--
     <siteMapNode title="Oficina" roles="" icon="ri-clipboard-line">
@@ -89,9 +91,10 @@
     -->
 
     <siteMapNode title="Suprimentos" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-shopping-bag-line">
-      <!--<siteMapNode title="Agenda" url="\sales\schedule" description="Agenda"/>-->
+      <siteMapNode title="Estoque" url="\supplies\stock" description="Estoque"/>
       <siteMapNode title="Cotação" url="\supplies\quotation" description="Cotação"/>
-      <siteMapNode title="Compras" url="\supplies\orders" description="Compras"/>
+      <siteMapNode title="Solicitações" url="\supplies\orders" description="Solicitações"/>
+      <siteMapNode title="Entrada" url="\supplies\entry" description="Entrada"/>
     </siteMapNode>
 
     <siteMapNode title="Vendas" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-shopping-cart-line">
@@ -99,10 +102,12 @@
       <siteMapNode title="PDV" url="\sales\pdv" description="PDV"/>
       <siteMapNode title="Pedidos" url="\sales\orders" description="Pedidos"/>
       <siteMapNode title="Separação" url="\sales\separation" description="Separação"/>
+      <siteMapNode title="Conferência" url="\sales\conference" description="Conferência"/>
       <siteMapNode title="Expedição" url="\sales\expedition" description="Expedição"/>
+      <!--<siteMapNode title="Notas fiscais" url="\sales\nfs" description="Notas fiscais"/>-->
     </siteMapNode>
 
-    <siteMapNode title="Finanças" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
+    <siteMapNode title="Financeiro" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-line-chart-line">
       <siteMapNode title="Caixa" url="\finances\cashier" description="Caixa"/>
       <!--<siteMapNode title="Caixa Fechamento" url="${URL}\Financeiro\ListaCaixaFechamento.aspx" description="Fechamento do caixa. Realiza o bloqueio do caixa para evitar lançamentos indevidos."/>-->
       <!--<siteMapNode title="Conciliação" url="${URL}\Financeiro\ListaconciliacaoNovo.aspx" description="Conciliação bancária"/>-->
@@ -126,16 +131,27 @@
     </siteMapNode>
 
     <siteMapNode title="Expedição" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-truck-line">
-      <siteMapNode title="Ordens de carga" url="\expedition\orders" description="Ordens de carga"/>
+      <siteMapNode title="Notas fiscais" url="\expedition\nfes" description="Notas fiscais"/>
+      <siteMapNode title="Cargas" url="\expedition\orders" description="Cargas"/>
       <siteMapNode title="Romaneios" url="\expedition\shippiments" description="Romaneios"/>
-      <siteMapNode title="Conhecimentos" url="\expedition\ctes" description="Conhecimentos"/>
-      <siteMapNode title="Viagens" url="\logistic\trips" description="Viagens"/>
+      <!--<siteMapNode title="Conhecimentos" url="\expedition\ctes" description="Conhecimentos"/>-->
+      <siteMapNode title="Viagens" url="\expedition\trips" description="Viagens"/>
     </siteMapNode>
 
     <siteMapNode title="Logística" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-road-map-line">
       <siteMapNode title="Andamento" url="\logistic\decrease" description="Viagens"/>
     </siteMapNode>
     
+    <siteMapNode title="Fiscal" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-calculator-line">
+      <siteMapNode title="Entrada/Saída" url="\fiscal\entries" description="Entrada/Saída"/>
+      <siteMapNode title="SPED" url="\fiscal\sped" description="SPED"/>
+    </siteMapNode>
+
+    <siteMapNode title="Relatórios" roles="Administrador, finan000,finan010,finan020,finan030,finan040,finan050,finan060,finan070,finan080,finan090,finan100,finan110,finan120,finan130," icon="ri-bar-chart-line">
+      <siteMapNode title="Fluxo de caixa" url="\fiscal\decrease" description="Fluxo de caixa"/>
+      <siteMapNode title="Extrato financeiro" url="\fiscal\decrease" description="Extrato financeiro"/>
+      <siteMapNode title="D.R.E" url="\fiscal\decrease" description="D.R.E"/>
+    </siteMapNode>
 
     <!--
     <siteMapNode title="Fiscal" roles="Administrador,fiscal000, fiscal010, fiscal020, fiscal030, fiscal040, fiscal050,fiscal060,fiscal070,fiscal080, fiscal090,fiscal100,fiscal110,fiscal120,fiscal130,fiscal140,fiscal150,fiscal160,fiscal170,fiscal180,fiscal190,fiscal200 " icon="ri-bar-chart-box-line">
