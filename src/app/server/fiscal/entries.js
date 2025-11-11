@@ -2,6 +2,7 @@
 
 import { AppContext } from "@/database"
 import { authOptions } from "@/libs/auth"
+import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
 
@@ -59,11 +60,60 @@ export async function findOne({id}) {
 
 }
 
-export async function upsert(fiscal) {
+export async function upsert(values) {
+
+  const session = await getServerSession(authOptions)
 
   const db = new AppContext()
 
   return await db.transaction(async (transaction) => {
+
+    const company = await db.Company.findOne({
+      attributes: ['codigo_empresa_filial', 'dpsLastNum', 'dpsSerie'],
+      where: [
+        {'codigo_empresa_filial': session.company.codigo_empresa_filial}
+      ],
+      transaction
+    })
+
+    let companyId = session.company.codigo_empresa_filial
+    let documentNumber
+    let serie
+    let date
+
+    if (!values.companyId) {
+      companyId = values.companyId
+    }
+
+    if (!values.date) {
+      date = format(new Date(), "dd/MM/yyyy HH:mm:ss")
+    }
+    
+    //99 - Nota Fiscal de Serviço NFS-e                                                                        
+    if (values.documentTemplateId == 99) {
+
+      if (!values.documentNumber) {
+        documentNumber = (company.dpsLastNum ? Number(company.dpsLastNum) : 0) + 1
+      }
+
+      if (!values.serie) {
+        serie = company.dpsSerie
+      }
+      
+      await db.Company.update({ dpsLastNum: documentNumber }, { where: [{'codigo_empresa_filial': company.codigo_empresa_filial}], transaction })
+
+    }
+
+    const fiscal = {
+      companyBusinessId: session.company.companyBusiness.codigo_empresa,
+      companyId: companyId,
+      documentTemplateId: values.documentTemplateId,
+      partnerId: values.partner.codigo_pessoa,
+      documentNumber: documentNumber,
+      serie: serie,
+      date: date,
+      value: values.value
+    }
 
     let result
 
@@ -77,11 +127,11 @@ export async function upsert(fiscal) {
         { ...fiscal },
         { where: { id: fiscal.id }, transaction }
       )
-
+      
       result = await db.Service.findByPk(fiscal.id, { transaction })
 
     }
-
+    
     return result.toJSON()
 
   })
@@ -93,18 +143,16 @@ export async function generate(id) {
   const db = new AppContext()
 
   const entry = await db.Fiscal.findOne({
-    attributes: [],
+    attributes: ['id', 'documentTemplateId'],
     where: [{ id }]
   })
 
-  let xml
-
-  switch (entry) {
+  switch (entry.documentTemplateId) {
     case 1:
 
       break
     case 99:
-      xml = await nfse(entry)
+      await nfse(entry.id)
       break
 
     default:
@@ -113,86 +161,83 @@ export async function generate(id) {
 
 }
 
-async function nfse(entry) {
+async function nfse(id) {
   
-  const getCurrentDateTimeFormatted = (date) => {
-
-    function pad(num, size = 2) {
-      return String(num).padStart(size, "0");
-    }
-
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hour = pad(date.getHours());
-    const minute = pad(date.getMinutes());
-    const second = pad(date.getSeconds());
-    const millisecond = pad(date.getMilliseconds(), 3) + "0000"; // preencher para 7 dígitos
-    
-    // offset do fuso
-    const offset = -date.getTimezoneOffset();
-    const offsetSign = offset >= 0 ? "+" : "-";
-    const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
-    const offsetMinutes = pad(Math.abs(offset) % 60);
-
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}${offsetSign}${offsetHours}:${offsetMinutes}`;
-  
-  }
-  
-  const session = await getServerSession(authOptions)
-
   const db = new AppContext()
 
   return await db.transaction(async (transaction) => {
 
-    const company = await db.Company.findOne({
-      attributes: ['codigo_empresa_filial', 'cnpj', 'name', 'certificate', 'dpsEnvironment', 'dpsLastNum', 'dpsSerie', 'dpsRegimeCalculation', 'dpsRegimeSpecial', 'dpsOptingForSimpleNational'],
+    const getCurrentDateTimeFormatted = (date) => {
+
+      function pad(num, size = 2) {
+        return String(num).padStart(size, "0");
+      }
+
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      const hour = pad(date.getHours());
+      const minute = pad(date.getMinutes());
+      const second = pad(date.getSeconds());
+      const millisecond = pad(date.getMilliseconds(), 3) + "0000"; // preencher para 7 dígitos
+      
+      // offset do fuso
+      const offset = -date.getTimezoneOffset();
+      const offsetSign = offset >= 0 ? "+" : "-";
+      const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
+      const offsetMinutes = pad(Math.abs(offset) % 60);
+
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}${offsetSign}${offsetHours}:${offsetMinutes}`;
+    
+    }
+    
+    const fiscal = await db.Fiscal.findOne({
+      attributes: ['id', 'documentNumber', 'serie', 'date'],
       include: [
-        {model: db.City, as: 'city', attributes: ['codigo_municipio', 'name', 'ibge']}
+        {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'name', 'cnpj', 'dpsEnvironment', 'dpsOptingForSimpleNational', 'dpsRegimeCalculation', 'dpsRegimeSpecial', 'certificate'], include: [
+          {model: db.City, as: 'city', attributes: ['codigo_municipio', 'ibge']}
+        ]}
       ],
       where: [
-        {'codigo_empresa_filial': session.company.codigo_empresa_filial}
+        { id }
       ],
       transaction
     })
 
-    const lastNum = company.dpsLastNum ? Number(company.dpsLastNum) : 0
-    const numeroDps = lastNum + 1
-
-    const certificate = JSON.parse(company.certificate)
+    const certificate = JSON.parse(fiscal.company.certificate)
 
     const url = "http://vps53636.publiccloud.com.br/application/services/dfe/nfse/generate";
         
     const now = new Date()
     now.setMinutes(now.getMinutes() - 180)
 
-    const emission = getCurrentDateTimeFormatted(now)
+    const emission = getCurrentDateTimeFormatted(fiscal.date)
 
     const dps = {
       "versao": "1.00",
       "informacoes": {
-        "tipoAmbiente": Number(company.dpsEnvironment),
+        "tipoAmbiente": Number(fiscal.company.dpsEnvironment),
         "dhEmissao": emission,
         "versaoAplicacao": "OpenAC.NFSe.Nacional",
-        "serie": String(company.dpsSerie),
-        "numeroDps": numeroDps,
+        "serie": String(fiscal.serie).trim().replace(/\s+/g, ' '),
+        "numeroDps": fiscal.documentNumber,
         "competencia": emission,
         "tipoEmitente": 1,
-        "localidadeEmitente": String(company.city?.ibge),
+        "localidadeEmitente": String(fiscal.company.city?.ibge).trim().replace(/\s+/g, ' '),
         "substituida": null,
         "prestador": {
           "regime": {
-            "optanteSimplesNacional": Number(company.dpsOptingForSimpleNational),
-            "regimeApuracao": Number(company.dpsRegimeCalculation),
-            "regimeEspecial": Number(company.dpsRegimeSpecial)
+            "optanteSimplesNacional": Number(fiscal.company.dpsOptingForSimpleNational),
+            "regimeApuracao": Number(fiscal.company.dpsRegimeCalculation),
+            "regimeEspecial": Number(fiscal.company.dpsRegimeSpecial)
           },
-          "cnpj": String(company.cnpj),
+          "cnpj": String(fiscal.company.cnpj).trim().replace(/\s+/g, ' '),
           "cpf": null,
           "nif": null,
           "codigoNaoNif": null,
           "numeroCAEPF": null,
           "inscricaoMunicipal": null,
-          "nome": String(company.name),
+          "nome": String(fiscal.company.name).trim().replace(/\s+/g, ' '),
           "endereco": null,
           "telefone": null,
           "email": "teste@teste.com"
@@ -283,13 +328,11 @@ async function nfse(entry) {
 
     const result = await response.json()
 
-    if (!response.ok) {
-      throw new Error(result.message)
+    if (response.ok) {
+      await db.Fiscal.update({status: 100, reason: 'Autorizado o uso da NFS-e', xml: result.xmlAut, accessKey: result.chNFSe}, { where: [{ id: fiscal.id }] })
+    } else {
+      await db.Fiscal.update({status: 500, reason: result.message}, { where: [{ id: fiscal.id }] })
     }
-
-    await db.Company.update({dpsLastNum: numeroDps}, {where: [{'codigo_empresa_filial': company.codigo_empresa_filial}], transaction})
-
-    return result
 
   })
 

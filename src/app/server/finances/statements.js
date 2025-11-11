@@ -191,7 +191,7 @@ export async function create(formData) {
       const begin = addDays(new Date(formData.statement.begin), -25)
       const end = addDays(new Date(formData.statement.end), 20)
 
-      await sincronize.receivements({start: begin, end: end})
+      await sincronize.receivements({start: begin, end: end, syncPartner: { lastSyncPartner: null }})
 
       const options = await db.BankAccount.findOne({attributes: ['statement'], where: [{codigo_conta_bancaria: formData.bankAccount?.codigo_conta_bancaria}]})
 
@@ -614,6 +614,9 @@ export async function concile({id}) {
         {model: db.BankAccount, as: 'destination', attributes: ['externalId']}
       ],
       where: [{id: id, isConciled: false}],
+      order: [
+        [{ model: db.StatementData, as: 'statementData' }, 'sequence', 'ASC']
+      ],
       transaction
     })
 

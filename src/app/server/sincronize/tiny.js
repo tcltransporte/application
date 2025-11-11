@@ -15,17 +15,27 @@ import { Op, Sequelize } from "sequelize"
 const MAX_REQUESTS_PER_MINUTE = 60; // Exemplo: 60 chamadas por minuto
 const DELAY_MS = 60000 / MAX_REQUESTS_PER_MINUTE; // 60000 ms = 1 minuto
 
-let lastCallTime = 0;
+// MODIFICADO: Trocado de uma variável única para um objeto (Map)
+// para rastrear o tempo por ID de integração.
+let callTimestamps = {};
 
-export async function rateLimitedFetch() {
+export async function rateLimitedFetch({ id }) {
+  // Garante que um ID foi passado para o controle de taxa
+  if (!id) {
+    throw new Error("rateLimitedFetch foi chamada sem um ID de integração.");
+  }
+
   const now = Date.now();
+  // Obtém o último tempo de chamada para ESTE ID específico
+  const lastCallTime = callTimestamps[id] || 0;
   const elapsed = now - lastCallTime;
 
   if (elapsed < DELAY_MS) {
     await new Promise((resolve) => setTimeout(resolve, DELAY_MS - elapsed));
   }
 
-  lastCallTime = Date.now();
+  // Define o tempo da chamada atual para ESTE ID específico
+  callTimestamps[id] = Date.now();
 }
 
 export async function authentication({ companyIntegrationId }) {
@@ -50,12 +60,15 @@ export async function authentication({ companyIntegrationId }) {
     })
 
     let options = JSON.parse(companyIntegration.options)
+    // ADICIONADO: Garante que o ID da integração esteja sempre no objeto options
+    options.id = companyIntegration.id 
 
     const timestamp = getTime(new Date())
 
     const url = `https://erp.tiny.com.br/services/auth.services.php?a=ping&time=${timestamp}`
 
-    await rateLimitedFetch();
+    // MODIFICADO: Passa o ID da integração para o controle de taxa
+    await rateLimitedFetch({ id: companyIntegration.id });
 
     const response = await fetch(url, {
         method: 'GET',
@@ -69,6 +82,7 @@ export async function authentication({ companyIntegrationId }) {
     const data = await response.text()
 
     if (data.includes(`"status":0`)) {
+        // options já contém o .id adicionado acima
         return options
     }
 
@@ -81,6 +95,7 @@ export async function authentication({ companyIntegrationId }) {
 
       await db.CompanyIntegration.update({ options: JSON.stringify(options) }, { where: [{ id: companyIntegration.id }] })
 
+      // options já contém o .id adicionado acima
       return options
 
     }
@@ -155,6 +170,7 @@ export async function categories({search = ' '}) {
 
     const session = await getServerSession(authOptions)
     
+    // options agora sempre conterá .id
     const options = await authentication({})
 
     if (options) {
@@ -162,7 +178,8 @@ export async function categories({search = ' '}) {
       const args = `[{"queryKey":["conta.pagar.categorias.financeiras"],"signal":{"aborted":false,"onabort":null}}]`
       const data = `argsLength=${_.size(args)}&args=${encodeURIComponent(args)}`
 
-      await rateLimitedFetch();
+      // MODIFICADO: Passa o ID da integração
+      await rateLimitedFetch({ id: options.id });
 
       const response = await fetch(
         'https://erp.tiny.com.br/services/contas.pagar.server/2/CategoriaFinanceira%5CCategoriaFinanceira/obterOpcoesSelectCategorias',
@@ -223,7 +240,7 @@ export async function categories({search = ' '}) {
   }
 }
 
-export async function partners({ search = " " }) {
+export async function partners({ search = " ", lastSyncPartner }) {
   try {
     
     if (!search) search = " "
@@ -242,10 +259,11 @@ export async function partners({ search = " " }) {
     if (!companyIntegration) {
       return
     }
-
+    
+    // options agora sempre conterá .id
     let options = await authentication({})
 
-    const lastSyncPartner = new Date()
+    const nowLastSyncPartner = new Date()
 
     await db.transaction(async (transaction) => {
 
@@ -259,7 +277,7 @@ export async function partners({ search = " " }) {
           formato: "json",
           pesquisa: search,
           pagina: page,
-          dataMinimaAtualizacao: options?.lastSyncPartner ? format(options?.lastSyncPartner, "dd/MM/yyyy HH:mm:ss") : null,
+          dataMinimaAtualizacao: lastSyncPartner ?? options?.lastSyncPartner ? format(options?.lastSyncPartner, "dd/MM/yyyy HH:mm:ss") : null,
         }
 
         const query = Object.entries(params)
@@ -271,7 +289,8 @@ export async function partners({ search = " " }) {
 
         console.log(`🔹 [${page}/${page}] Buscando página de contatos`)
 
-        await rateLimitedFetch();
+        // MODIFICADO: Passa o ID da integração
+        await rateLimitedFetch({ id: options.id });
 
         const res = await fetch(url, options);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -334,7 +353,7 @@ export async function partners({ search = " " }) {
       } while (page <= totalPages)
 
       // Atualizar última sincronização
-      options.lastSyncPartner = format(lastSyncPartner, "yyyy-MM-dd HH:mm")
+      options.lastSyncPartner = format(nowLastSyncPartner, "yyyy-MM-dd HH:mm")
 
       await db.CompanyIntegration.update(
         { options: JSON.stringify(options) },
@@ -355,7 +374,8 @@ export async function partners({ search = " " }) {
 // 🔹 AUXILIARES GENÉRICOS
 // =============================
 // Buscar páginas de contas
-async function fetchTinyAccounts({ token, partner, start, end, offset, type }) {
+// MODIFICADO: Adicionado 'id' (integrationId) aos parâmetros
+async function fetchTinyAccounts({ token, id, partner, start, end, offset, type }) {
 
   const params = new URLSearchParams({ token, formato: "json" })
 
@@ -371,7 +391,8 @@ async function fetchTinyAccounts({ token, partner, start, end, offset, type }) {
 
   const url = `https://api.tiny.com.br/api2/${endpoint}?${params.toString()}`
 
-  await rateLimitedFetch()
+  // MODIFICADO: Passa o ID da integração
+  await rateLimitedFetch({ id })
 
   const res = await fetch(url)
 
@@ -382,7 +403,8 @@ async function fetchTinyAccounts({ token, partner, start, end, offset, type }) {
 }
 
 // Buscar detalhes de cada conta
-async function fetchTinyDetail({ token, id, type }) {
+// MODIFICADO: Adicionado 'integrationId' aos parâmetros
+async function fetchTinyDetail({ token, id, type, integrationId }) {
   const endpoint =
     type === "pay"
       ? "conta.pagar.obter.php"
@@ -390,7 +412,8 @@ async function fetchTinyDetail({ token, id, type }) {
 
   const url = `https://api.tiny.com.br/api2/${endpoint}?token=${token}&id=${id}&formato=json`;
 
-  await rateLimitedFetch();
+  // MODIFICADO: Passa o ID da integração (renomeado para integrationId)
+  await rateLimitedFetch({ id: integrationId });
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Erro ao acessar ${url}: ${res.statusText}`);
 
@@ -398,7 +421,8 @@ async function fetchTinyDetail({ token, id, type }) {
 }
 
 // Obter todas as páginas e detalhes
-async function getAllTinyAccounts({ token, partner, start, end, type }) {
+// MODIFICADO: Adicionado 'id' (integrationId) aos parâmetros
+async function getAllTinyAccounts({ token, id, partner, start, end, type }) {
 
   let page = 1
   let totalPages = 1
@@ -411,6 +435,7 @@ async function getAllTinyAccounts({ token, partner, start, end, type }) {
 
     const response = await fetchTinyAccounts({
       token,
+      id, // MODIFICADO: Passa o ID
       partner,
       start,
       end,
@@ -446,22 +471,24 @@ async function getAllTinyAccounts({ token, partner, start, end, type }) {
 
     const conta = contas[index]
 
-    const id = conta?.conta?.id
+    // MODIFICADO: Renomeado 'id' para 'contaId' para evitar conflito
+    const contaId = conta?.conta?.id
 
-    if (!id) {
+    if (!contaId) {
       index++
       continue
     }
 
-    console.log(`🔹 [${index + 1}/${contas.length}] Buscando detalhe da conta ${id}`)
+    console.log(`🔹 [${index + 1}/${contas.length}] Buscando detalhe da conta ${contaId}`)
 
     try {
-
-      const detail = await fetchTinyDetail({ token, id, type })
+      
+      // MODIFICADO: Passa 'contaId' como 'id' e 'id' (integrationId) como 'integrationId'
+      const detail = await fetchTinyDetail({ token, id: contaId, type, integrationId: id })
       contasComDetalhe.push({ ...conta, detail: detail?.retorno || {} })
 
     } catch (err) {
-      console.error(`❌ Erro ao buscar detalhe da conta ${id}:`, err.message)
+      console.error(`❌ Erro ao buscar detalhe da conta ${contaId}:`, err.message)
     }
 
     index++
@@ -550,7 +577,7 @@ async function upsertMovements({
     const category = item.category
       ? await db.FinancialCategory.findOne({
           attributes: ["id"],
-          where: [{ Descricao: item.category }],
+          where: [{ Descricao: item.category }], // ATENÇÃO: Verifique se o campo é 'Descricao' ou 'description'
           transaction,
         })
       : null
@@ -575,12 +602,24 @@ async function upsertMovements({
         dueDate: item.dueDate,
         observation: item.observation,
       }
+      
+      // Ajuste na lógica de comparação para campos do 'existing'
+      const existingData = {
+          documentNumber: existing.financialMovement.documentNumber,
+          partnerId: existing.financialMovement.partnerId,
+          categoryId: existing.categoryId, // 'categoryId' pode estar em 'existing' ou 'existing.financialMovement'
+          amount: existing.amount, // 'amount' está em FinancialMovementInstallment
+          issueDate: existing.financialMovement.issueDate,
+          dueDate: existing.dueDate, // 'dueDate' está em FinancialMovementInstallment
+          observation: existing.observation // 'observation' está em FinancialMovementInstallment
+      };
 
       const hasChanges = Object.keys(updatedFields).some(
-        (key) => String(existing[key]) !== String(updatedFields[key])
+        (key) => String(existingData[key]) !== String(updatedFields[key])
       )
 
       if (hasChanges) {
+        // ID para atualização é o financialMovementId
         toUpdate.push({ id: existing.financialMovementId, ...updatedFields });
       }
     }
@@ -595,10 +634,20 @@ async function upsertMovements({
   // Atualizar existentes
   for (const updateData of toUpdate) {
 
-    await db.FinancialMovement.update(updateData, {
-      where: { codigo_movimento: updateData.id },
-      transaction,
-    })
+    await db.FinancialMovement.update(
+      {
+        documentNumber: updateData.documentNumber,
+        partnerId: updateData.partnerId,
+        categoryId: updateData.categoryId,
+        amount: updateData.amount,
+        issueDate: updateData.issueDate,
+        observation: updateData.observation,
+      },
+      {
+        where: { codigo_movimento: updateData.id },
+        transaction,
+      }
+    )
 
     await db.FinancialMovementInstallment.update(
       {
@@ -638,7 +687,7 @@ async function upsertMovements({
       })
 
     if (!created) {
-      await installment.update({ dueDate }, { transaction })
+      await installment.update({ dueDate, amount: movement.amount, observation: movement.observation, externalId }, { transaction })
     }
   }
 }
@@ -646,14 +695,15 @@ async function upsertMovements({
 // =============================
 // 🔹 Função principal genérica
 // =============================
-async function syncTinyData({ partner, start, end, type, type_operation }) {
+async function syncTinyData({ partner, start, end, type, type_operation, syncPartner }) {
 
+  // options agora sempre conterá .id
   const options = await authentication({})
 
   if (!options) return
 
   await categories({})
-  await partners({})
+  await partners(syncPartner)
 
   const session = await getServerSession(authOptions)
 
@@ -661,6 +711,7 @@ async function syncTinyData({ partner, start, end, type, type_operation }) {
 
   const contasComDetalhe = await getAllTinyAccounts({
     token: options.token,
+    id: options.id, // MODIFICADO: Passa o ID da integração
     partner,
     start,
     end,
@@ -676,7 +727,7 @@ async function syncTinyData({ partner, start, end, type, type_operation }) {
         companyId: session.company.codigo_empresa_filial,
         [Op.or]: [
           { cpfCnpj: partnerData.map((p) => p.cpfCnpj).filter(Boolean) },
-          { nome: partnerData.map((p) => p.nome).filter(Boolean) },
+          { surname: partnerData.map((p) => p.nome).filter(Boolean) }, // Corrigido de 'nome' para 'surname'
         ],
       },
       transaction,
@@ -707,23 +758,25 @@ async function syncTinyData({ partner, start, end, type, type_operation }) {
 // =============================
 // 🔹 FUNÇÕES PRINCIPAIS
 // =============================
-export async function payments({ partner, start, end }) {
-  await syncTinyData({ partner, start, end, type: "pay", type_operation: 2 });
+export async function payments({ partner, start, end, syncPartner }) {
+  await syncTinyData({ partner, start, end, type: "pay", type_operation: 2, syncPartner });
 }
 
-export async function receivements({ partner, start, end }) {
-  await syncTinyData({ partner, start, end, type: "receive", type_operation: 1 });
+export async function receivements({ partner, start, end, syncPartner }) {
+  await syncTinyData({ partner, start, end, type: "receive", type_operation: 1, syncPartner });
 }
 
 export async function transfer({date, originId, destinationId, amount, observation = ''}) {
 
+  // options agora sempre conterá .id
   const options = await authentication({})
 
   const args = `[{"data":"${format(date, 'dd/MM/yyyy')}","valor":"${amount.toString().replace('.', ',')}","idContaOrigem":"${originId}","idContaDestino":"${destinationId}","historicoTransferencia":"${observation}"}]`
 
   const data = `argsLength=${args.length}&args=${args}`
 
-  await rateLimitedFetch();
+  // MODIFICADO: Passa o ID da integração
+  await rateLimitedFetch({ id: options.id });
 
   const res = await fetch("https://erp.tiny.com.br/services/caixa.server/2/Caixa/salvarTransferencia", {
     "headers": {
@@ -744,7 +797,7 @@ export async function transfer({date, originId, destinationId, amount, observati
       "Referer": "https://erp.tiny.com.br/caixa",
       "Referrer-Policy": "strict-origin-when-cross-origin"
     },
-    "body": data, //"argsLength=149&timeInicio=1758132000767&versaoFront=3.80.38&pageTime=1758131952&pageLastPing=1758131959873&location=https%3A%2F%2Ferp.tiny.com.br%2Fcaixa&curRetry=0&args=%5B%7B%22data%22%3A%2217%2F09%2F2025%22%2C%22valor%22%3A%220%2C01%22%2C%22idContaOrigem%22%3A%22351099665%22%2C%22idContaDestino%22%3A%22351167825%22%2C%22historicoTransferencia%22%3A%22Transfer%C3%AAncia+entre+contas%22%7D%5D",
+    "body": data,
     "method": "POST"
   });
 

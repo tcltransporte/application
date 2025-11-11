@@ -163,6 +163,33 @@ export async function partner(search, signal) {
     }
 }
 
+export async function service(search, signal) {
+    try {
+
+        const response = await fetch('/api/search/service', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
+
+        return data
+
+    } catch (error) {
+        
+        return exception(error)
+        
+    }
+}
+
 export async function financialCategory(search, signal) {
     try {
 

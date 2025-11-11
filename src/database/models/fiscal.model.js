@@ -9,6 +9,26 @@ export class Fiscal {
     type: DataTypes.BIGINT
   }
 
+  companyBusinessId = {
+    field: 'IDEmpresa',
+    type: DataTypes.INTEGER
+  }
+
+  companyId = {
+    field: 'CodigoEmpresaFilial',
+    type: DataTypes.TINYINT
+  }
+
+  status = {
+    field: 'status',
+    type: DataTypes.INTEGER
+  }
+
+  reason = {
+    field: 'reason',
+    type: DataTypes.STRING
+  }
+
   partnerId = {
     field: 'IDFornecedor',
     type: DataTypes.BIGINT
@@ -23,10 +43,30 @@ export class Fiscal {
     field: 'NumeroNF',
     type: DataTypes.BIGINT
   }
+
+  serie = {
+    field: 'SerieNF',
+    type: DataTypes.STRING
+  }
+  
+  date = {
+    field: 'DataNF',
+    type: DataTypes.STRING
+  }
   
   value = {
     field: 'ValorNF',
     type: DataTypes.DECIMAL
+  }
+
+  accessKey = {
+    field: 'ChaveNfe',
+    type: DataTypes.STRING
+  }
+
+  xml = {
+    field: 'Xml',
+    type: Sequelize.BLOB
   }
 
 }

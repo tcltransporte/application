@@ -204,7 +204,7 @@ export async function insert(formData) {
       }
     }
 
-    await rateLimitedFetch()
+    await rateLimitedFetch({ id: options.id })
 
     const url = `https://api.tiny.com.br/api2/conta.receber.incluir.php?token=${options.token}&conta=${encodeURIComponent(JSON.stringify(conta))}&formato=JSON`;
 
@@ -319,7 +319,7 @@ export async function concile({codigo_movimento_detalhe, bankAccountId, date, am
     historico: observation
   }
 
-  await rateLimitedFetch()
+  await rateLimitedFetch({ id: options.id })
 
   const url = `https://api.tiny.com.br/api2/conta.receber.baixar.php?token=${options.token}&conta=${encodeURIComponent(
     JSON.stringify({
@@ -358,7 +358,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
 
   let data1 = `argsLength=${_.size(args1)}&args=${args1}`;
 
-  await rateLimitedFetch()
+  await rateLimitedFetch({ id: options.id })
 
   const response1 = await fetch(
     "https://erp.tiny.com.br/services/contas.receber.server/1/iniciarEstornoDaConta",
@@ -393,7 +393,7 @@ export async function desconcile({codigo_movimento_detalhe}) {
 
   let data2 = `argsLength=${_.size(args2)}&args=${args2}`
 
-  await rateLimitedFetch()
+  await rateLimitedFetch({ id: options.id })
 
   const response2 = await fetch(
     "https://erp.tiny.com.br/services/contas.receber.server/1/excluirBorderos",

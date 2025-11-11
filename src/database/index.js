@@ -33,6 +33,7 @@ import { State } from './models/state.model.js'
 import { City } from './models/city.model.js'
 import { DocumentTemplate } from './models/documentTemplate.model.js'
 import { Fiscal } from './models/fiscal.model.js'
+import { OrderFiscal } from './models/orderFiscal.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -91,6 +92,8 @@ export class AppContext extends Sequelize {
   Nfe = this.define('nfe', new Nfe(), { tableName: 'nota' })
 
   Order = this.define('order', new Order(), { tableName: 'Solicitacao' })
+  
+  OrderFiscal = this.define('orderFiscal', new OrderFiscal(), { tableName: 'orderFiscal' })
   
   OrderService = this.define('orderService', new OrderService(), { tableName: 'SolicitacaoServicoRealizado' })
 
@@ -172,8 +175,9 @@ export class AppContext extends Sequelize {
     this.FinancialMovement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'codigo_conta', onDelete: 'CASCADE' })
     //this.FinancialMovement.hasMany(this.FinancialMovementInstallment, { as: 'installments', foreignKey: 'financialMovementId', onDelete: 'CASCADE' })
 
-
+    this.Fiscal.belongsTo(this.Company, { as: 'company', foreignKey: 'CodigoEmpresaFilial', targetKey: 'codigo_empresa_filial', onDelete: 'CASCADE' })
     this.Fiscal.belongsTo(this.Partner, { as: 'partner', foreignKey: 'IDFornecedor', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
+    this.Fiscal.belongsTo(this.DocumentTemplate, { as: 'documentTemplate', foreignKey: 'IDModeloDocumento', targetKey: 'id', onDelete: 'CASCADE' })
 
     this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
     this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId', onDelete: 'CASCADE' })
@@ -206,7 +210,11 @@ export class AppContext extends Sequelize {
     this.Nfe.belongsTo(this.Partner, {as: 'destination', foreignKey: 'codigo_cliente', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
 
     
+    this.Order.belongsTo(this.Partner, {as: 'customer', foreignKey: 'customerId', targetKey: 'codigo_pessoa', onDelete: 'CASCADE'})
+    this.Order.hasMany(this.OrderFiscal, { as: 'orderFiscals', foreignKey: 'orderId', onDelete: 'CASCADE' })
     this.Order.hasMany(this.OrderService, { as: 'services', foreignKey: 'IDSolicitacao', onDelete: 'CASCADE' })
+    
+    this.OrderFiscal.belongsTo(this.Fiscal, {as: 'fiscal', foreignKey: 'fiscalId', targetKey: 'id', onDelete: 'CASCADE'})
     
     this.OrderService.belongsTo(this.Service, {as: 'service', foreignKey: 'IDServico', targetKey: 'id', onDelete: 'CASCADE'})
 

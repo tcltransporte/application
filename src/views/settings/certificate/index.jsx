@@ -65,7 +65,7 @@ export const Certificate = () => {
 
       } else {
           
-        const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'question', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Não' })
+        const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Não' })
 
         if (!result.isConfirmed) {
           return
@@ -110,7 +110,7 @@ export const Certificate = () => {
             (
               <>
                 
-                <DragAndDrop files={[certificate]} title={'Arquivo PFX'} accept={'.pfx'} onChange={(files) => handleUpload(files)}></DragAndDrop>
+                <DragAndDrop files={certificate ? [certificate] : []} title={'Arquivo PFX'} accept={'.pfx'} onChange={(files) => handleUpload(files)}></DragAndDrop>
 
                 <Grid container spacing={3}>
 

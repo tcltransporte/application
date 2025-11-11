@@ -9,6 +9,11 @@ export class Service {
     type: DataTypes.INTEGER
   }
 
+  companyId = {
+    field: 'companyId',
+    type: DataTypes.SMALLINT
+  }
+
   name = {
     field: 'Descricao',
     type: DataTypes.STRING

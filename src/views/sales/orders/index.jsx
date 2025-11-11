@@ -17,7 +17,8 @@ import {
   Checkbox,
   Tooltip,
   Menu,
-  MenuItem
+  MenuItem,
+  Divider
 } from '@mui/material'
 import { useTitle } from '@/contexts/TitleProvider'
 import * as orders from '@/app/server/sales/orders'
@@ -27,6 +28,143 @@ import _ from 'lodash'
 import { format } from 'date-fns'
 import Swal from 'sweetalert2'
 import { BackdropLoading } from '@/components/BackdropLoading'
+import { Form, Formik } from 'formik'
+import { Drawer } from '@/components/Drawer'
+
+
+const DfeDrawer = ({ order, onClose }) => {
+  
+  return (
+    <Drawer
+      open={order}
+      title={'Documentos'}
+      onClose={onClose}
+      width={'780px'}
+    >
+     
+      <Box sx={{ p: 3 }}>
+
+        {_.size(order?.orderFiscals) > 0 ? (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 8, p: 0 }}></TableCell>
+                <TableCell sx={{ width: 130 }}>Data</TableCell>
+                <TableCell sx={{ width: 70 }}>Tipo</TableCell>
+                <TableCell sx={{ width: 50 }}>Número</TableCell>
+                <TableCell>Chave de acesso</TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+            </TableHead>
+
+          <TableBody>
+            {_.map(order?.orderFiscals, (fiscal, index) => {
+
+              const statusColor =
+                _.get(fiscal, 'fiscal.status') === 100
+                  ? 'success.main'
+                  : _.get(fiscal, 'fiscal.status') === 500
+                  ? 'error.main'
+                  : 'grey.400'
+
+              return (
+                <Tooltip
+                  key={index}
+                  title={_.get(fiscal, 'fiscal.reason')}
+                  placement="left"
+                  arrow
+                >
+                  <TableRow
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    className="with-hover-actions"
+                  >
+                    <TableCell sx={{ position: 'relative', p: 0, width: 8 }}>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 4,          // margem superior
+                          bottom: 4,       // margem inferior
+                          left: 0,
+                          width: 6,
+                          borderRadius: 1,
+                          backgroundColor: statusColor
+                        }}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {_.get(fiscal, 'fiscal.date')
+                        ? format(new Date(_.get(fiscal, 'fiscal.date')), 'dd/MM/yyyy HH:mm')
+                        : ""}
+                    </TableCell>
+
+                    <TableCell>
+                      {_.get(fiscal, 'fiscal.documentTemplate.acronym', '')}
+                    </TableCell>
+
+                    <TableCell>
+                      {_.get(fiscal, 'fiscal.documentNumber', '')}
+                    </TableCell>
+
+                    <TableCell
+                      sx={{
+                        fontFamily: 'monospace',
+                        letterSpacing: '-0.6px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {_.get(fiscal, 'fiscal.accessKey', '')}
+                    </TableCell>
+
+                    <TableCell align="center">
+                      <Box className="row-actions">
+                        <Tooltip title="Visualizar PDF">
+                          <IconButton
+                            size="large"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDacte({ id: payment.id })
+                            }}
+                          >
+                            <i
+                              className="ri-file-pdf-2-line"
+                              style={{ fontSize: 20, color: '#d32f2f' }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Baixar XML">
+                          <IconButton
+                            size="large"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownload({ id: payment.id })
+                            }}
+                          >
+                            <i className="ri-download-2-line" style={{ fontSize: 20 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                </Tooltip>
+              )
+            })}
+          </TableBody>
+        </Table>
+
+        ) : (
+          <Typography variant="body2" color="textSecondary">
+            Nenhum documento encontrado!
+          </Typography>
+        )}
+      </Box>
+    </Drawer>
+  )
+}
 
 export const ViewSalesOrders = ({ initialOrders = [] }) => {
 
@@ -38,6 +176,8 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
   const [data, setData] = useState(initialOrders)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [serviceId, setServiceId] = useState(undefined)
+
+  const [order, setOrder] = useState(undefined)
 
   // estados para o menu de ações
   const [anchorEl, setAnchorEl] = useState(null)
@@ -93,7 +233,9 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
 
       setLoading('Gerando nota fiscal...')
 
-      await orders.generate()
+      await orders.generate(orderId)
+
+      fetchServices({...data.request})
 
     } catch (error) {
       Swal.fire({ icon: 'warning', title: 'Ops!', text: error.message, confirmButtonText: 'Ok' })
@@ -157,9 +299,10 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
                       onChange={toggleSelectAll}
                     />
                   </TableCell>
-                  <TableCell align="center" sx={{ width: 140 }}>Data</TableCell>
+                  <TableCell align="left" sx={{ width: 140 }}>Data</TableCell>
                   <TableCell align="center" sx={{ width: 70 }}>Número</TableCell>
-                  <TableCell>Descrição</TableCell>
+                  <TableCell>Cliente</TableCell>
+                  <TableCell align="center"></TableCell>
                   <TableCell align="center" sx={{ width: 90 }}></TableCell>
                 </TableRow>
               </TableHead>
@@ -167,7 +310,7 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
               <TableBody>
                 {isFetching ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={styles.tableCellLoader}>
+                    <TableCell colSpan={6} align="center" sx={styles.tableCellLoader}>
                       <CircularProgress size={30} />
                     </TableCell>
                   </TableRow>
@@ -191,9 +334,21 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
                             onChange={() => toggleSelect(order.id)}
                           />
                         </TableCell>
-                        <TableCell align="center">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
+                        <TableCell align="left">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
                         <TableCell align="center">{order.sequence}</TableCell>
-                        <TableCell>{order.description}</TableCell>
+                        <TableCell>{order.customer?.surname}</TableCell>
+                        <TableCell align="center">
+
+                          <IconButton onClick={() => {
+                            setOrder(order)
+                          }} sx={{ p: 0, width: 26, height: 26, borderRadius: '50%', fontSize: 12, backgroundColor: 'var(--mui-palette-primary-main)', color: '#fff', '&:hover': { backgroundColor: 'primary.dark' }, position: 'relative' }}>
+                            <i className="ri-file-text-line" style={{ fontSize: 18 }} />
+                            <Box sx={{ position: 'absolute', bottom: -4, right: -4, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--mui-palette-success-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12 }}>
+                              {_.size(order.orderFiscals)}
+                            </Box>
+                          </IconButton>
+
+                        </TableCell>
                         <TableCell align="center">
                           <Box className="row-actions">
                             <Tooltip title="Editar">
@@ -270,6 +425,12 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
             />
           </Box>
         </Box>
+
+        <DfeDrawer
+          order={order}
+          onClose={() => setOrder(undefined)}
+          //ctes={selectedCtes}
+        />
 
         <ViewOrder
           serviceId={serviceId}

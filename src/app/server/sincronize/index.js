@@ -13,15 +13,15 @@ export async function categories({search = ''}) {
 
 }
 
-export async function payments({ partner, start, end }) {
+export async function payments({ partner, start, end, syncPartner }) {
     
-    await tiny.payments({ partner, start: format(start, "dd/MM/yyyy"), end: format(end, "dd/MM/yyyy") })
+    await tiny.payments({ partner, start: format(start, "dd/MM/yyyy"), end: format(end, "dd/MM/yyyy"), syncPartner })
 
 }
 
-export async function receivements({ partner, start, end }) {
+export async function receivements({ partner, start, end, syncPartner }) {
     
-    await tiny.receivements({ partner, start: format(start, "dd/MM/yyyy"), end: format(end, "dd/MM/yyyy") })
+    await tiny.receivements({ partner, start: format(start, "dd/MM/yyyy"), end: format(end, "dd/MM/yyyy"), syncPartner })
 
 }
 

@@ -9,8 +9,13 @@ export class DocumentTemplate {
     type: DataTypes.INTEGER
   }
 
-  name = {
+  description = {
     field: 'Descricao',
+    type: DataTypes.STRING
+  }
+
+  acronym = {
+    field: 'Sigla',
     type: DataTypes.STRING
   }
 

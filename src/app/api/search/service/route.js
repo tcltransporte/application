@@ -1,0 +1,39 @@
+import { authOptions } from "@/libs/auth"
+import { getServerSession } from "next-auth"
+
+import { AppContext } from "@/database"
+import { Op } from "sequelize"
+
+export async function POST(request) {
+    try {
+
+        const { search } = await request.json()
+
+        const session = await getServerSession(authOptions)
+
+        const db = new AppContext()
+
+        const where = []
+
+        where.push({ '$Descricao$': { [Op.like]: `%${search.replace(/ /g, "%").toUpperCase()}%` }})
+
+        where.push({ '$companyId$': session.company.codigo_empresa_filial })
+        
+        const services = await db.Service.findAll({
+            attributes: ['id', 'name'],
+            order: [['name', 'asc']],
+            where: where,
+            limit: 20,
+            offset: 0,
+        })
+
+        const data = services.map((partner) => partner.toJSON())
+
+        return Response.json(data)
+
+    } catch (error) {
+
+        return new Response(JSON.stringify({ message: error.message }), { status: 500 })
+
+    }
+}
