@@ -29,6 +29,11 @@ export class Fiscal {
     type: DataTypes.STRING
   }
 
+  localityId = {
+    field: 'localityId',
+    type: DataTypes.INTEGER
+  }
+
   partnerId = {
     field: 'IDFornecedor',
     type: DataTypes.BIGINT
@@ -54,8 +59,18 @@ export class Fiscal {
     type: DataTypes.STRING
   }
   
-  value = {
+  amount = {
     field: 'ValorNF',
+    type: DataTypes.DECIMAL
+  }
+
+  pISSQN = {
+    field: 'pISSQN',
+    type: DataTypes.DECIMAL
+  }
+
+  vISSQN = {
+    field: 'ValorISS',
     type: DataTypes.DECIMAL
   }
 

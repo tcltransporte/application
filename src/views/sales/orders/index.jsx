@@ -28,7 +28,6 @@ import _ from 'lodash'
 import { format } from 'date-fns'
 import Swal from 'sweetalert2'
 import { BackdropLoading } from '@/components/BackdropLoading'
-import { Form, Formik } from 'formik'
 import { Drawer } from '@/components/Drawer'
 
 
@@ -300,9 +299,10 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
                     />
                   </TableCell>
                   <TableCell align="left" sx={{ width: 140 }}>Data</TableCell>
-                  <TableCell align="center" sx={{ width: 70 }}>Número</TableCell>
+                  <TableCell align="center" sx={{ width: 80 }}>Número</TableCell>
+                  <TableCell sx={{ width: 200 }}>Filial</TableCell>
                   <TableCell>Cliente</TableCell>
-                  <TableCell align="center"></TableCell>
+                  <TableCell align="center" sx={{ width: 90 }}></TableCell>
                   <TableCell align="center" sx={{ width: 90 }}></TableCell>
                 </TableRow>
               </TableHead>
@@ -310,7 +310,7 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
               <TableBody>
                 {isFetching ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={styles.tableCellLoader}>
+                    <TableCell colSpan={7} align="center" sx={styles.tableCellLoader}>
                       <CircularProgress size={30} />
                     </TableCell>
                   </TableRow>
@@ -335,7 +335,8 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
                           />
                         </TableCell>
                         <TableCell align="left">{order.date ? format(new Date(order.date), 'dd/MM/yyyy HH:mm') : ""}</TableCell>
-                        <TableCell align="center">{order.sequence}</TableCell>
+                        <TableCell>{order.sequence}</TableCell>
+                        <TableCell>{order.company?.surname}</TableCell>
                         <TableCell>{order.customer?.surname}</TableCell>
                         <TableCell align="center">
 

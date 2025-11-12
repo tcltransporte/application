@@ -17,6 +17,11 @@ export async function POST(request) {
 
         const companies = await db.Company.findAll({
             attributes: ['codigo_empresa_filial', 'surname'],
+            include: [
+                {model: db.City, as: 'city', attributes: ['codigo_municipio', 'name'], include: [
+                    {model: db.State, as: 'state', attributes: ['codigo_uf', 'acronym']}
+                ]}
+            ],
             order: [['codigo_empresa_filial', 'asc']],
             where: {
                 codigo_empresa: session.company.companyBusiness.codigo_empresa,

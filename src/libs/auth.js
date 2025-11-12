@@ -83,11 +83,10 @@ async function validateCompanyAccess(userId, companyBusinessId, companyId, db) {
         where: whereCompany,
         required: true,
         include: [
-          {
-            model: db.CompanyUser,
-            as: 'companyUsers',
-            required: true,
-          },
+          { model: db.City, as: 'city', include: [
+              { model: db.State, as: 'state' }
+          ]},
+          { model: db.CompanyUser, as: 'companyUsers', required: true },
         ],
         attributes: ['codigo_empresa_filial', 'name', 'surname'],
       },

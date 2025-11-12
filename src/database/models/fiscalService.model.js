@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 
-export class OrderService {
+export class FiscalService {
 
   id = {
     field: 'ID',
@@ -9,14 +9,19 @@ export class OrderService {
     type: DataTypes.BIGINT
   }
 
-  orderId = {
-    field: 'IDSolicitacao',
+  fiscalId = {
+    field: 'IDCompras',
     type: DataTypes.BIGINT
   }
 
   serviceId = {
     field: 'IDServico',
-    type: DataTypes.INTEGER
+    type: DataTypes.TINYINT
+  }
+
+  description = {
+    field: 'Descricao',
+    type: DataTypes.STRING
   }
 
   quantity = {
@@ -27,20 +32,17 @@ export class OrderService {
 
   amount = {
     field: 'Valor',
-    type: DataTypes.DECIMAL,
-    defaultValue: 0
+    type: DataTypes.DECIMAL
   }
 
   pISSQN = {
-    field: 'pISSQN',
-    type: DataTypes.DECIMAL,
-    defaultValue: 0
+    field: 'AliquotaISS',
+    type: DataTypes.DECIMAL
   }
 
   vISSQN = {
-    field: 'vISSQN',
-    type: DataTypes.DECIMAL,
-    defaultValue: 0
+    field: 'ValorISSQN',
+    type: DataTypes.DECIMAL
   }
 
 }

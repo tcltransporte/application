@@ -5,6 +5,7 @@ import { authOptions } from "@/libs/auth"
 import { format } from "date-fns"
 import _ from "lodash"
 import { getServerSession } from "next-auth"
+import { Op } from "sequelize"
 
 export async function findAll({dueDate, limit = 50, offset}) {
 
@@ -108,11 +109,12 @@ export async function upsert(values) {
       companyBusinessId: session.company.companyBusiness.codigo_empresa,
       companyId: companyId,
       documentTemplateId: values.documentTemplateId,
+      localityId: values.locality.codigo_municipio,
       partnerId: values.partner.codigo_pessoa,
       documentNumber: documentNumber,
       serie: serie,
       date: date,
-      value: values.value
+      amount: values.amount
     }
 
     let result
@@ -130,6 +132,21 @@ export async function upsert(values) {
       
       result = await db.Service.findByPk(fiscal.id, { transaction })
 
+    }
+
+    const keepIds = values.services.filter(s => s.id).map(s => s.id);
+
+    for (const item of values.services) {
+      const service = { serviceId: item.service?.id, description: item.service?.name, fiscalId: result.id, amount: item.amount, pISSQN: item.pISSQN, vISSQN: item.vISSQN }
+      if (item.id) {
+        await db.FiscalService.update(service, { where: { id: item.id }, transaction })
+      } else {
+        await db.FiscalService.create(service, { transaction })
+      }
+    }
+
+    if (keepIds.length > 0) {
+      await db.FiscalService.destroy({ where: { fiscalId: result.id, id: { [Op.notIn]: keepIds }}, transaction })
     }
     
     return result.toJSON()
@@ -194,9 +211,10 @@ async function nfse(id) {
     const fiscal = await db.Fiscal.findOne({
       attributes: ['id', 'documentNumber', 'serie', 'date'],
       include: [
-        {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'name', 'cnpj', 'dpsEnvironment', 'dpsOptingForSimpleNational', 'dpsRegimeCalculation', 'dpsRegimeSpecial', 'certificate'], include: [
+        {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'name', 'cnpj', 'certificate', 'dpsEnvironment', 'dpsOptingForSimpleNational', 'dpsRegimeCalculation', 'dpsRegimeSpecial'], include: [
           {model: db.City, as: 'city', attributes: ['codigo_municipio', 'ibge']}
-        ]}
+        ]},
+        {model: db.City, as: 'locality', attributes: ['codigo_municipio', 'ibge']}
       ],
       where: [
         { id }
@@ -209,7 +227,7 @@ async function nfse(id) {
     const url = "http://vps53636.publiccloud.com.br/application/services/dfe/nfse/generate";
         
     const now = new Date()
-    now.setMinutes(now.getMinutes() - 180)
+    now.setMinutes(now.getMinutes() - 200)
 
     const emission = getCurrentDateTimeFormatted(fiscal.date)
 
@@ -266,7 +284,7 @@ async function nfse(id) {
         "intermediario": null,
         "servico": {
           "localidade": {
-            "codMunicipioPrestacao": "5208707",
+            "codMunicipioPrestacao": String(fiscal.locality.ibge),
             "codPaisPrestacao": null
           },
           "informacoes": {

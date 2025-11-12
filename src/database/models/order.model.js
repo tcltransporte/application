@@ -39,14 +39,4 @@ export class Order {
     type: DataTypes.STRING(100)
   }
 
-  nfeId = {
-    field: 'nfeId',
-    type: DataTypes.BIGINT
-  }
-
-  nfseId = {
-    field: 'nfseId',
-    type: DataTypes.BIGINT
-  }
-
 }
