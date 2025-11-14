@@ -87,7 +87,7 @@ export async function upsert(values) {
     }
 
     if (!values.date) {
-      date = format(new Date(), "dd/MM/yyyy HH:mm:ss")
+      date = format(new Date(), "yyyy-MM-dd HH:mm:ss")
     }
     
     //99 - Nota Fiscal de Serviço NFS-e                                                                        
@@ -155,27 +155,42 @@ export async function upsert(values) {
 
 }
 
-export async function generate(id) {
+export async function generate(fiscals) {
 
   const db = new AppContext()
 
-  const entry = await db.Fiscal.findOne({
-    attributes: ['id', 'documentTemplateId'],
-    where: [{ id }]
-  })
+  for (const id of fiscals) {
 
-  switch (entry.documentTemplateId) {
-    case 1:
+    await db.transaction(async (transaction) => {
 
-      break
-    case 99:
-      await nfse(entry.id)
-      break
+      const entry = await db.Fiscal.findOne({
+        attributes: ['id', 'documentTemplateId'],
+        where: {
+          id,
+          [Op.or]: [
+            { status: { [Op.ne]: 100 } },
+            { status: { [Op.is]: null } }
+          ]
+        },
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      })
 
-    default:
-      break
+      if (!entry) {
+        return
+      }
+
+      switch (entry.documentTemplateId) {
+        case 99:
+          await nfse(entry.id)
+          break
+        default:
+          break
+      }
+      
+    })
+
   }
-
 }
 
 async function nfse(id) {
@@ -184,37 +199,19 @@ async function nfse(id) {
 
   return await db.transaction(async (transaction) => {
 
-    const getCurrentDateTimeFormatted = (date) => {
-
-      function pad(num, size = 2) {
-        return String(num).padStart(size, "0");
-      }
-
-      const year = date.getFullYear();
-      const month = pad(date.getMonth() + 1);
-      const day = pad(date.getDate());
-      const hour = pad(date.getHours());
-      const minute = pad(date.getMinutes());
-      const second = pad(date.getSeconds());
-      const millisecond = pad(date.getMilliseconds(), 3) + "0000"; // preencher para 7 dígitos
-      
-      // offset do fuso
-      const offset = -date.getTimezoneOffset();
-      const offsetSign = offset >= 0 ? "+" : "-";
-      const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
-      const offsetMinutes = pad(Math.abs(offset) % 60);
-
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}.${millisecond}${offsetSign}${offsetHours}:${offsetMinutes}`;
-    
-    }
-    
     const fiscal = await db.Fiscal.findOne({
-      attributes: ['id', 'documentNumber', 'serie', 'date'],
+      attributes: ['id', 'documentNumber', 'serie', 'date', 'amount', 'pISSQN', 'vISSQN'],
       include: [
+        {model: db.Partner, as: 'partner', attributes: ['codigo_pessoa', 'typeId', 'cpfCnpj', 'name', 'surname'], include: [
+          {model: db.Address, as: 'address', attributes: ['codigo_endereco', 'zipCode', 'street', 'number', 'complement', 'district'], include: [
+            {model: db.City, as: 'city', attributes: ['codigo_municipio', 'ibge']}
+          ]}
+        ]},
         {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'name', 'cnpj', 'certificate', 'dpsEnvironment', 'dpsOptingForSimpleNational', 'dpsRegimeCalculation', 'dpsRegimeSpecial'], include: [
           {model: db.City, as: 'city', attributes: ['codigo_municipio', 'ibge']}
         ]},
-        {model: db.City, as: 'locality', attributes: ['codigo_municipio', 'ibge']}
+        {model: db.City, as: 'locality', attributes: ['codigo_municipio', 'ibge']},
+        {model: db.FiscalService, as: 'services', attributes: ['id', 'description']}
       ],
       where: [
         { id }
@@ -225,102 +222,128 @@ async function nfse(id) {
     const certificate = JSON.parse(fiscal.company.certificate)
 
     const url = "http://vps53636.publiccloud.com.br/application/services/dfe/nfse/generate";
-        
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - 200)
 
-    const emission = getCurrentDateTimeFormatted(fiscal.date)
+    const now = new Date()
+
+    const description = fiscal.services?.map(s => s.description).join('\n')
+
+    let prestador = {
+      cpf: null,
+      cnpj: null,
+      tipoEmitente: null
+    }
+
+    let tomador = {
+      cpf: null,
+      cnpj: null
+    }
+
+    if (fiscal.partner.typeId == 2) {
+      tomador.cnpj = String(fiscal.partner.cpfCnpj)
+    } else {
+      tomador.cpf = String(fiscal.partner.cpfCnpj)
+    }
+
+    const companyCnpj = String(fiscal.company.cnpj).trim().replace(/\s+/g, ' ')
+
+    if (_.size(companyCnpj) == 14) {
+      prestador.cnpj = companyCnpj
+      prestador.tipoEmitente = 1
+    } else {
+      prestador.cpf = companyCnpj
+      prestador.tipoEmitente = 2
+    }
 
     const dps = {
       "versao": "1.00",
       "informacoes": {
         "tipoAmbiente": Number(fiscal.company.dpsEnvironment),
-        "dhEmissao": emission,
+        "dhEmissao": format(now, "yyyy-MM-dd'T'HH:mm:ss"),
         "versaoAplicacao": "OpenAC.NFSe.Nacional",
         "serie": String(fiscal.serie).trim().replace(/\s+/g, ' '),
         "numeroDps": fiscal.documentNumber,
-        "competencia": emission,
-        "tipoEmitente": 1,
+        "competencia": format(now, "yyyy-MM-dd"),
+        "tipoEmitente": prestador.tipoEmitente,
         "localidadeEmitente": String(fiscal.company.city?.ibge).trim().replace(/\s+/g, ' '),
-        "substituida": null,
+        //"substituida": null,
         "prestador": {
           "regime": {
             "optanteSimplesNacional": Number(fiscal.company.dpsOptingForSimpleNational),
             "regimeApuracao": Number(fiscal.company.dpsRegimeCalculation),
             "regimeEspecial": Number(fiscal.company.dpsRegimeSpecial)
           },
-          "cnpj": String(fiscal.company.cnpj).trim().replace(/\s+/g, ' '),
-          "cpf": null,
-          "nif": null,
-          "codigoNaoNif": null,
-          "numeroCAEPF": null,
-          "inscricaoMunicipal": null,
+          "cnpj": prestador.cnpj,
+          "cpf": prestador.cpf,
+          //"nif": null,
+          //"codigoNaoNif": null,
+          //"numeroCAEPF": null,
+          //"inscricaoMunicipal": null,
           "nome": String(fiscal.company.name).trim().replace(/\s+/g, ' '),
-          "endereco": null,
-          "telefone": null,
-          "email": "teste@teste.com"
+          //"endereco": null,
+          //"telefone": null,
+          //"email": null
         },
         "tomador": {
-          "cnpj": "50834272000165",
-          "cpf": null,
-          "nif": null,
-          "codigoNaoNif": null,
-          "numeroCAEPF": null,
-          "inscricaoMunicipal": null,
-          "nome": "701453 Guilherme Venancio Freitas",
+          "cnpj": tomador.cnpj,
+          "cpf": tomador.cpf,
+          //"nif": null,
+          //"codigoNaoNif": null,
+          //"numeroCAEPF": null,
+          //"inscricaoMunicipal": null,
+          "nome": String(fiscal.partner.surname),
           "endereco": {
             "municipio": {
-              "cep": "74663520",
-              "codMunicipio": "5208707"
+              "cep": String(fiscal.partner.address.zipCode),
+              "codMunicipio": String(fiscal.partner.address.city.ibge)
             },
-            "logradouro": "Av Pedro Paulo de Souza",
-            "numero": "1981",
-            "complemento": null,
-            "bairro": "Goiania 2"
+            "logradouro": String(fiscal.partner.address.street),
+            "numero": String(fiscal.partner.address.number),
+            "complemento": String(fiscal.partner.address.complement),
+            "bairro": String(fiscal.partner.address.district)
           },
-          "telefone": null,
-          "email": null
+          //"telefone": null,
+          //"email": null
         },
         "intermediario": null,
         "servico": {
           "localidade": {
             "codMunicipioPrestacao": String(fiscal.locality.ibge),
-            "codPaisPrestacao": null
+            //"codPaisPrestacao": null
           },
           "informacoes": {
             "codTributacaoNacional": "080201",
-            "codTributacaoMunicipio": null,
-            "descricao": "Referente ao serviço prestado",
-            "codNBS": null,
-            "codInterno": null
+            //"codTributacaoMunicipio": null,
+            "descricao": description,
+            //"codNBS": null,
+            //"codInterno": null
           },
-          "servicoExterior": null,
-          "informacoesLocacao": null,
-          "obra": null,
-          "evento": null,
-          "exploracaoRodoviaria": null,
-          "informacoesComplementares": null
+          //"servicoExterior": null,
+          //"informacoesLocacao": null,
+          //"obra": null,
+          //"evento": null,
+          //"exploracaoRodoviaria": null,
+          //"informacoesComplementares": null
         },
         "valores": {
           "valoresServico": {
             "valorRecebido": 0,
-            "valor": 0.01
+            "valor": Number(fiscal.amount)
           },
-          "valoresDesconto": null,
-          "valoresDeducaoReducao": null,
+          //"valoresDesconto": null,
+          //"valoresDeducaoReducao": null,
           "tributos": {
             "municipal": {
               "issqn": 0,
-              "codPais": null,
-              "beneficio": null,
-              "suspensao": null,
-              "tipoImunidade": null,
-              "aliquota": 0,
+              //"codPais": null,
+              //"beneficio": null,
+              //"suspensao": null,
+              //"tipoImunidade": null,
+              //"aliquota": Number(fiscal.pISSQN),
               "tipoRetencaoISSQN": 0
             },
-            "federal": null,
+            //"federal": null,
             "total": {
-              "valorTotal": 0,
+              "valorTotal": Number(fiscal.amount),
               "porcentagemTotal": {
                 "totalFederal": 0,
                 "totalEstadual": 0,
@@ -354,4 +377,26 @@ async function nfse(id) {
 
   })
 
+}
+
+export async function xml({ id }) {
+
+  const db = new AppContext()
+
+  const fiscal = await db.Fiscal.findOne({
+    attributes: ['accessKey', 'xml'],
+    include: [
+      {model: db.DocumentTemplate, as: 'documentTemplate', attributes: ['acronym']}
+    ],
+    where: { id }
+  })
+
+  const xmlString = fiscal.xml // conteúdo XML como string
+  const base64 = Buffer.from(xmlString, 'utf-8').toString('base64')
+
+  return {
+    fileName: `${fiscal.documentTemplate.acronym}-${fiscal.accessKey}.xml`,
+    base64,
+  }
+  
 }

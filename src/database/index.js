@@ -21,7 +21,7 @@ import { FinancialCategory } from './models/financialCategory.model.js'
 import { Shippiment } from './models/shippiment.model.js'
 import { Cte } from './models/cte.model.js'
 import { CteNfe } from './models/cteNfe.model.js'
-import { Nfe } from './models/Nfe.model.js'
+import { Nfe } from './models/nfe.model.js'
 import { CenterCost } from './models/centerCost.model.js'
 import { BankAccountIntegration } from './models/bankAccountIntegration.model.js'
 import { Archive } from './models/archive.model.js'
@@ -35,6 +35,9 @@ import { DocumentTemplate } from './models/documentTemplate.model.js'
 import { Fiscal } from './models/fiscal.model.js'
 import { OrderFiscal } from './models/orderFiscal.model.js'
 import { FiscalService } from './models/fiscalService.model.js'
+import { Address } from './models/address.model.js'
+import { CompanyNfseTributation } from './models/companyNfseTributation.js'
+import { NfseOperation } from './models/nfseOperation.model.js'
 
 const afterFind = (result) => {
   const trimStrings = obj => {
@@ -54,6 +57,8 @@ const afterFind = (result) => {
 
 export class AppContext extends Sequelize {
   
+  Address = this.define('address', new Address(), { tableName: 'Endereco' })
+  
   Archive = this.define('archive', new Archive(), { tableName: 'archive' })
   
   Bank = this.define('bank', new Bank(), { tableName: 'Banco' })
@@ -71,6 +76,8 @@ export class AppContext extends Sequelize {
   CompanyBusiness = this.define('companyBusiness', new CompanyBusiness(), { tableName: 'empresa' })
 
   CompanyIntegration = this.define('companyIntegration', new CompanyIntegration(), { tableName: 'companyIntegration' })
+
+  CompanyNfseTributation = this.define('companyNfseTributation', new CompanyNfseTributation(), { tableName: 'companyNfseTributation' })
 
   CompanyUser = this.define('companyUser', new CompanyUser(), { tableName: 'companyUser' })
 
@@ -93,6 +100,8 @@ export class AppContext extends Sequelize {
   Integration = this.define('integration', new Integration(), { tableName: 'integration' })
 
   Nfe = this.define('nfe', new Nfe(), { tableName: 'nota' })
+
+  NfseOperation = this.define('nfseOperation', new NfseOperation(), { tableName: 'nfseOperation' })
 
   Order = this.define('order', new Order(), { tableName: 'Solicitacao' })
   
@@ -141,6 +150,8 @@ export class AppContext extends Sequelize {
       },
     })
 
+    this.Address.belongsTo(this.City, { as: 'city', foreignKey: 'codigo_municipio', onDelete: 'CASCADE' })
+
     this.BankAccount.belongsTo(this.Bank, { as: 'bank', foreignKey: 'bankId', onDelete: 'CASCADE' })
     this.BankAccount.hasMany(this.BankAccountIntegration, { as: 'bankAccountIntegrations', foreignKey: 'bankAccountId', onDelete: 'CASCADE' })
 
@@ -182,6 +193,7 @@ export class AppContext extends Sequelize {
     this.Fiscal.belongsTo(this.City, { as: 'locality', foreignKey: 'localityId', targetKey: 'codigo_municipio', onDelete: 'CASCADE' })
     this.Fiscal.belongsTo(this.Partner, { as: 'partner', foreignKey: 'IDFornecedor', targetKey: 'codigo_pessoa', onDelete: 'CASCADE' })
     this.Fiscal.belongsTo(this.DocumentTemplate, { as: 'documentTemplate', foreignKey: 'IDModeloDocumento', targetKey: 'id', onDelete: 'CASCADE' })
+    this.Fiscal.hasMany(this.FiscalService, { as: 'services', foreignKey: 'IDCompras', onDelete: 'CASCADE' })
 
     this.Statement.belongsTo(this.BankAccount, { as: 'bankAccount', foreignKey: 'bankAccountId', targetKey: 'codigo_conta_bancaria', onDelete: 'CASCADE' })
     this.Statement.hasMany(this.StatementData, { as: 'statementData', foreignKey: 'statementId', onDelete: 'CASCADE' })
@@ -224,6 +236,7 @@ export class AppContext extends Sequelize {
     
     this.OrderService.belongsTo(this.Service, {as: 'service', foreignKey: 'IDServico', targetKey: 'id', onDelete: 'CASCADE'})
 
+    this.Partner.belongsTo(this.Address, {as: 'address', foreignKey: 'addressId', targetKey: 'codigo_endereco', onDelete: 'CASCADE'})
 
     this.Bank.addHook('afterFind', afterFind)
     this.BankAccount.addHook('afterFind', afterFind)

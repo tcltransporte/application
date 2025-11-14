@@ -9,7 +9,7 @@ export class Partner {
     type: DataTypes.BIGINT
   }
 
-  partnerType = {
+  typeId = {
     field: 'IDTipoPessoa',
     type: DataTypes.TINYINT
   }
@@ -27,6 +27,11 @@ export class Partner {
   surname = {
     field: 'nome',
     type: DataTypes.STRING
+  }
+
+  addressId = {
+    field: 'addressId',
+    type: DataTypes.BIGINT
   }
 
   companyBusinessId = {

@@ -20,6 +20,7 @@ async function buscarEnderecoPeloCep(cep) {
 }
 
 const CepField = () => {
+  
   const { values, setFieldValue } = useFormikContext()
 
   const handleSearch = async () => {
@@ -82,7 +83,7 @@ export const Company = ({ company }) => {
     number: Yup.string().required('Campo obrigatório'),
     district: Yup.string().required('Campo obrigatório'),
     state: Yup.mixed().required('Campo obrigatório'),
-    city: Yup.object().required('Campo obrigatório')
+    city: Yup.object().required('Campo obrigatório'),
   })
 
   const handleSubmit = async (values) => {

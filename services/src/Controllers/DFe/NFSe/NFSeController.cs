@@ -189,7 +189,6 @@ namespace services.Controllers.DFe.NFSe
                 return BadRequest(new { message = ex.Message });
             }
 
-
         }
     }
 }

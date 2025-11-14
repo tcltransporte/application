@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import {  Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Grid, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress } from "@mui/material";
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton, Grid, Table, TableHead,
+  TableBody, TableRow, TableCell, CircularProgress, Box, InputAdornment, TextField, Typography,
+  RadioGroup, FormControlLabel, Radio
+} from "@mui/material";
 import { Formik, Form, Field } from "formik";
 import { styles } from "@/components/styles";
 
@@ -13,75 +17,144 @@ import * as search from '@/utils/search';
 import { Drawer } from "@/components/Drawer";
 
 import { upsertByIndex } from "@/utils/arrayUtils";
-
 import _ from "lodash";
 import Swal from "sweetalert2";
+import { useSession } from 'next-auth/react';
+import { keyframes } from "@emotion/react"
 
-import { useSession } from 'next-auth/react'
+const pulse = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+`
+
+export const StatusField = ({ label = "Status", value = "Ativo" }) => {
+  const getColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "ativo":
+      case "concluído":
+      case "aprovado":
+        return "#4caf50" // verde
+      case "pendente":
+      case "em andamento":
+        return "#ff9800" // laranja
+      case "cancelado":
+      case "reprovado":
+        return "#f44336" // vermelho
+      default:
+        return "#9e9e9e" // cinza
+    }
+  }
+
+  const color = getColor(value)
+
+  return (
+    <TextField
+      fullWidth
+      variant="filled"
+      label={label}
+      value={value}
+      InputProps={{
+        readOnly: true,
+        startAdornment: (
+          <InputAdornment position="start">
+            <Box
+              sx={{
+                position: "relative",
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                bgcolor: color,
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "50%",
+                  backgroundColor: color,
+                  animation: `${pulse} 1.4s infinite ease-in-out`,
+                },
+              }}
+            />
+          </InputAdornment>
+        ),
+      }}
+    />
+  )
+}
 
 export const ViewOrder = ({ serviceId, onClose }) => {
 
-  const session = useSession()
+  const session = useSession();
 
   const empty = {
     company: session.data?.company,
     locality: session.data?.company?.city,
     customer: null,
+    takerType: "customer", // 👈 padrão: tomador = cliente
+    taker: null,
     name: '',
     services: []
-  }
+  };
 
-  const [loading, setLoading] = useState(false)
-  const [service, setService] = useState(null)
-  const [editingService, setEditingService] = useState(undefined)
+  const [loading, setLoading] = useState(false);
+  const [service, setService] = useState(null);
+  const [editingService, setEditingService] = useState(undefined);
 
   useEffect(() => {
-    
-  if (!serviceId) {
-    setService(empty)
-    return
-  }
 
-  const fetchService = async () => {
-    setLoading(true)
-    try {
-      const data = await orders.findOne({ id: serviceId })
-      setService(data)
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
+    if (!serviceId) {
+      setService(empty);
+      return;
     }
-  }
 
-  fetchService()
+    const fetchService = async () => {
+      setLoading(true);
+      try {
+        const data = await orders.findOne({ id: serviceId });
+        setService(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-}, [serviceId])
+    fetchService();
+
+  }, [serviceId]);
 
   const handleSubmit = async (values) => {
     try {
-      const updated = await orders.upsert(values)
-      onClose(updated)
+      const updated = await orders.upsert(values);
+      onClose(updated);
     } catch (error) {
-      console.error(error.message)
+      console.error(error.message);
     }
-  }
+  };
 
   const handleAddItem = (item, index) => {
-    console.log(item)
-    setService(prev => ({ ...prev, services: upsertByIndex(prev.services || [], item, index) }))
-    setEditingService(undefined)
-  }
+    setService(prev => ({ ...prev, services: upsertByIndex(prev.services || [], item, index) }));
+    setEditingService(undefined);
+  };
 
   const handleRemoveItem = async (index) => {
 
-    const result = await Swal.fire({ text: 'Tem certeza que deseja excluir ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Não' })
-    
+    const result = await Swal.fire({
+      text: 'Tem certeza que deseja excluir ?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Não'
+    });
+
     if (result.isConfirmed) {
-      setService(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }))
+      setService(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }));
     }
 
-  }
+  };
 
   return (
     <>
@@ -104,10 +177,15 @@ export const ViewOrder = ({ serviceId, onClose }) => {
               </DialogTitle>
 
               <DialogContent sx={{ maxHeight: '80vh', overflowY: 'auto', px: 3 }}>
+                <Grid container spacing={2} alignItems="center">
 
-                <Grid container spacing={2}>
-
-                  <Grid item size={{sm: 12, md: 4}}>
+                  <Grid item size={{ sm: 12, md: 1.5 }}>
+                    <Field component={TextField} name="phone" label="Número" />
+                  </Grid>
+                  <Grid item size={{ sm: 12, md: 1.7 }}>
+                    <Field component={TextField} name="date" label="Data" />
+                  </Grid>
+                  <Grid item size={{ sm: 12, md: 4 }}>
                     <Field
                       component={AutoComplete}
                       name="company"
@@ -116,13 +194,12 @@ export const ViewOrder = ({ serviceId, onClose }) => {
                       onSearch={(value) => search.company(value)}
                       renderSuggestion={(item) => <span>{item.surname}</span>}
                       onChange={(company) => {
-                        setFieldValue("company", company)
-                        setFieldValue("locality", company?.city || null)
+                        setFieldValue("company", company);
+                        setFieldValue("locality", company?.city || null);
                       }}
                     />
                   </Grid>
-
-                  <Grid item size={{sm: 12, md: 3}}>
+                  <Grid item size={{ sm: 12, md: 2.5 }}>
                     <Field
                       component={AutoComplete}
                       name="locality"
@@ -132,22 +209,70 @@ export const ViewOrder = ({ serviceId, onClose }) => {
                       renderSuggestion={(item) => <span>{item.name} - {item.state?.acronym}</span>}
                     />
                   </Grid>
+                  <Grid item size={{ sm: 12, md: 2.3 }}>
+                    <StatusField></StatusField>
+                  </Grid>
+                </Grid>
+
+                {/* Cliente e Tomador */}
+                <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                  {/* Cliente */}
+                  <Grid item size={{ sm: 12, md: 4.4 }}>
+                    <Field
+                      component={AutoComplete}
+                      name="customer"
+                      label="Cliente"
+                      text={(partner) => partner?.surname}
+                      onSearch={(value) => search.partner(value)}
+                      renderSuggestion={(item) => <span>{item.surname}</span>}
+                      onChange={(partner) => {
+                        setFieldValue("customer", partner);
+                        if (values.takerType === "customer") {
+                          setFieldValue("taker", partner);
+                        }
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid item size={{ sm: 12, md: 2.8 }}>
+                    <Field
+                      component={AutoComplete}
+                      name="company"
+                      label="Vendedor"
+                      text={(company) => company.surname}
+                      onSearch={(value) => search.company(value)}
+                      renderSuggestion={(item) => <span>{item.surname}</span>}
+                    />
+                  </Grid>
 
                 </Grid>
 
-                <Field
-                  component={AutoComplete}
-                  name="customer"
-                  label="Cliente"
-                  text={(partner) => partner.surname}
-                  onSearch={(value) => search.partner(value)}
-                  renderSuggestion={(item) => <span>{item.surname}</span>}
-                />
+                <Button
+                  variant="text"
+                  startIcon={<i className="ri-add-circle-line" />}
+                  sx={{ mt: 2 }}
+                >
+                  Intermediário
+                </Button>
 
-                <br />
+                <br /><br /><br />
 
+                {/* Serviços */}
                 <fieldset className="dark-fieldset">
                   <legend>Serviços</legend>
+
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item size={{ sm: 12, md: 4.4 }}>
+                      <Field
+                        component={AutoComplete}
+                        name="company"
+                        label="Tributação"
+                        text={(company) => company.surname}
+                        onSearch={(value) => search.company(value)}
+                        renderSuggestion={(item) => <span>{item.surname}</span>}
+                      />
+                    </Grid>
+                  </Grid>
 
                   <Table size="small" sx={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                     <TableHead>
@@ -170,9 +295,9 @@ export const ViewOrder = ({ serviceId, onClose }) => {
                         values.services.map((row, index) => (
                           <TableRow key={index} onDoubleClick={() => setEditingService({ ...row, index })} style={{ cursor: "pointer" }}>
                             <TableCell>{row.service?.name}</TableCell>
-                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.amount)}</TableCell>
-                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.pISSQN)}</TableCell>
-                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.vISSQN)}</TableCell>
+                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(row.amount)}</TableCell>
+                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(row.pISSQN)}</TableCell>
+                            <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(row.vISSQN)}</TableCell>
                             <TableCell width={40}>
                               <IconButton size="small" color="error" onClick={() => handleRemoveItem(index)}>
                                 <i className="ri-delete-bin-line" />
@@ -190,7 +315,7 @@ export const ViewOrder = ({ serviceId, onClose }) => {
                     sx={{ mt: 2 }}
                     onClick={() => setEditingService({ index: null })}
                   >
-                    Adicionar
+                    Adicionar serviço
                   </Button>
                 </fieldset>
               </DialogContent>
@@ -211,10 +336,10 @@ export const ViewOrder = ({ serviceId, onClose }) => {
         onClose={() => setEditingService(undefined)}
         onSubmit={handleAddItem}
       />
+      
     </>
-  )
-
-}
+  );
+};
 
 export function ServiceItemFormDrawer({ service, onClose, onSubmit }) {
 
@@ -254,6 +379,7 @@ export function ServiceItemFormDrawer({ service, onClose, onSubmit }) {
           return (
             <Form>
               <Grid container spacing={2}>
+
                 <Grid item size={{ sm: 12, md: 12 }}>
                   <Field
                     component={AutoComplete}

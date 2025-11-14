@@ -18,10 +18,12 @@ import {
   Tooltip,
   Menu,
   MenuItem,
-  Divider
+  Divider,
+  Grid
 } from '@mui/material'
 import { useTitle } from '@/contexts/TitleProvider'
 import * as orders from '@/app/server/sales/orders'
+import * as entries from '@/app/server/fiscal/entries'
 import { styles } from '@/components/styles'
 import { ViewOrder } from './view.order'
 import _ from 'lodash'
@@ -29,139 +31,260 @@ import { format } from 'date-fns'
 import Swal from 'sweetalert2'
 import { BackdropLoading } from '@/components/BackdropLoading'
 import { Drawer } from '@/components/Drawer'
+import { downloadFile } from '@/utils/download'
 
 
 const DfeDrawer = ({ order, onClose }) => {
+
+
+  const [loading, setLoading] = useState(undefined)
+
+  const [data, setData] = useState([])
+
+  const [generating, setGenerating] = useState(false)
   
+  const [selected, setSelected] = useState([])
+
+  useEffect(() => {
+    if (order) {
+      setData(order)
+    }
+  }, [order])
+
+  const handleSelect = (id) => {
+    setSelected(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    )
+  }
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      const selectable = data.orderFiscals
+        //?.filter(f => f.fiscal.status !== 100) // 🔹 só pega os que não estão finalizados
+        .map(f => f.fiscal.id)
+      setSelected(selectable)
+    } else {
+      setSelected([])
+    }
+  }
+
+  const refreshOrderFiscals = async () => {
+    const orderFiscals = await orders.orderFiscals({ id: data.id })
+    data.orderFiscals = orderFiscals
+    setData(data)
+  }
+
+  const handleGenerate = async () => {
+    try {
+      setGenerating(true)
+      await entries.generate(selected)
+      await refreshOrderFiscals()
+      setSelected([])
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleDownload = async ({id}) => {
+    try {
+
+      setLoading('Baixando XML...')
+
+      const response = await entries.xml({ id })
+
+      downloadFile('application/xml', response.base64, response.fileName)
+
+      toast.success('Baixado com sucesso!')
+
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(undefined)
+    }
+  }
+
   return (
-    <Drawer
-      open={order}
-      title={'Documentos'}
-      onClose={onClose}
-      width={'780px'}
-    >
-     
-      <Box sx={{ p: 3 }}>
+    <>
 
-        {_.size(order?.orderFiscals) > 0 ? (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: 8, p: 0 }}></TableCell>
-                <TableCell sx={{ width: 130 }}>Data</TableCell>
-                <TableCell sx={{ width: 70 }}>Tipo</TableCell>
-                <TableCell sx={{ width: 50 }}>Número</TableCell>
-                <TableCell>Chave de acesso</TableCell>
-                <TableCell></TableCell>
-              </TableRow>
-            </TableHead>
+      <BackdropLoading loading={loading} message={loading} />
+      
+      <Drawer
+        open={order}
+        title={'Documentos'}
+        onClose={onClose}
+        width={'910px'}
+      >
+      
+        <Box sx={{ p: 3 }}>
 
-          <TableBody>
-            {_.map(order?.orderFiscals, (fiscal, index) => {
+          {_.size(data?.orderFiscals) > 0 ? (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: 8, p: 0 }}></TableCell>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={_.size(data?.orderFiscals) > 0 && _.size(selected) === _.size(data?.orderFiscals)}
+                      indeterminate={_.size(selected) > 0 && _.size(selected) < _.size(data?.orderFiscals)}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ width: 130 }}>Data</TableCell>
+                  <TableCell sx={{ width: 70 }}>Tipo</TableCell>
+                  <TableCell sx={{ width: 50 }}>Número</TableCell>
+                  <TableCell>Chave de acesso</TableCell>
+                  <TableCell align='right' sx={{ width: 50 }}>Valor</TableCell>
+                  <TableCell sx={{ width: 100 }}></TableCell>
+                </TableRow>
+              </TableHead>
 
-              const statusColor =
-                _.get(fiscal, 'fiscal.status') === 100
-                  ? 'success.main'
-                  : _.get(fiscal, 'fiscal.status') === 500
-                  ? 'error.main'
-                  : 'grey.400'
+            <TableBody>
+              {_.map(data?.orderFiscals, (fiscal, index) => {
 
-              return (
-                <Tooltip
-                  key={index}
-                  title={_.get(fiscal, 'fiscal.reason')}
-                  placement="left"
-                  arrow
-                >
-                  <TableRow
-                    hover
-                    sx={{ cursor: 'pointer' }}
-                    className="with-hover-actions"
+                const statusColor =
+                  _.get(fiscal, 'fiscal.status') === 100
+                    ? 'success.main'
+                    : _.get(fiscal, 'fiscal.status') === 500
+                    ? 'error.main'
+                    : 'grey.400'
+
+                return (
+                  <Tooltip
+                    key={index}
+                    title={_.get(fiscal, 'fiscal.reason')}
+                    placement="left"
+                    arrow
                   >
-                    <TableCell sx={{ position: 'relative', p: 0, width: 8 }}>
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 4,          // margem superior
-                          bottom: 4,       // margem inferior
-                          left: 0,
-                          width: 6,
-                          borderRadius: 1,
-                          backgroundColor: statusColor
-                        }}
-                      />
-                    </TableCell>
-
-                    <TableCell>
-                      {_.get(fiscal, 'fiscal.date')
-                        ? format(new Date(_.get(fiscal, 'fiscal.date')), 'dd/MM/yyyy HH:mm')
-                        : ""}
-                    </TableCell>
-
-                    <TableCell>
-                      {_.get(fiscal, 'fiscal.documentTemplate.acronym', '')}
-                    </TableCell>
-
-                    <TableCell>
-                      {_.get(fiscal, 'fiscal.documentNumber', '')}
-                    </TableCell>
-
-                    <TableCell
-                      sx={{
-                        fontFamily: 'monospace',
-                        letterSpacing: '-0.6px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
+                    <TableRow
+                      hover
+                      sx={{ cursor: 'pointer' }}
+                      className="with-hover-actions"
                     >
-                      {_.get(fiscal, 'fiscal.accessKey', '')}
-                    </TableCell>
+                      <TableCell sx={{ position: 'relative', p: 0, width: 8 }}>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 4,          // margem superior
+                            bottom: 4,       // margem inferior
+                            left: 0,
+                            width: 6,
+                            borderRadius: 1,
+                            backgroundColor: statusColor
+                          }}
+                        />
+                      </TableCell>
 
-                    <TableCell align="center">
-                      <Box className="row-actions">
-                        <Tooltip title="Visualizar PDF">
-                          <IconButton
-                            size="large"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDacte({ id: payment.id })
-                            }}
-                          >
-                            <i
-                              className="ri-file-pdf-2-line"
-                              style={{ fontSize: 20, color: '#d32f2f' }}
-                            />
-                          </IconButton>
-                        </Tooltip>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selected.includes(fiscal.fiscal.id)}
+                          //disabled={fiscal.fiscal.status == 100}
+                          onChange={() => handleSelect(fiscal.fiscal.id)}
+                        />
+                      </TableCell>
 
-                        <Tooltip title="Baixar XML">
-                          <IconButton
-                            size="large"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDownload({ id: payment.id })
-                            }}
-                          >
-                            <i className="ri-download-2-line" style={{ fontSize: 20 }} />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                </Tooltip>
-              )
-            })}
-          </TableBody>
-        </Table>
+                      <TableCell>
+                        {_.get(fiscal, 'fiscal.date')
+                          ? format(new Date(_.get(fiscal, 'fiscal.date')), 'dd/MM/yyyy HH:mm')
+                          : ""}
+                      </TableCell>
 
-        ) : (
-          <Typography variant="body2" color="textSecondary">
-            Nenhum documento encontrado!
-          </Typography>
-        )}
-      </Box>
-    </Drawer>
+                      <TableCell>
+                        {_.get(fiscal, 'fiscal.documentTemplate.acronym', '')}
+                      </TableCell>
+
+                      <TableCell>
+                        {_.get(fiscal, 'fiscal.documentNumber', '')}
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          fontFamily: 'monospace',
+                          letterSpacing: '-0.6px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {_.get(fiscal, 'fiscal.accessKey', '')}
+                      </TableCell>
+
+                      <TableCell align='right'>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(fiscal.fiscal.amount)}</TableCell>
+
+                      <TableCell align="center">
+                        <Box className="row-actions">
+                          <Tooltip title="Visualizar PDF">
+                            <IconButton
+                              size="large"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDacte({ id: payment.id })
+                              }}
+                            >
+                              <i
+                                className="ri-file-pdf-2-line"
+                                style={{ fontSize: 20, color: '#d32f2f' }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Baixar XML">
+                            <IconButton
+                              size="large"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDownload({ id: fiscal.fiscal.id })
+                              }}
+                            >
+                              <i className="ri-download-2-line" style={{ fontSize: 20 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  </Tooltip>
+                )
+              })}
+            </TableBody>
+          </Table>
+
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Nenhum documento encontrado!
+            </Typography>
+          )}
+
+          <br></br>
+
+          <Divider></Divider>
+
+          <br></br>
+
+          {_.size(selected) > 0 && (
+            <Grid container spacing={1} justifyContent="flex-start">
+              <Grid item>
+                <Button
+                  color="success"
+                  variant="contained"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  startIcon={
+                    generating && (
+                      <CircularProgress size={18} color="inherit" />
+                    )
+                  }
+                >
+                  {generating ? 'Gerando nota fiscal...' : 'Gerar nota fiscal'}
+                </Button>
+              </Grid>
+            </Grid>
+          )}
+          
+        </Box>
+      </Drawer>
+    
+    </>
   )
 }
 
@@ -232,7 +355,7 @@ export const ViewSalesOrders = ({ initialOrders = [] }) => {
 
       setLoading('Gerando nota fiscal...')
 
-      await orders.generate(orderId)
+      await orders.generate([orderId])
 
       fetchServices({...data.request})
 

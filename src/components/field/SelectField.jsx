@@ -1,14 +1,17 @@
 import React from 'react';
 import MuiTextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 
 const SelectField = (props) => {
+  const { field, form } = props;
+
   const rawError =
-    (props.form?.touched?.[props.field?.name] || props.form?.submitCount > 0)
-      ? props.form?.errors?.[props.field?.name]
+    (form?.touched?.[field?.name] || form?.submitCount > 0)
+      ? form?.errors?.[field?.name]
       : undefined;
 
   const errorMessage =
-    rawError && rawError !== `${props.field?.name} is a required field`
+    rawError && rawError !== `${field?.name} is a required field`
       ? rawError
       : undefined;
 
@@ -16,7 +19,11 @@ const SelectField = (props) => {
 
   const handleChange = (e) => {
     let val = e.target.value;
-    props.form?.setFieldValue(props.field?.name, val);
+
+    // sempre transformar "" em null pro Formik
+    if (val === "") val = null;
+
+    form?.setFieldValue(field?.name, val);
     props.onChange?.(val);
   };
 
@@ -26,37 +33,42 @@ const SelectField = (props) => {
       fullWidth
       size="small"
       variant="filled"
-      {...props.field}
+      {...field}
       {...props}
-      value={props.field?.value || ''}
+      value={field.value ?? ""}  // null vira "", para o MUI
+
       onChange={handleChange}
       onBlur={props.onBlur}
       error={showError}
       helperText={errorMessage}
       SelectProps={{
-        native: false, // ou true se quiser <select> nativo
+        native: false,
+        displayEmpty: true, // 🔥 Permite exibir placeholder/value=""
+        renderValue: (selected) => {
+          if (selected === "" || selected === null) {
+            return <span style={{ opacity: 0.6 }}>[Selecione]</span>; // 🔥 placeholder visual
+          }
+          return props.children.find(
+            (child) => child.props.value === selected
+          )?.props.children || selected;
+        },
         MenuProps: {
-          anchorOrigin: {
-            vertical: 'bottom',
-            horizontal: 'left', // garante alinhamento à esquerda
-          },
-          transformOrigin: {
-            vertical: 'top',
-            horizontal: 'left', // garante alinhamento à esquerda
-          },
+          anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+          transformOrigin: { vertical: 'top', horizontal: 'left' },
         },
       }}
       slotProps={{
-        input: {
-          readOnly: props.readOnly,
-        },
+        input: { readOnly: props.readOnly },
         formHelperText: {
-          sx: {
-            display: errorMessage ? 'block' : 'none',
-          },
+          sx: { display: errorMessage ? 'block' : 'none' },
         },
       }}
     >
+      {/* opção placeholder real — precisa ser o primeiro */}
+      <MenuItem value="">
+        [Selecione]
+      </MenuItem>
+
       {props.children}
     </MuiTextField>
   );

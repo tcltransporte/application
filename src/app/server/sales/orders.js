@@ -26,7 +26,7 @@ export async function findAll({dueDate, limit = 50, offset}) {
           {model: db.Company, as: 'company', attributes: ['codigo_empresa_filial', 'surname']},
           {model: db.Partner, as: 'customer', attributes: ['codigo_pessoa', 'surname']},
           {model: db.OrderFiscal, as: 'orderFiscals', attributes: ['id'], include: [
-            {model: db.Fiscal, as: 'fiscal', attributes: ['id', 'status', 'reason', 'date', 'documentNumber', 'accessKey'], include: [
+            {model: db.Fiscal, as: 'fiscal', attributes: ['id', 'status', 'reason', 'date', 'documentNumber', 'accessKey', 'amount'], include: [
               {model: db.DocumentTemplate, as: 'documentTemplate', attributes: ['id', 'acronym']}
             ]}
           ]}
@@ -48,6 +48,28 @@ export async function findAll({dueDate, limit = 50, offset}) {
 
 }
 
+export async function orderFiscals({ id }) {
+
+  const db = new AppContext()
+
+  const where = []
+
+  where.push({ orderId: id })
+
+  const orderFiscals = await db.OrderFiscal.findAll({
+    attributes: ['id'],
+    include: [
+      {model: db.Fiscal, as: 'fiscal', attributes: ['id', 'status', 'reason', 'date', 'documentNumber', 'accessKey', 'amount'], include: [
+        {model: db.DocumentTemplate, as: 'documentTemplate', attributes: ['id', 'acronym']}
+      ]}
+    ],
+    where
+  })
+
+  return _.map(orderFiscals, (item) => item.toJSON())
+
+}
+
 export async function findOne({id}) {
 
   const session = await getServerSession(authOptions)
@@ -65,7 +87,13 @@ export async function findOne({id}) {
         {model: db.City, as: 'locality', attributes: ['codigo_municipio', 'name'], include: [
           {model: db.State, as: 'state', attributes: ['codigo_uf', 'acronym']}
         ]},
-        {model: db.Partner, as: 'customer', attributes: ['codigo_pessoa', 'surname']},
+        {model: db.Partner, as: 'customer', attributes: ['codigo_pessoa', 'surname'], include: [
+          { model: db.Address, as: 'address', attributes: ['codigo_endereco', 'zipCode', 'street', 'number', 'complement', 'district'], include: [
+            { model: db.City, as: 'city', attributes: ['codigo_municipio', 'name'], include: [
+              { model: db.State, as: 'state', attributes: ['codigo_uf', 'name', 'acronym'] }
+            ]}
+          ]}
+        ]},
         {model: db.OrderService, as: 'services', attributes: ['id', 'amount', 'pISSQN', 'vISSQN'], include: [
           {model: db.Service, as: 'service', attributes: ['id', 'name']}
         ]}
@@ -116,6 +144,12 @@ export async function upsert(values) {
 
     const keepIds = values.services.filter(s => s.id).map(s => s.id);
 
+    console.log(keepIds)
+
+    if (keepIds.length > 0) {
+      await db.OrderService.destroy({ where: { orderId: result.id, id: { [Op.notIn]: keepIds }}, transaction })
+    }
+
     for (const item of values.services) {
       const service = { orderId: result.id, amount: item.amount, pISSQN: item.pISSQN, vISSQN: item.vISSQN, serviceId: item.service.id }
       if (item.id) {
@@ -125,29 +159,27 @@ export async function upsert(values) {
       }
     }
 
-    if (keepIds.length > 0) {
-      await db.OrderService.destroy({ where: { orderId: result.id, id: { [Op.notIn]: keepIds }}, transaction })
-    }
-
     return result.toJSON()
 
   })
 
 }
 
-export async function generate(id) {
+export async function generate(orders) {
 
   const session = await getServerSession(authOptions)
 
-  const db = new AppContext()
+  for (const id of orders) {
 
-  return await db.transaction(async (transaction) => {
+    const db = new AppContext()
 
-    const where = []
+    await db.transaction(async (transaction) => {
 
-    where.push({ id: id })
+      const where = []
 
-    const order = await db.Order.findOne({
+      where.push({ id: id })
+
+      const order = await db.Order.findOne({
         attributes: ['id', 'companyId', 'localityId', 'customerId'],
         include: [
           {model: db.OrderService, as: 'services', attributes: ['id', 'amount', 'pISSQN', 'vISSQN'], include: [
@@ -156,42 +188,44 @@ export async function generate(id) {
         ],
         where,
         transaction
+      })
+
+      const services = []
+
+      for(const item of order.services){
+        services.push({
+          service: { id: item.service?.id, name: item.service?.name },
+          description: item.service?.name,
+          amount: item.amount,
+          pISSQN: item.pISSQN,
+          vISSQN: item.vISSQN,
+        })
+      }
+          
+      const totalAmount = services.reduce((sum, s) => sum + s.amount, 0)
+      const totalValorISSQN = services.reduce((sum, s) => sum + s.vISSQN, 0)
+      const totalAliqISSQN = totalAmount ? (totalValorISSQN / totalAmount) * 100 : 0
+
+      //existe algum serviço => gerar nfse
+      const fiscal = await entries.upsert(
+        {
+          companyId: order.companyId,
+          documentTemplateId: 99,
+          locality: { codigo_municipio: order.localityId },
+          partner: { codigo_pessoa: order.customerId },
+          amount: totalAmount,
+          pISSQN: totalAliqISSQN,
+          vISSQN: totalValorISSQN,
+          services: services
+        }
+      )
+
+      await db.OrderFiscal.create({ orderId: order.id, fiscalId: fiscal.id }, { transaction })
+
+      await entries.generate(fiscal.id)
+
     })
 
-    const services = []
-
-    for(const item of order.services){
-      services.push({
-        service: { id: item.service?.id },
-        description: item.service?.name,
-        amount: item.amount,
-        pISSQN: item.pISSQN,
-        vISSQN: item.vISSQN,
-      })
-    }
-        
-    const totalAmount = services.reduce((sum, s) => sum + s.amount, 0)
-    const totalValorISSQN = services.reduce((sum, s) => sum + s.vISSQN, 0)
-    const totalAliqISSQN = totalAmount ? (totalValorISSQN / totalAmount) * 100 : 0
-
-    //existe algum serviço => gerar nfse
-    const fiscal = await entries.upsert(
-      {
-        companyId: order.companyId,
-        documentTemplateId: 99,
-        locality: { codigo_municipio: order.localityId },
-        partner: { codigo_pessoa: order.customerId },
-        amount: totalAmount,
-        pISSQN: totalAliqISSQN,
-        vISSQN: totalValorISSQN,
-        services: services
-      }
-    )
-
-    await db.OrderFiscal.create({ orderId: order.id, fiscalId: fiscal.id }, { transaction })
-
-    await entries.generate(fiscal.id)
-
-  })
+  }
 
 }

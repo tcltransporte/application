@@ -23,7 +23,8 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions
+  CardActions,
+  Link
 } from '@mui/material'
 import { format, fromZonedTime } from 'date-fns-tz'
 import * as mercadolivre from '@/app/server/settings/integrations/plugins/mercado-livre.controller'
@@ -219,11 +220,20 @@ export const Statement = ({ data, onChange }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {!uploadedFile && (
-        <DragAndDrop files={uploadedFile} title={'Arquivo CSV'} accept={'.csv'} onChange={(files) => setUploadedFile(files[0])} />
+        <>
+          <Link href="https://www.mercadopago.com.br/balance/reports/account_status" underline="hover" target='_blank'>1º - Clique aqui para gerar o extrato da conta</Link>
+          <br></br>
+          <DragAndDrop files={uploadedFile} title={'Arquivo CSV'} accept={'.csv'} onChange={(files) => setUploadedFile(files[0])} />
+        </>
       )}
 
       {uploadedFile && (
         <>
+
+          <Link href="https://www.mercadopago.com.br/balance/reports/release" underline="hover" target='_blank'>2º - Clique aqui para visualizar as liberações</Link>
+
+          <br></br>
+
           {/* Cabeçalho fixo */}
           <Box
             display="flex"
@@ -232,6 +242,7 @@ export const Statement = ({ data, onChange }) => {
             mb={1}
             sx={{ flexShrink: 0 }}
           >
+            
             <Typography fontWeight="bold">Liberações</Typography>
 
             <ButtonGroup variant="outlined" size="small">

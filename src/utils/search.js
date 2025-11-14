@@ -30,6 +30,35 @@ export async function company(search, signal) {
     }
 }
 
+export async function nfseOperation(search, signal) {
+    try {
+
+        const response = await fetch('/api/search/nfse-operation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search }),
+            signal
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            throw new Error(data.message)
+        }
+
+        return data
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return []
+        }
+        toast.error(error.message)
+        return []
+    }
+}
+
 export async function state(search, signal) {
     try {
 

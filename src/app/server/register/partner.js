@@ -47,7 +47,14 @@ export async function findOne({id}) {
   where.push({ companyId: session.company.codigo_empresa_filial })
 
   const partner = await db.Partner.findOne({
-      attributes: ['codigo_pessoa', 'partnerType', 'cpfCnpj', 'name', 'surname'],
+      attributes: ['codigo_pessoa', 'typeId', 'cpfCnpj', 'name', 'surname'],
+      include: [
+        { model: db.Address, as: 'address', attributes: ['codigo_endereco', 'zipCode', 'street', 'number', 'complement', 'district'], include: [
+          { model: db.City, as: 'city', attributes: ['codigo_municipio', 'name'], include: [
+            { model: db.State, as: 'state', attributes: ['codigo_uf', 'name', 'acronym'] }
+          ]}
+        ]}
+      ],
       where
   })
 
@@ -83,6 +90,28 @@ export async function upsert(values) {
 
       result = await db.Partner.findByPk(partner.codigo_pessoa, { transaction })
 
+    }
+
+    //ENDEREÇO PRINCIPAL
+    if (result.addressId) {
+
+      await db.Address.update({ ...values.address, partnerId: partner.codigo_pessoa, cityId: values.address.city.codigo_municipio }, {
+        where: { codigo_endereco: result.addressId },
+        transaction
+      })
+
+    } else {
+
+      const address = await db.Address.create(
+        { ...values.address, partnerId: partner.codigo_pessoa, cityId: values.address.city.codigo_municipio },
+        { transaction }
+      )
+
+      await db.Partner.update(
+        { addressId: address.codigo_endereco },
+        { where: { codigo_pessoa: result.codigo_pessoa }, transaction }
+      )
+      
     }
 
     return result.toJSON()

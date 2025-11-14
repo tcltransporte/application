@@ -20,8 +20,15 @@ export default function RouteProgressBar() {
       const link = e.target.closest('a')
       if (!link) return
 
+      // 🚫 (1) Ignora links marcados explicitamente
+      if (link.dataset.ignoreProgress === 'true') return
+
+      // 🚫 (2) Ignora cliques programáticos (não do usuário)
+      if (!e.isTrusted) return
+
+      // 🚫 (3) Ignora links que disparam downloads (ex: Blob ou Base64)
       const href = link.getAttribute('href')
-      if (!href || href.startsWith('#')) return
+      if (!href || href.startsWith('#') || href.startsWith('blob:') || href.startsWith('data:')) return
 
       const linkUrl = new URL(link.href)
       const currentUrl = new URL(window.location.href)

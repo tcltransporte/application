@@ -1,25 +1,17 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Grid from '@mui/material/Grid'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import CardHeader from '@mui/material/CardHeader'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
+import { Grid, Card, CardContent, CardHeader, TextField, Typography } from '@mui/material'
 import Swal from 'sweetalert2'
 import { DragAndDrop } from '@/components/DragAndDrop'
 import * as certificateService from '@/app/server/settings/certificate'
 import _ from 'lodash'
-import { getCompany } from '@/app/server/settings/index.controller'
 import { Box, CircularProgress } from '@mui/material'
 import { BackdropLoading } from '@/components/BackdropLoading'
 import { format } from 'date-fns'
 
 export const Certificate = () => {
 
-  
   const [loading, setLoading] = useState(undefined)
   const [isLoading, setIsLoading] = useState(false)
 

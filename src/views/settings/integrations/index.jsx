@@ -10,7 +10,7 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
-import Drawer from '@mui/material/Drawer'
+import DrawerMUI from '@mui/material/Drawer'
 import Divider from '@mui/material/Divider'
 import CircularProgress from '@mui/material/CircularProgress'
 import { CardContent, Paper } from '@mui/material'
@@ -26,6 +26,7 @@ import {
 } from '@/app/server/settings/integrations/index.controller'
 import { useTitle } from '@/contexts/TitleProvider'
 import { styles } from '@/components/styles'
+import { Drawer } from '@/components/Drawer'
 
 const Integrations = ({ integrations }) => {
   const [connectedIntegrations, setConnectedIntegrations] = useState([])
@@ -248,7 +249,7 @@ const Integrations = ({ integrations }) => {
             )}
 
             {/* Drawer de Edição */}
-            <Drawer
+            <DrawerMUI
               anchor="right"
               open={editDrawerOpen}
               onClose={handleCloseDrawers}
@@ -272,10 +273,10 @@ const Integrations = ({ integrations }) => {
                   />
                 </>
               )}
-            </Drawer>
+            </DrawerMUI>
 
             {/* Drawer de Conexão */}
-            <Drawer
+            <DrawerMUI
               anchor="right"
               open={connectDrawerOpen}
               onClose={handleCloseDrawers}
@@ -295,19 +296,15 @@ const Integrations = ({ integrations }) => {
                   />
                 </>
               )}
-            </Drawer>
+            </DrawerMUI>
 
             {/* Drawer de Adição */}
             <Drawer
-              anchor="right"
               open={addDrawerOpen}
+              title={'Integrações disponíveis'}
               onClose={handleCloseDrawers}
-              PaperProps={{ sx: { width: 1100, p: 4 } }}
+              width={'1100px'}
             >
-              <Typography variant="h5" mb={2}>
-                Integrações disponíveis
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
 
               <Grid container spacing={3}>
                 {integrations.length > 0 ? (
